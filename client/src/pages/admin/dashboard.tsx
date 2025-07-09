@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   };
 
   const handleViewAllProducts = () => {
-    setLocation('/admin/products');
+    setLocation('/products');
   };
 
   const handleDateRangeChange = () => {

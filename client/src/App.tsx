@@ -17,6 +17,7 @@ import Checkout from "@/pages/checkout"; // Uncomment this line if you have a Ch
 // import Checkout from "@/pages/checkout"
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminProducts from "@/pages/admin/products";
+import AdminCategories from "@/pages/admin/category";
 import AdminOrders from "@/pages/admin/orders";
 import AdminCustomers from "@/pages/admin/customers";
 import AdminSettings from "@/pages/admin/settings";
@@ -31,6 +32,7 @@ function Router() {
           <Switch>
             <Route path="/" component={AdminDashboard} />
             <Route path="/products" component={AdminProducts} />
+            <Route path="/categories" component={AdminCategories} />
             <Route path="/orders" component={AdminOrders} />
             <Route path="/customers" component={AdminCustomers} />
             <Route path="/settings" component={AdminSettings} />

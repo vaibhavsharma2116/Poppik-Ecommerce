@@ -40,19 +40,16 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Top Banner */}
-      <div className="bg-red-500 text-white text-center py-2 text-sm font-medium">
-        <span>🎉 PayDay Sale: Buy 1 Get 1 FREE + Free Shipping on orders above ₹599</span>
-      </div>
+  
 
       {/* Main Header */}
-      <header className="sticky top-8 z-50 bg-white border-b border-gray-200">
+      <header className=" bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/">
               <h1 className="text-2xl font-bold text-black cursor-pointer">
-                Discover Pilgrim
+                Poppik
               </h1>
             </Link>
 
@@ -880,7 +877,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Company Info */}
             <div>
-              <h3 className="text-xl font-bold mb-4">Discover Pilgrim</h3>
+              <h3 className="text-xl font-bold mb-4">Poppik</h3>
               <p className="text-gray-400 mb-4">
                 Your trusted partner for natural, effective beauty and wellness products.
               </p>
@@ -1022,7 +1019,7 @@ export default function Layout({ children }: LayoutProps) {
           {/* Copyright */}
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Discover Pilgrim. All rights reserved.
+              © 2024 Poppik. All rights reserved.
             </p>
           </div>
         </div>

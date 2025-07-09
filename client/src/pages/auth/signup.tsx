@@ -45,7 +45,7 @@ export default function Signup() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/">
-            <h1 className="text-3xl font-bold text-red-600 mb-2">Discover Pilgrim</h1>
+            <h1 className="text-3xl font-bold text-red-600 mb-2">Poppik</h1>
           </Link>
           <p className="text-gray-600">Start your natural beauty journey today</p>
         </div>

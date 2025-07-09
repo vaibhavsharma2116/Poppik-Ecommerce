@@ -1,8 +1,8 @@
-# Discover Pilgrim Beauty E-commerce Application
+# Poppik Beauty E-commerce Application
 
 ## Overview
 
-This is a full-stack e-commerce application for the beauty brand "Discover Pilgrim". The application features a modern, responsive interface for browsing and purchasing beauty products including skincare, haircare, makeup, and body care items. It's built with React on the frontend and Express.js on the backend, with TypeScript throughout for type safety.
+This is a full-stack e-commerce application for the beauty brand "Poppik". The application features a modern, responsive interface for browsing and purchasing beauty products including skincare, haircare, makeup, and body care items. It's built with React on the frontend and Express.js on the backend, with TypeScript throughout for type safety.
 
 ## System Architecture
 

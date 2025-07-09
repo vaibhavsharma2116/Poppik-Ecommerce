@@ -31,7 +31,7 @@ export default function About() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">About Discover Pilgrim</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">About Poppik</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             We're on a mission to revolutionize beauty and wellness through science-backed formulations, 
             natural ingredients, and sustainable practices that empower everyone to discover their unique glow.
@@ -44,7 +44,7 @@ export default function About() {
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
             <div className="space-y-4 text-gray-600 leading-relaxed">
               <p>
-                Founded with the belief that beauty should be accessible, effective, and ethical, Discover Pilgrim 
+                Founded with the belief that beauty should be accessible, effective, and ethical, Poppik 
                 has grown from a small startup to a trusted name in the beauty industry. Our journey began with a 
                 simple question: "What if we could create products that not only make you look good but feel good too?"
               </p>

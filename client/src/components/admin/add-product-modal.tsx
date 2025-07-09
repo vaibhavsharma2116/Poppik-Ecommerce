@@ -19,6 +19,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    subcategory: '',
     price: '',
     stock: '',
     description: '',
@@ -33,6 +34,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
     const newProduct = {
       name: formData.name,
       category: formData.category,
+      subcategory: formData.subcategory,
       price: formData.price,
       stock: parseInt(formData.stock),
       description: formData.description,
@@ -48,6 +50,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
     setFormData({
       name: '',
       category: '',
+      subcategory: '',
       price: '',
       stock: '',
       description: '',
@@ -59,6 +62,47 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Get subcategories for selected category
+  const getSubcategoriesForCategory = (category: string) => {
+    const subcategoryMap: Record<string, { value: string; label: string }[]> = {
+      'skincare': [
+        { value: 'serums', label: 'Face Serums' },
+        { value: 'moisturizers', label: 'Moisturizers' },
+        { value: 'cleansers', label: 'Face Cleansers' },
+        { value: 'toners', label: 'Toners' },
+        { value: 'masks', label: 'Face Masks' },
+        { value: 'sunscreen', label: 'Sunscreen' },
+        { value: 'eye-care', label: 'Eye Care' },
+        { value: 'lip-care', label: 'Lip Care' }
+      ],
+      'makeup': [
+        { value: 'foundations', label: 'Foundations' },
+        { value: 'lipsticks', label: 'Lipsticks' },
+        { value: 'eyeshadows', label: 'Eyeshadows' },
+        { value: 'mascaras', label: 'Mascaras' },
+        { value: 'blushes', label: 'Blushes' },
+        { value: 'concealers', label: 'Concealers' },
+        { value: 'highlighters', label: 'Highlighters' }
+      ],
+      'body care': [
+        { value: 'moisturizers', label: 'Body Moisturizers' },
+        { value: 'scrubs', label: 'Body Scrubs' },
+        { value: 'oils', label: 'Body Oils' },
+        { value: 'cleansers', label: 'Body Cleansers' },
+        { value: 'treatments', label: 'Body Treatments' }
+      ],
+      'hair care': [
+        { value: 'shampoos', label: 'Shampoos' },
+        { value: 'conditioners', label: 'Conditioners' },
+        { value: 'oils', label: 'Hair Oils' },
+        { value: 'masks', label: 'Hair Masks' },
+        { value: 'treatments', label: 'Hair Treatments' },
+        { value: 'styling', label: 'Styling Products' }
+      ]
+    };
+    return subcategoryMap[category.toLowerCase()] || [];
   };
 
   return (
@@ -105,7 +149,10 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
             
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)} required>
+              <Select value={formData.category} onValueChange={(value) => {
+                handleInputChange('category', value);
+                handleInputChange('subcategory', ''); // Reset subcategory when category changes
+              }} required>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -115,6 +162,20 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                   <SelectItem value="Body Care">Body Care</SelectItem>
                   <SelectItem value="Hair Care">Hair Care</SelectItem>
                   <SelectItem value="Fragrance">Fragrance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="subcategory">Subcategory</Label>
+              <Select value={formData.subcategory} onValueChange={(value) => handleInputChange('subcategory', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subcategory" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getSubcategoriesForCategory(formData.category).map((sub) => (
+                    <SelectItem key={sub.value} value={sub.value}>{sub.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

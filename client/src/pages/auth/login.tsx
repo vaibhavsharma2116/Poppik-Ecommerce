@@ -35,7 +35,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/">
-            <h1 className="text-3xl font-bold text-red-600 mb-2">Discover Pilgrim</h1>
+            <h1 className="text-3xl font-bold text-red-600 mb-2">Poppik</h1>
           </Link>
           <p className="text-gray-600">Welcome back to your beauty journey</p>
         </div>

@@ -31,7 +31,15 @@ const sidebarItems = [
     icon: LayoutDashboard,
     badge: null,
   },
+
+
   {
+    title: "Categories",
+    href: "/categories",
+    icon: FolderTree,
+    badge: null,
+  },
+    {
     title: "Products",
     href: "/products",
     icon: Package,

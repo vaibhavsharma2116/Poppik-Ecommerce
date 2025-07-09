@@ -33,12 +33,14 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [subcategoryFilter, setSubcategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [products, setProducts] = useState([
     { 
       id: 1, 
       name: "Moisturizing Face Cream", 
       category: "Skincare", 
+      subcategory: "moisturizers",
       price: "29.99", 
       stock: 45, 
       status: "Active",
@@ -50,6 +52,7 @@ export default function AdminProducts() {
       id: 2, 
       name: "Red Velvet Lipstick", 
       category: "Makeup", 
+      subcategory: "lipsticks",
       price: "19.99", 
       stock: 23, 
       status: "Active",
@@ -61,6 +64,7 @@ export default function AdminProducts() {
       id: 3, 
       name: "Body Lotion Vanilla", 
       category: "Body Care", 
+      subcategory: "moisturizers",
       price: "15.99", 
       stock: 0, 
       status: "Out of Stock",
@@ -72,6 +76,7 @@ export default function AdminProducts() {
       id: 4, 
       name: "Rose Water Toner", 
       category: "Skincare", 
+      subcategory: "toners",
       price: "12.99", 
       stock: 67, 
       status: "Active",
@@ -83,6 +88,7 @@ export default function AdminProducts() {
       id: 5, 
       name: "Matte Foundation", 
       category: "Makeup", 
+      subcategory: "foundations",
       price: "34.99", 
       stock: 12, 
       status: "Low Stock",
@@ -109,6 +115,7 @@ export default function AdminProducts() {
     price: '',
     stock: '',
     category: '',
+    subcategory: '',
     status: ''
   });
 
@@ -121,6 +128,7 @@ export default function AdminProducts() {
         price: product.price,
         stock: product.stock.toString(),
         category: product.category,
+        subcategory: product.subcategory || '',
         status: product.status
       });
       setIsEditModalOpen(true);
@@ -137,6 +145,7 @@ export default function AdminProducts() {
               price: editFormData.price,
               stock: parseInt(editFormData.stock),
               category: editFormData.category,
+              subcategory: editFormData.subcategory,
               status: editFormData.status
             }
           : p
@@ -202,6 +211,47 @@ export default function AdminProducts() {
     }
   };
 
+  // Get subcategories for selected category
+  const getSubcategoriesForCategory = (category: string) => {
+    const subcategoryMap: Record<string, { value: string; label: string }[]> = {
+      'skincare': [
+        { value: 'serums', label: 'Face Serums' },
+        { value: 'moisturizers', label: 'Moisturizers' },
+        { value: 'cleansers', label: 'Face Cleansers' },
+        { value: 'toners', label: 'Toners' },
+        { value: 'masks', label: 'Face Masks' },
+        { value: 'sunscreen', label: 'Sunscreen' },
+        { value: 'eye-care', label: 'Eye Care' },
+        { value: 'lip-care', label: 'Lip Care' }
+      ],
+      'makeup': [
+        { value: 'foundations', label: 'Foundations' },
+        { value: 'lipsticks', label: 'Lipsticks' },
+        { value: 'eyeshadows', label: 'Eyeshadows' },
+        { value: 'mascaras', label: 'Mascaras' },
+        { value: 'blushes', label: 'Blushes' },
+        { value: 'concealers', label: 'Concealers' },
+        { value: 'highlighters', label: 'Highlighters' }
+      ],
+      'body care': [
+        { value: 'moisturizers', label: 'Body Moisturizers' },
+        { value: 'scrubs', label: 'Body Scrubs' },
+        { value: 'oils', label: 'Body Oils' },
+        { value: 'cleansers', label: 'Body Cleansers' },
+        { value: 'treatments', label: 'Body Treatments' }
+      ],
+      'haircare': [
+        { value: 'shampoos', label: 'Shampoos' },
+        { value: 'conditioners', label: 'Conditioners' },
+        { value: 'oils', label: 'Hair Oils' },
+        { value: 'masks', label: 'Hair Masks' },
+        { value: 'treatments', label: 'Hair Treatments' },
+        { value: 'styling', label: 'Styling Products' }
+      ]
+    };
+    return subcategoryMap[category.toLowerCase()] || [];
+  };
+
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -210,10 +260,13 @@ export default function AdminProducts() {
     const matchesCategory = categoryFilter === 'all' || 
                            product.category.toLowerCase() === categoryFilter.toLowerCase();
     
+    const matchesSubcategory = subcategoryFilter === 'all' || 
+                              product.subcategory?.toLowerCase() === subcategoryFilter.toLowerCase();
+    
     const matchesStatus = statusFilter === 'all' || 
                          product.status.toLowerCase().replace(' ', '-') === statusFilter;
     
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesCategory && matchesSubcategory && matchesStatus;
   });
 
   const lowStockCount = products.filter(p => p.status === "Low Stock" || p.stock < 15).length;
@@ -274,7 +327,10 @@ export default function AdminProducts() {
                   className="pl-10 w-64"
                 />
               </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select value={categoryFilter} onValueChange={(value) => {
+                setCategoryFilter(value);
+                setSubcategoryFilter('all'); // Reset subcategory when category changes
+              }}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -282,7 +338,19 @@ export default function AdminProducts() {
                   <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="skincare">Skincare</SelectItem>
                   <SelectItem value="makeup">Makeup</SelectItem>
-                  <SelectItem value="body-care">Body Care</SelectItem>
+                  <SelectItem value="body care">Body Care</SelectItem>
+                  <SelectItem value="haircare">Hair Care</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Subcategory" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subcategories</SelectItem>
+                  {categoryFilter !== 'all' && getSubcategoriesForCategory(categoryFilter).map((sub) => (
+                    <SelectItem key={sub.value} value={sub.value}>{sub.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -355,7 +423,9 @@ export default function AdminProducts() {
               </div>
               <CardContent className="p-4">
                 <h3 className="font-semibold text-slate-900 mb-1">{product.name}</h3>
-                <p className="text-sm text-slate-500 mb-2">{product.category}</p>
+                <p className="text-sm text-slate-500 mb-2">
+                  {product.category} {product.subcategory && `• ${product.subcategory}`}
+                </p>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-lg font-bold text-slate-900">${product.price}</span>
                   <div className="flex items-center space-x-1">
@@ -409,6 +479,7 @@ export default function AdminProducts() {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Subcategory</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Rating</TableHead>
@@ -431,6 +502,7 @@ export default function AdminProducts() {
                       </div>
                     </TableCell>
                     <TableCell>{product.category}</TableCell>
+                    <TableCell>{product.subcategory || 'N/A'}</TableCell>
                     <TableCell className="font-medium">${product.price}</TableCell>
                     <TableCell>{product.stock}</TableCell>
                     <TableCell>
@@ -589,10 +661,14 @@ export default function AdminProducts() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Category</Label>
                         <p className="text-base text-slate-900 mt-1">{selectedProduct.category}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Subcategory</Label>
+                        <p className="text-base text-slate-900 mt-1">{selectedProduct.subcategory || 'N/A'}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Product ID</Label>
@@ -749,18 +825,36 @@ export default function AdminProducts() {
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="edit-category">Category</Label>
-              <Select value={editFormData.category} onValueChange={(value) => setEditFormData(prev => ({ ...prev, category: value }))}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Skincare">Skincare</SelectItem>
-                  <SelectItem value="Makeup">Makeup</SelectItem>
-                  <SelectItem value="Body Care">Body Care</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-category">Category</Label>
+                <Select value={editFormData.category} onValueChange={(value) => {
+                  setEditFormData(prev => ({ ...prev, category: value, subcategory: '' }));
+                }}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Skincare">Skincare</SelectItem>
+                    <SelectItem value="Makeup">Makeup</SelectItem>
+                    <SelectItem value="Body Care">Body Care</SelectItem>
+                    <SelectItem value="Hair Care">Hair Care</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-subcategory">Subcategory</Label>
+                <Select value={editFormData.subcategory} onValueChange={(value) => setEditFormData(prev => ({ ...prev, subcategory: value }))}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select subcategory" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getSubcategoriesForCategory(editFormData.category).map((sub) => (
+                      <SelectItem key={sub.value} value={sub.value}>{sub.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label htmlFor="edit-status">Status</Label>

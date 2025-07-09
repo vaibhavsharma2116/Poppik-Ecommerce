@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { cn } from "@/lib/utils";
@@ -21,7 +20,8 @@ import {
   User,
   Shield,
   Activity,
-  TrendingUp
+  TrendingUp,
+  FolderTree
 } from "lucide-react";
 
 const sidebarItems = [
@@ -87,13 +87,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           )}
         </div>
-        
+
         {/* Navigation */}
         <nav className="flex-1 px-3 py-6 space-y-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href;
-            
+
             return (
               <Link
                 key={item.href}
@@ -120,7 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
-        
+
         {/* Footer */}
         <div className="px-3 py-4 border-t border-slate-700/50">
           <Button 
@@ -149,7 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               <Menu className="h-5 w-5" />
             </Button>
-            
+
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
@@ -158,17 +158,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               />
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <Button variant="ghost" size="sm" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            
+
             <Button variant="ghost" size="sm" className="relative">
               <Bell className="h-4 w-4" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
             </Button>
-            
+
             <div className="flex items-center space-x-3 border-l border-slate-200 pl-4">
               <div className="relative">
                 <div className="w-9 h-9 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center shadow-md">

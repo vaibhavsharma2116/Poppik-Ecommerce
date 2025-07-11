@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,43 +16,20 @@ import {
   Search, 
   Edit, 
   Trash2, 
-  Filter, 
   Grid3X3, 
   List,
-  Star,
   Eye,
   MoreVertical,
-  Package,
-  TrendingUp,
-  AlertTriangle,
-  Image as ImageIcon,
   Layers,
   Tag,
   FolderOpen,
-  ChevronRight,
-  Settings
+  Package,
+  TrendingUp,
+  ImageIcon,
+  Upload,
+  X
 } from "lucide-react";
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  image: string;
-  status: 'Active' | 'Inactive';
-  productCount: number;
-  subcategories: Subcategory[];
-}
-
-interface Subcategory {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  categoryId: number;
-  status: 'Active' | 'Inactive';
-  productCount: number;
-}
+import type { Category, Subcategory } from "@/lib/types";
 
 export default function AdminCategories() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,67 +46,140 @@ export default function AdminCategories() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
 
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: 1,
-      name: 'Skincare',
-      slug: 'skincare',
-      description: 'Premium skincare products for all skin types',
-      image: '/api/placeholder/300/200',
-      status: 'Active',
-      productCount: 45,
-      subcategories: [
-        { id: 1, name: 'Face Serums', slug: 'serums', description: 'Anti-aging and hydrating serums', categoryId: 1, status: 'Active', productCount: 12 },
-        { id: 2, name: 'Moisturizers', slug: 'moisturizers', description: 'Daily moisturizing products', categoryId: 1, status: 'Active', productCount: 18 },
-        { id: 3, name: 'Cleansers', slug: 'cleansers', description: 'Face cleansing products', categoryId: 1, status: 'Active', productCount: 15 }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Makeup',
-      slug: 'makeup',
-      description: 'High-quality makeup products and cosmetics',
-      image: '/api/placeholder/300/200',
-      status: 'Active',
-      productCount: 32,
-      subcategories: [
-        { id: 4, name: 'Foundations', slug: 'foundations', description: 'Full coverage foundations', categoryId: 2, status: 'Active', productCount: 8 },
-        { id: 5, name: 'Lipsticks', slug: 'lipsticks', description: 'Long-lasting lipsticks', categoryId: 2, status: 'Active', productCount: 14 },
-        { id: 6, name: 'Eyeshadows', slug: 'eyeshadows', description: 'Vibrant eyeshadow palettes', categoryId: 2, status: 'Active', productCount: 10 }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Hair Care',
-      slug: 'haircare',
-      description: 'Professional hair care and styling products',
-      image: '/api/placeholder/300/200',
-      status: 'Active',
-      productCount: 28,
-      subcategories: [
-        { id: 7, name: 'Shampoos', slug: 'shampoos', description: 'Nourishing shampoos', categoryId: 3, status: 'Active', productCount: 10 },
-        { id: 8, name: 'Conditioners', slug: 'conditioners', description: 'Hair conditioning treatments', categoryId: 3, status: 'Active', productCount: 8 },
-        { id: 9, name: 'Hair Oils', slug: 'hair-oils', description: 'Natural hair oils', categoryId: 3, status: 'Active', productCount: 10 }
-      ]
-    },
-    {
-      id: 4,
-      name: 'Body Care',
-      slug: 'bodycare',
-      description: 'Luxurious body care and wellness products',
-      image: '/api/placeholder/300/200',
-      status: 'Inactive',
-      productCount: 0,
-      subcategories: []
+  const queryClient = useQueryClient();
+
+  // Fetch categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
     }
-  ]);
+  });
+
+  // Fetch subcategories
+  const { data: subcategories = [], isLoading: subcategoriesLoading } = useQuery({
+    queryKey: ['subcategories'],
+    queryFn: async () => {
+      const response = await fetch('/api/subcategories');
+      if (!response.ok) throw new Error('Failed to fetch subcategories');
+      return response.json();
+    }
+  });
+
+  // Category mutations
+  const createCategoryMutation = useMutation({
+    mutationFn: async (category: Omit<Category, 'id' | 'productCount'>) => {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...category,
+          imageUrl: category.imageUrl || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400'
+        })
+      });
+      if (!response.ok) throw new Error('Failed to create category');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setIsAddCategoryModalOpen(false);
+      setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
+    }
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, ...category }: Partial<Category> & { id: number }) => {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(category)
+      });
+      if (!response.ok) throw new Error('Failed to update category');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setIsEditModalOpen(false);
+      setEditingCategory(null);
+      setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
+    }
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete category');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setIsDeleteModalOpen(false);
+      setSelectedCategory(null);
+    }
+  });
+
+  // Subcategory mutations
+  const createSubcategoryMutation = useMutation({
+    mutationFn: async (subcategory: Omit<Subcategory, 'id' | 'productCount'>) => {
+      const response = await fetch('/api/subcategories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subcategory)
+      });
+      if (!response.ok) throw new Error('Failed to create subcategory');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subcategories'] });
+      setIsAddSubcategoryModalOpen(false);
+      setSubcategoryFormData({ name: '', slug: '', description: '', categoryId: '', status: 'Active' });
+    }
+  });
+
+  const updateSubcategoryMutation = useMutation({
+    mutationFn: async ({ id, ...subcategory }: Partial<Subcategory> & { id: number }) => {
+      const response = await fetch(`/api/subcategories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subcategory)
+      });
+      if (!response.ok) throw new Error('Failed to update subcategory');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subcategories'] });
+      setIsEditModalOpen(false);
+      setEditingSubcategory(null);
+      setSubcategoryFormData({ name: '', slug: '', description: '', categoryId: '', status: 'Active' });
+    }
+  });
+
+  const deleteSubcategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/subcategories/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete subcategory');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subcategories'] });
+      setIsDeleteModalOpen(false);
+      setSelectedSubcategory(null);
+    }
+  });
 
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
     slug: '',
     description: '',
-    status: 'Active' as const
+    status: 'Active' as const,
+    imageUrl: ''
   });
+
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [subcategoryFormData, setSubcategoryFormData] = useState({
     name: '',
@@ -138,11 +189,8 @@ export default function AdminCategories() {
     status: 'Active' as const
   });
 
-  // Get all subcategories
-  const allSubcategories = categories.flatMap(cat => cat.subcategories);
-
   // Filter categories
-  const filteredCategories = categories.filter(category => {
+  const filteredCategories = categories.filter((category: Category) => {
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          category.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || category.status.toLowerCase() === statusFilter;
@@ -150,60 +198,76 @@ export default function AdminCategories() {
   });
 
   // Filter subcategories
-  const filteredSubcategories = allSubcategories.filter(subcategory => {
+  const filteredSubcategories = subcategories.filter((subcategory: Subcategory) => {
     const matchesSearch = subcategory.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          subcategory.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || subcategory.status.toLowerCase() === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleAddCategory = () => {
-    const newCategory: Category = {
-      id: Date.now(),
-      name: categoryFormData.name,
-      slug: categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-'),
-      description: categoryFormData.description,
-      image: '/api/placeholder/300/200',
-      status: categoryFormData.status,
-      productCount: 0,
-      subcategories: []
-    };
-    setCategories(prev => [...prev, newCategory]);
-    setIsAddCategoryModalOpen(false);
-    setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string> => {
+    if (!selectedImage) return '';
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload image');
+
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      throw error;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    try {
+      let imageUrl = categoryFormData.imageUrl;
+
+      if (selectedImage) {
+        imageUrl = await uploadImage();
+      }
+
+      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+      createCategoryMutation.mutate({
+        ...categoryFormData,
+        slug,
+        imageUrl: imageUrl || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400'
+      });
+    } catch (error) {
+      console.error('Failed to add category:', error);
+    }
   };
 
   const handleAddSubcategory = () => {
-    const newSubcategory: Subcategory = {
-      id: Date.now(),
-      name: subcategoryFormData.name,
-      slug: subcategoryFormData.slug || subcategoryFormData.name.toLowerCase().replace(/\s+/g, '-'),
-      description: subcategoryFormData.description,
-      categoryId: parseInt(subcategoryFormData.categoryId),
-      status: subcategoryFormData.status,
-      productCount: 0
-    };
-    
-    setCategories(prev => prev.map(cat => 
-      cat.id === parseInt(subcategoryFormData.categoryId) 
-        ? { ...cat, subcategories: [...cat.subcategories, newSubcategory] }
-        : cat
-    ));
-    setIsAddSubcategoryModalOpen(false);
-    setSubcategoryFormData({ name: '', slug: '', description: '', categoryId: '', status: 'Active' });
-  };
-
-  const handleDeleteCategory = (categoryId: number) => {
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-    setIsDeleteModalOpen(false);
-  };
-
-  const handleDeleteSubcategory = (subcategoryId: number) => {
-    setCategories(prev => prev.map(cat => ({
-      ...cat,
-      subcategories: cat.subcategories.filter(sub => sub.id !== subcategoryId)
-    })));
-    setIsDeleteModalOpen(false);
+    const slug = subcategoryFormData.slug || subcategoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+    createSubcategoryMutation.mutate({
+      ...subcategoryFormData,
+      slug,
+      categoryId: parseInt(subcategoryFormData.categoryId)
+    });
   };
 
   const handleEditCategory = (category: Category) => {
@@ -212,9 +276,17 @@ export default function AdminCategories() {
       name: category.name,
       slug: category.slug,
       description: category.description,
-      status: category.status
+      status: category.status as 'Active' | 'Inactive',
+      imageUrl: category.imageUrl
     });
+    setSelectedImage(null);
+    setImagePreview('');
     setIsEditModalOpen(true);
+  };
+
+  const resetImageState = () => {
+    setSelectedImage(null);
+    setImagePreview('');
   };
 
   const handleEditSubcategory = (subcategory: Subcategory) => {
@@ -224,69 +296,60 @@ export default function AdminCategories() {
       slug: subcategory.slug,
       description: subcategory.description,
       categoryId: subcategory.categoryId.toString(),
-      status: subcategory.status
+      status: subcategory.status as 'Active' | 'Inactive'
     });
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateCategory = () => {
+  const handleUpdateCategory = async () => {
     if (!editingCategory) return;
-    
-    setCategories(prev => prev.map(cat => 
-      cat.id === editingCategory.id 
-        ? { 
-            ...cat, 
-            name: categoryFormData.name,
-            slug: categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-'),
-            description: categoryFormData.description,
-            status: categoryFormData.status
-          }
-        : cat
-    ));
-    setIsEditModalOpen(false);
-    setEditingCategory(null);
-    setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
+
+    try {
+      let imageUrl = categoryFormData.imageUrl;
+
+      if (selectedImage) {
+        imageUrl = await uploadImage();
+      }
+
+      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+      updateCategoryMutation.mutate({
+        id: editingCategory.id,
+        ...categoryFormData,
+        slug,
+        imageUrl
+      });
+    } catch (error) {
+      console.error('Failed to update category:', error);
+    }
   };
 
   const handleUpdateSubcategory = () => {
     if (!editingSubcategory) return;
-    
-    setCategories(prev => prev.map(cat => ({
-      ...cat,
-      subcategories: cat.subcategories.map(sub => 
-        sub.id === editingSubcategory.id 
-          ? {
-              ...sub,
-              name: subcategoryFormData.name,
-              slug: subcategoryFormData.slug || subcategoryFormData.name.toLowerCase().replace(/\s+/g, '-'),
-              description: subcategoryFormData.description,
-              categoryId: parseInt(subcategoryFormData.categoryId),
-              status: subcategoryFormData.status
-            }
-          : sub
-      )
-    })));
-    setIsEditModalOpen(false);
-    setEditingSubcategory(null);
-    setSubcategoryFormData({ name: '', slug: '', description: '', categoryId: '', status: 'Active' });
-  };
-
-  const handleViewCategory = (category: Category) => {
-    setSelectedCategory(category);
-    setIsViewModalOpen(true);
-  };
-
-  const handleViewSubcategory = (subcategory: Subcategory) => {
-    setSelectedSubcategory(subcategory);
-    setIsViewModalOpen(true);
+    const slug = subcategoryFormData.slug || subcategoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+    updateSubcategoryMutation.mutate({
+      id: editingSubcategory.id,
+      ...subcategoryFormData,
+      slug,
+      categoryId: parseInt(subcategoryFormData.categoryId)
+    });
   };
 
   const stats = [
     { label: "Total Categories", value: categories.length.toString(), icon: Layers, color: "from-blue-500 to-cyan-500" },
-    { label: "Total Subcategories", value: allSubcategories.length.toString(), icon: Tag, color: "from-purple-500 to-pink-500" },
-    { label: "Active Categories", value: categories.filter(c => c.status === 'Active').length.toString(), icon: Package, color: "from-green-500 to-emerald-500" },
-    { label: "Total Products", value: categories.reduce((sum, cat) => sum + cat.productCount, 0).toString(), icon: TrendingUp, color: "from-orange-500 to-red-500" }
+    { label: "Total Subcategories", value: subcategories.length.toString(), icon: Tag, color: "from-purple-500 to-pink-500" },
+    { label: "Active Categories", value: categories.filter((c: Category) => c.status === 'Active').length.toString(), icon: Package, color: "from-green-500 to-emerald-500" },
+    { label: "Total Products", value: categories.reduce((sum: number, cat: Category) => sum + cat.productCount, 0).toString(), icon: TrendingUp, color: "from-orange-500 to-red-500" }
   ];
+
+  if (categoriesLoading || subcategoriesLoading) {
+    return (
+      <div className="flex-1 space-y-6 p-8 pt-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading categories...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -406,11 +469,19 @@ export default function AdminCategories() {
             </Card>
           ) : viewMode === 'grid' ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredCategories.map((category) => (
+              {filteredCategories.map((category: Category) => (
                 <Card key={category.id} className="border-0 shadow-lg bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300 group">
                   <div className="relative">
                     <div className="aspect-video bg-slate-100 rounded-t-lg flex items-center justify-center overflow-hidden">
-                      <ImageIcon className="h-12 w-12 text-slate-400" />
+                      {category.imageUrl ? (
+                        <img
+                          src={category.imageUrl}
+                          alt={category.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="h-12 w-12 text-slate-400" />
+                      )}
                     </div>
                     <Badge 
                       className={`absolute top-2 right-2 ${
@@ -430,14 +501,17 @@ export default function AdminCategories() {
                     <p className="text-sm text-slate-600 mb-3">{category.description}</p>
                     <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
                       <span>{category.productCount} products</span>
-                      <span>{category.subcategories.length} subcategories</span>
+                      <span>{subcategories.filter((sub: Subcategory) => sub.categoryId === category.id).length} subcategories</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="flex-1 h-9 transition-all hover:bg-blue-50 hover:text-blue-600"
-                        onClick={() => handleViewCategory(category)}
+                        onClick={() => {
+                          setSelectedCategory(category);
+                          setIsViewModalOpen(true);
+                        }}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
@@ -486,12 +560,20 @@ export default function AdminCategories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCategories.map((category) => (
+                    {filteredCategories.map((category: Category) => (
                       <TableRow key={category.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                              <ImageIcon className="h-6 w-6 text-slate-400" />
+                            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                              {category.imageUrl ? (
+                                <img
+                                  src={category.imageUrl}
+                                  alt={category.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <ImageIcon className="h-6 w-6 text-slate-400" />
+                              )}
                             </div>
                             <div>
                               <div className="font-medium">{category.name}</div>
@@ -503,7 +585,7 @@ export default function AdminCategories() {
                           <p className="text-sm text-slate-600 truncate">{category.description}</p>
                         </TableCell>
                         <TableCell>{category.productCount}</TableCell>
-                        <TableCell>{category.subcategories.length}</TableCell>
+                        <TableCell>{subcategories.filter((sub: Subcategory) => sub.categoryId === category.id).length}</TableCell>
                         <TableCell>
                           <Badge variant={category.status === 'Active' ? 'default' : 'destructive'}>
                             {category.status}
@@ -515,7 +597,10 @@ export default function AdminCategories() {
                               variant="ghost" 
                               size="sm" 
                               className="h-8 w-8 p-0"
-                              onClick={() => handleViewCategory(category)}
+                              onClick={() => {
+                                setSelectedCategory(category);
+                                setIsViewModalOpen(true);
+                              }}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -578,8 +663,8 @@ export default function AdminCategories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSubcategories.map((subcategory) => {
-                      const parentCategory = categories.find(cat => cat.id === subcategory.categoryId);
+                    {filteredSubcategories.map((subcategory: Subcategory) => {
+                      const parentCategory = categories.find((cat: Category) => cat.id === subcategory.categoryId);
                       return (
                         <TableRow key={subcategory.id}>
                           <TableCell>
@@ -614,7 +699,10 @@ export default function AdminCategories() {
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-8 w-8 p-0"
-                                onClick={() => handleViewSubcategory(subcategory)}
+                                onClick={() => {
+                                  setSelectedSubcategory(subcategory);
+                                  setIsViewModalOpen(true);
+                                }}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -651,173 +739,155 @@ export default function AdminCategories() {
       </Tabs>
 
       {/* Add/Edit Category Modal */}
-      <Dialog open={isAddCategoryModalOpen || isEditModalOpen} onOpenChange={(open) => {
+      <Dialog open={isAddCategoryModalOpen || (isEditModalOpen && editingCategory)} onOpenChange={(open) => {
         if (!open) {
           setIsAddCategoryModalOpen(false);
           setIsEditModalOpen(false);
           setEditingCategory(null);
+          setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
+          resetImageState();
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {editingCategory ? <Edit className="h-5 w-5 text-emerald-600" /> : <Layers className="h-5 w-5 text-blue-600" />}
+              {editingCategory ? 'Edit Category' : 'Add New Category'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCategory ? 'Update the category details' : 'Create a new product category for your store'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div>
+              <Label htmlFor="category-name">Category Name</Label>
+              <Input
+                id="category-name"
+                value={categoryFormData.name}
+                onChange={(e) => setCategoryFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Skincare"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category-slug">URL Slug</Label>
+              <Input
+                id="category-slug"
+                value={categoryFormData.slug}
+                onChange={(e) => setCategoryFormData(prev => ({ ...prev, slug: e.target.value }))}
+                placeholder="e.g., skincare (auto-generated if empty)"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category-description">Description</Label>
+              <Textarea
+                id="category-description"
+                value={categoryFormData.description}
+                onChange={(e) => setCategoryFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Brief description of the category"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category-image">Category Image</Label>
+              <div className="mt-1 space-y-3">
+                {(imagePreview || (editingCategory && categoryFormData.imageUrl)) && (
+                  <div className="relative">
+                    <img
+                      src={imagePreview || categoryFormData.imageUrl}
+                      alt="Category preview"
+                      className="w-full h-32 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 p-0"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setImagePreview('');
+                        setCategoryFormData(prev => ({ ...prev, imageUrl: '' }));
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <Label
+                    htmlFor="image-upload"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {selectedImage ? 'Change Image' : 'Upload Image'}
+                  </Label>
+                  {selectedImage && (
+                    <span className="text-sm text-slate-600">{selectedImage.name}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="category-status">Status</Label>
+              <Select value={categoryFormData.status} onValueChange={(value) => setCategoryFormData(prev => ({ ...prev, status: value as 'Active' | 'Inactive' }))}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsAddCategoryModalOpen(false);
+              setIsEditModalOpen(false);
+              setEditingCategory(null);
+              setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
+              resetImageState();
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={editingCategory ? handleUpdateCategory : handleAddCategory}
+              disabled={isUploadingImage || createCategoryMutation.isPending || updateCategoryMutation.isPending}
+              className={editingCategory ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}
+            >
+              {isUploadingImage ? 'Uploading...' : 
+               createCategoryMutation.isPending || updateCategoryMutation.isPending ? 'Saving...' :
+               editingCategory ? 'Update Category' : 'Add Category'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Subcategory Modal */}
+      <Dialog open={isAddSubcategoryModalOpen || (isEditModalOpen && editingSubcategory)} onOpenChange={(open) => {
+        if (!open) {
+          setIsAddSubcategoryModalOpen(false);
+          setIsEditModalOpen(false);
           setEditingSubcategory(null);
-          setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
           setSubcategoryFormData({ name: '', slug: '', description: '', categoryId: '', status: 'Active' });
         }
       }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {editingCategory ? <Edit className="h-5 w-5 text-emerald-600" /> : editingSubcategory ? <Edit className="h-5 w-5 text-purple-600" /> : <Layers className="h-5 w-5 text-blue-600" />}
-              {editingCategory ? 'Edit Category' : editingSubcategory ? 'Edit Subcategory' : 'Add New Category'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingCategory ? 'Update the category details' : editingSubcategory ? 'Update the subcategory details' : 'Create a new product category for your store'}
-            </DialogDescription>
-          </DialogHeader>
-          {!editingSubcategory && (
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="category-name">{editingCategory ? 'Category' : 'Category'} Name</Label>
-                <Input
-                  id="category-name"
-                  value={categoryFormData.name}
-                  onChange={(e) => setCategoryFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Skincare"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="category-slug">URL Slug</Label>
-                <Input
-                  id="category-slug"
-                  value={categoryFormData.slug}
-                  onChange={(e) => setCategoryFormData(prev => ({ ...prev, slug: e.target.value }))}
-                  placeholder="e.g., skincare (auto-generated if empty)"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="category-description">Description</Label>
-                <Textarea
-                  id="category-description"
-                  value={categoryFormData.description}
-                  onChange={(e) => setCategoryFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of the category"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="category-status">Status</Label>
-                <Select value={categoryFormData.status} onValueChange={(value) => setCategoryFormData(prev => ({ ...prev, status: value as 'Active' | 'Inactive' }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          
-          {editingSubcategory && (
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="subcategory-category">Parent Category</Label>
-                <Select value={subcategoryFormData.categoryId} onValueChange={(value) => setSubcategoryFormData(prev => ({ ...prev, categoryId: value }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select parent category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.filter(cat => cat.status === 'Active').map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="subcategory-name">Subcategory Name</Label>
-                <Input
-                  id="subcategory-name"
-                  value={subcategoryFormData.name}
-                  onChange={(e) => setSubcategoryFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Face Serums"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="subcategory-slug">URL Slug</Label>
-                <Input
-                  id="subcategory-slug"
-                  value={subcategoryFormData.slug}
-                  onChange={(e) => setSubcategoryFormData(prev => ({ ...prev, slug: e.target.value }))}
-                  placeholder="e.g., face-serums (auto-generated if empty)"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="subcategory-description">Description</Label>
-                <Textarea
-                  id="subcategory-description"
-                  value={subcategoryFormData.description}
-                  onChange={(e) => setSubcategoryFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of the subcategory"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="subcategory-status">Status</Label>
-                <Select value={subcategoryFormData.status} onValueChange={(value) => setSubcategoryFormData(prev => ({ ...prev, status: value as 'Active' | 'Inactive' }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsAddCategoryModalOpen(false);
-              setIsEditModalOpen(false);
-              setEditingCategory(null);
-              setEditingSubcategory(null);
-              setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
-              setSubcategoryFormData({ name: '', slug: '', description: '', categoryId: '', status: 'Active' });
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                if (editingCategory) {
-                  handleUpdateCategory();
-                } else if (editingSubcategory) {
-                  handleUpdateSubcategory();
-                } else {
-                  handleAddCategory();
-                }
-              }} 
-              className={editingCategory ? "bg-emerald-600 hover:bg-emerald-700" : editingSubcategory ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"}
-            >
-              {editingCategory ? 'Update Category' : editingSubcategory ? 'Update Subcategory' : 'Add Category'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Subcategory Modal */}
-      <Dialog open={isAddSubcategoryModalOpen} onOpenChange={setIsAddSubcategoryModalOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
               <Tag className="h-5 w-5 text-purple-600" />
-              Add New Subcategory
+              {editingSubcategory ? 'Edit Subcategory' : 'Add New Subcategory'}
             </DialogTitle>
             <DialogDescription>
-              Create a new subcategory under an existing category
+              {editingSubcategory ? 'Update the subcategory details' : 'Create a new subcategory under an existing category'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
@@ -828,7 +898,7 @@ export default function AdminCategories() {
                   <SelectValue placeholder="Select parent category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.filter(cat => cat.status === 'Active').map((category) => (
+                  {categories.filter((cat: Category) => cat.status === 'Active').map((category: Category) => (
                     <SelectItem key={category.id} value={category.id.toString()}>
                       {category.name}
                     </SelectItem>
@@ -880,11 +950,19 @@ export default function AdminCategories() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddSubcategoryModalOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddSubcategoryModalOpen(false);
+              setIsEditModalOpen(false);
+              setEditingSubcategory(null);
+              setSubcategoryFormData({ name: '', slug: '', description: '', categoryId: '', status: 'Active' });
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleAddSubcategory} className="bg-purple-600 hover:bg-purple-700">
-              Add Subcategory
+            <Button 
+              onClick={editingSubcategory ? handleUpdateSubcategory : handleAddSubcategory}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {editingSubcategory ? 'Update Subcategory' : 'Add Subcategory'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -924,14 +1002,14 @@ export default function AdminCategories() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Subcategories</Label>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">{selectedCategory.subcategories.length}</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{subcategories.filter((sub: Subcategory) => sub.categoryId === selectedCategory.id).length}</p>
                 </div>
               </div>
-              {selectedCategory.subcategories.length > 0 && (
+              {subcategories.filter((sub: Subcategory) => sub.categoryId === selectedCategory.id).length > 0 && (
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Subcategories</Label>
                   <div className="mt-2 space-y-2">
-                    {selectedCategory.subcategories.map((sub) => (
+                    {subcategories.filter((sub: Subcategory) => sub.categoryId === selectedCategory.id).map((sub: Subcategory) => (
                       <div key={sub.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                         <span className="font-medium">{sub.name}</span>
                         <Badge variant={sub.status === 'Active' ? 'default' : 'destructive'}>
@@ -960,7 +1038,7 @@ export default function AdminCategories() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-600">Parent Category</Label>
-                <p className="mt-1 text-slate-900">{categories.find(cat => cat.id === selectedSubcategory.categoryId)?.name}</p>
+                <p className="mt-1 text-slate-900">{categories.find((cat: Category) => cat.id === selectedSubcategory.categoryId)?.name}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-600">Description</Label>
@@ -1011,11 +1089,9 @@ export default function AdminCategories() {
               variant="destructive" 
               onClick={() => {
                 if (selectedCategory) {
-                  handleDeleteCategory(selectedCategory.id);
-                  setSelectedCategory(null);
+                  deleteCategoryMutation.mutate(selectedCategory.id);
                 } else if (selectedSubcategory) {
-                  handleDeleteSubcategory(selectedSubcategory.id);
-                  setSelectedSubcategory(null);
+                  deleteSubcategoryMutation.mutate(selectedSubcategory.id);
                 }
               }}
             >

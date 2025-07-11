@@ -34,6 +34,17 @@ export interface Category {
   slug: string;
   description: string;
   imageUrl: string;
+  status: string;
+  productCount: number;
+}
+
+export interface Subcategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  categoryId: number;
+  status: string;
   productCount: number;
 }
 

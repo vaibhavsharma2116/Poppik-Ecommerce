@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -15,25 +14,18 @@ import {
   Plus, 
   Search, 
   Edit, 
-  Trash2, 
-  Grid3X3, 
-  List,
+  Trash2,
   Eye,
-  MoreVertical,
   Layers,
   Tag,
   FolderOpen,
   Package,
-  TrendingUp,
-  ImageIcon,
-  Upload,
-  X
+  TrendingUp
 } from "lucide-react";
 import type { Category, Subcategory } from "@/lib/types";
 
 export default function AdminCategories() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('categories');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -76,7 +68,7 @@ export default function AdminCategories() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...category,
-          imageUrl: category.imageUrl || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400'
+          imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400'
         })
       });
       if (!response.ok) throw new Error('Failed to create category');
@@ -85,7 +77,7 @@ export default function AdminCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsAddCategoryModalOpen(false);
-      setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
+      setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
     }
   });
 
@@ -103,7 +95,7 @@ export default function AdminCategories() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsEditModalOpen(false);
       setEditingCategory(null);
-      setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
+      setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
     }
   });
 
@@ -173,13 +165,8 @@ export default function AdminCategories() {
     name: '',
     slug: '',
     description: '',
-    status: 'Active' as const,
-    imageUrl: ''
+    status: 'Active' as const
   });
-
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [subcategoryFormData, setSubcategoryFormData] = useState({
     name: '',
@@ -205,60 +192,12 @@ export default function AdminCategories() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadImage = async (): Promise<string> => {
-    if (!selectedImage) return '';
-
-    setIsUploadingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', selectedImage);
-
-      const response = await fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error('Failed to upload image');
-
-      const data = await response.json();
-      return data.imageUrl;
-    } catch (error) {
-      console.error('Image upload error:', error);
-      throw error;
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
-
   const handleAddCategory = async () => {
-    try {
-      let imageUrl = categoryFormData.imageUrl;
-
-      if (selectedImage) {
-        imageUrl = await uploadImage();
-      }
-
-      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
-      createCategoryMutation.mutate({
-        ...categoryFormData,
-        slug,
-        imageUrl: imageUrl || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400'
-      });
-    } catch (error) {
-      console.error('Failed to add category:', error);
-    }
+    const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+    createCategoryMutation.mutate({
+      ...categoryFormData,
+      slug
+    });
   };
 
   const handleAddSubcategory = () => {
@@ -276,17 +215,9 @@ export default function AdminCategories() {
       name: category.name,
       slug: category.slug,
       description: category.description,
-      status: category.status as 'Active' | 'Inactive',
-      imageUrl: category.imageUrl
+      status: category.status as 'Active' | 'Inactive'
     });
-    setSelectedImage(null);
-    setImagePreview('');
     setIsEditModalOpen(true);
-  };
-
-  const resetImageState = () => {
-    setSelectedImage(null);
-    setImagePreview('');
   };
 
   const handleEditSubcategory = (subcategory: Subcategory) => {
@@ -303,24 +234,12 @@ export default function AdminCategories() {
 
   const handleUpdateCategory = async () => {
     if (!editingCategory) return;
-
-    try {
-      let imageUrl = categoryFormData.imageUrl;
-
-      if (selectedImage) {
-        imageUrl = await uploadImage();
-      }
-
-      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
-      updateCategoryMutation.mutate({
-        id: editingCategory.id,
-        ...categoryFormData,
-        slug,
-        imageUrl
-      });
-    } catch (error) {
-      console.error('Failed to update category:', error);
-    }
+    const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+    updateCategoryMutation.mutate({
+      id: editingCategory.id,
+      ...categoryFormData,
+      slug
+    });
   };
 
   const handleUpdateSubcategory = () => {
@@ -395,7 +314,7 @@ export default function AdminCategories() {
         })}
       </div>
 
-      {/* Filters and Controls */}
+      {/* Filters */}
       <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
@@ -420,26 +339,6 @@ export default function AdminCategories() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center rounded-lg border p-1">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="h-8 w-8 p-0"
-                >
-                  <Grid3X3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="h-8 w-8 p-0"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -459,136 +358,121 @@ export default function AdminCategories() {
 
         {/* Categories Tab */}
         <TabsContent value="categories" className="space-y-6">
-          {filteredCategories.length === 0 ? (
-            <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
-              <CardContent className="p-12 text-center">
-                <Layers className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">No categories found</h3>
-                <p className="text-slate-600">Create your first category to get started</p>
-              </CardContent>
-            </Card>
-          ) : viewMode === 'grid' ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredCategories.map((category: Category) => (
-                <Card key={category.id} className="border-0 shadow-lg bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300 group">
-                  <div className="relative">
-                    <div className="aspect-video bg-slate-100 rounded-t-lg flex items-center justify-center overflow-hidden">
-                      {category.imageUrl ? (
-                        <img
-                          src={category.imageUrl}
-                          alt={category.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-12 w-12 text-slate-400" />
-                      )}
-                    </div>
-                    <Badge 
-                      className={`absolute top-2 right-2 ${
-                        category.status === 'Active' ? 'bg-green-500' : 'bg-red-500'
-                      }`}
-                    >
-                      {category.status}
-                    </Badge>
-                  </div>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-slate-900">{category.name}</h3>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">{category.description}</p>
-                    <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
-                      <span>{category.productCount} products</span>
-                      <span>{subcategories.filter((sub: Subcategory) => sub.categoryId === category.id).length} subcategories</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1 h-9 transition-all hover:bg-blue-50 hover:text-blue-600"
-                        onClick={() => {
-                          setSelectedCategory(category);
-                          setIsViewModalOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1 h-9 transition-all hover:bg-emerald-50 hover:text-emerald-600"
-                        onClick={() => handleEditCategory(category)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-9 w-9 p-0 transition-all hover:bg-red-50 hover:text-red-600"
-                        onClick={() => {
-                          setSelectedCategory(category);
-                          setIsDeleteModalOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Categories</CardTitle>
-                <CardDescription>Manage your product categories</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Products</TableHead>
-                      <TableHead>Subcategories</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Categories</CardTitle>
+              <CardDescription>Manage your product categories</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Subcategories</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCategories.map((category: Category) => (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell className="text-sm text-slate-500">{category.slug}</TableCell>
+                      <TableCell className="max-w-xs">
+                        <p className="text-sm text-slate-600 truncate">{category.description}</p>
+                      </TableCell>
+                      <TableCell>{category.productCount}</TableCell>
+                      <TableCell>{subcategories.filter((sub: Subcategory) => sub.categoryId === category.id).length}</TableCell>
+                      <TableCell>
+                        <Badge variant={category.status === 'Active' ? 'default' : 'destructive'}>
+                          {category.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setIsViewModalOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditCategory(category)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setIsDeleteModalOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCategories.map((category: Category) => (
-                      <TableRow key={category.id}>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Subcategories Tab */}
+        <TabsContent value="subcategories" className="space-y-6">
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Subcategories</CardTitle>
+              <CardDescription>Manage your product subcategories</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Parent Category</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSubcategories.map((subcategory: Subcategory) => {
+                    const parentCategory = categories.find((cat: Category) => cat.id === subcategory.categoryId);
+                    return (
+                      <TableRow key={subcategory.id}>
+                        <TableCell className="font-medium">{subcategory.name}</TableCell>
+                        <TableCell className="text-sm text-slate-500">{subcategory.slug}</TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
-                              {category.imageUrl ? (
-                                <img
-                                  src={category.imageUrl}
-                                  alt={category.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <ImageIcon className="h-6 w-6 text-slate-400" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-medium">{category.name}</div>
-                              <div className="text-sm text-slate-500">{category.slug}</div>
-                            </div>
+                          <div className="flex items-center space-x-1">
+                            <FolderOpen className="h-4 w-4 text-slate-400" />
+                            <span className="text-sm">{parentCategory?.name}</span>
                           </div>
                         </TableCell>
                         <TableCell className="max-w-xs">
-                          <p className="text-sm text-slate-600 truncate">{category.description}</p>
+                          <p className="text-sm text-slate-600 truncate">{subcategory.description}</p>
                         </TableCell>
-                        <TableCell>{category.productCount}</TableCell>
-                        <TableCell>{subcategories.filter((sub: Subcategory) => sub.categoryId === category.id).length}</TableCell>
+                        <TableCell>{subcategory.productCount}</TableCell>
                         <TableCell>
-                          <Badge variant={category.status === 'Active' ? 'default' : 'destructive'}>
-                            {category.status}
+                          <Badge variant={subcategory.status === 'Active' ? 'default' : 'destructive'}>
+                            {subcategory.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -598,7 +482,7 @@ export default function AdminCategories() {
                               size="sm" 
                               className="h-8 w-8 p-0"
                               onClick={() => {
-                                setSelectedCategory(category);
+                                setSelectedSubcategory(subcategory);
                                 setIsViewModalOpen(true);
                               }}
                             >
@@ -608,7 +492,7 @@ export default function AdminCategories() {
                               variant="ghost" 
                               size="sm" 
                               className="h-8 w-8 p-0"
-                              onClick={() => handleEditCategory(category)}
+                              onClick={() => handleEditSubcategory(subcategory)}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -617,7 +501,7 @@ export default function AdminCategories() {
                               size="sm" 
                               className="h-8 w-8 p-0"
                               onClick={() => {
-                                setSelectedCategory(category);
+                                setSelectedSubcategory(subcategory);
                                 setIsDeleteModalOpen(true);
                               }}
                             >
@@ -626,115 +510,12 @@ export default function AdminCategories() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Subcategories Tab */}
-        <TabsContent value="subcategories" className="space-y-6">
-          {filteredSubcategories.length === 0 ? (
-            <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
-              <CardContent className="p-12 text-center">
-                <Tag className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">No subcategories found</h3>
-                <p className="text-slate-600">Create subcategories to organize your products better</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Subcategories</CardTitle>
-                <CardDescription>Manage your product subcategories</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Subcategory</TableHead>
-                      <TableHead>Parent Category</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Products</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSubcategories.map((subcategory: Subcategory) => {
-                      const parentCategory = categories.find((cat: Category) => cat.id === subcategory.categoryId);
-                      return (
-                        <TableRow key={subcategory.id}>
-                          <TableCell>
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                                <Tag className="h-4 w-4 text-slate-400" />
-                              </div>
-                              <div>
-                                <div className="font-medium">{subcategory.name}</div>
-                                <div className="text-sm text-slate-500">{subcategory.slug}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-1">
-                              <FolderOpen className="h-4 w-4 text-slate-400" />
-                              <span className="text-sm">{parentCategory?.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="max-w-xs">
-                            <p className="text-sm text-slate-600 truncate">{subcategory.description}</p>
-                          </TableCell>
-                          <TableCell>{subcategory.productCount}</TableCell>
-                          <TableCell>
-                            <Badge variant={subcategory.status === 'Active' ? 'default' : 'destructive'}>
-                              {subcategory.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0"
-                                onClick={() => {
-                                  setSelectedSubcategory(subcategory);
-                                  setIsViewModalOpen(true);
-                                }}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0"
-                                onClick={() => handleEditSubcategory(subcategory)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0"
-                                onClick={() => {
-                                  setSelectedSubcategory(subcategory);
-                                  setIsDeleteModalOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
@@ -744,8 +525,7 @@ export default function AdminCategories() {
           setIsAddCategoryModalOpen(false);
           setIsEditModalOpen(false);
           setEditingCategory(null);
-          setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
-          resetImageState();
+          setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
         }
       }}>
         <DialogContent className="max-w-lg">
@@ -790,52 +570,6 @@ export default function AdminCategories() {
               />
             </div>
             <div>
-              <Label htmlFor="category-image">Category Image</Label>
-              <div className="mt-1 space-y-3">
-                {(imagePreview || (editingCategory && categoryFormData.imageUrl)) && (
-                  <div className="relative">
-                    <img
-                      src={imagePreview || categoryFormData.imageUrl}
-                      alt="Category preview"
-                      className="w-full h-32 object-cover rounded-lg border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 h-6 w-6 p-0"
-                      onClick={() => {
-                        setSelectedImage(null);
-                        setImagePreview('');
-                        setCategoryFormData(prev => ({ ...prev, imageUrl: '' }));
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <Label
-                    htmlFor="image-upload"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <Upload className="h-4 w-4" />
-                    {selectedImage ? 'Change Image' : 'Upload Image'}
-                  </Label>
-                  {selectedImage && (
-                    <span className="text-sm text-slate-600">{selectedImage.name}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div>
               <Label htmlFor="category-status">Status</Label>
               <Select value={categoryFormData.status} onValueChange={(value) => setCategoryFormData(prev => ({ ...prev, status: value as 'Active' | 'Inactive' }))}>
                 <SelectTrigger className="mt-1">
@@ -853,18 +587,16 @@ export default function AdminCategories() {
               setIsAddCategoryModalOpen(false);
               setIsEditModalOpen(false);
               setEditingCategory(null);
-              setCategoryFormData({ name: '', slug: '', description: '', status: 'Active', imageUrl: '' });
-              resetImageState();
+              setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
             }}>
               Cancel
             </Button>
             <Button 
               onClick={editingCategory ? handleUpdateCategory : handleAddCategory}
-              disabled={isUploadingImage || createCategoryMutation.isPending || updateCategoryMutation.isPending}
+              disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}
               className={editingCategory ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}
             >
-              {isUploadingImage ? 'Uploading...' : 
-               createCategoryMutation.isPending || updateCategoryMutation.isPending ? 'Saving...' :
+              {createCategoryMutation.isPending || updateCategoryMutation.isPending ? 'Saving...' :
                editingCategory ? 'Update Category' : 'Add Category'}
             </Button>
           </DialogFooter>
@@ -1005,21 +737,6 @@ export default function AdminCategories() {
                   <p className="mt-1 text-2xl font-bold text-slate-900">{subcategories.filter((sub: Subcategory) => sub.categoryId === selectedCategory.id).length}</p>
                 </div>
               </div>
-              {subcategories.filter((sub: Subcategory) => sub.categoryId === selectedCategory.id).length > 0 && (
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Subcategories</Label>
-                  <div className="mt-2 space-y-2">
-                    {subcategories.filter((sub: Subcategory) => sub.categoryId === selectedCategory.id).map((sub: Subcategory) => (
-                      <div key={sub.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
-                        <span className="font-medium">{sub.name}</span>
-                        <Badge variant={sub.status === 'Active' ? 'default' : 'destructive'}>
-                          {sub.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
           {selectedSubcategory && (

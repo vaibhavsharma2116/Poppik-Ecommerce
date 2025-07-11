@@ -57,7 +57,11 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Failed to upload image');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload failed:', errorText);
+        throw new Error(`Failed to upload image: ${response.status}`);
+      }
 
       const data = await response.json();
       return data.imageUrl;
@@ -72,7 +76,30 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Client-side validation
+    if (!formData.name.trim()) {
+      alert('Product name is required');
+      return;
+    }
+    
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      alert('Valid price is required');
+      return;
+    }
+    
+    if (!formData.category) {
+      alert('Category is required');
+      return;
+    }
+    
+    if (!formData.description.trim()) {
+      alert('Description is required');
+      return;
+    }
+    
     try {
+      setLoading(true);
+      
       // Upload image first
       const imageUrl = await uploadImage();
       
@@ -103,11 +130,43 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
         imageUrl: imageUrl
       };
 
-      onAddProduct(newProduct);
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProduct),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const responseText = await response.text();
+          console.log('Raw response:', responseText);
+          
+          // Try to parse as JSON
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData?.error || errorData?.details || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorMessage = `Server returned non-JSON response (${response.status})`;
+        }
+        
+        console.error('Product creation failed:', errorMessage);
+        alert(`Failed to create product: ${errorMessage}`);
+        return;
+      }
+
+      const createdProduct = await response.json();
+      onAddProduct(createdProduct);
       setOpen(false);
       resetForm();
+      alert('Product created successfully!');
     } catch (error) {
       console.error('Error creating product:', error);
+      alert(`Failed to create product: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -499,10 +558,10 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
             </Button>
             <Button 
               type="submit" 
-              disabled={isUploadingImage}
+              disabled={isUploadingImage || loading}
               className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
             >
-              {isUploadingImage ? 'Uploading...' : 'Add Product'}
+              {isUploadingImage ? 'Uploading Image...' : loading ? 'Creating Product...' : 'Add Product'}
             </Button>
           </DialogFooter>
         </form>

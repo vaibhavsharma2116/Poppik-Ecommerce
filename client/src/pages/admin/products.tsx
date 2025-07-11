@@ -357,11 +357,7 @@ export default function AdminProducts() {
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="text-center">
-          <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={fetchData}>Try Again</Button>
-        </div>
+      {/* {history.location.push('/admin/products')} */}
       </div>
     );
   }

@@ -28,11 +28,11 @@ CREATE TABLE "products" (
 	"new_launch" boolean DEFAULT false NOT NULL,
 	"sale_offer" text,
 	"variants" jsonb,
-	"ingredients" text[],
-	"benefits" text[],
+	"ingredients" text,
+	"benefits" text,
 	"how_to_use" text,
 	"size" text,
-	"tags" text[],
+	"tags" text,
 	CONSTRAINT "products_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint

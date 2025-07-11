@@ -1,6 +1,6 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
-import Database from "better-sqlite3";
+import { Pool } from "pg";
 import { 
   products, 
   categories, 
@@ -16,11 +16,27 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Initialize SQLite connection
-const sqlite = new Database("dev.db");
-const db = drizzle(sqlite);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/my_pgdb",
+});
 
-console.log("Database connected successfully (SQLite)");
+let db: ReturnType<typeof drizzle> | undefined = undefined;
+
+async function getDb() {
+  if (!db) {
+    try {
+      // Test the connection
+      const client = await pool.connect();
+      client.release();
+      console.log("Database connected successfully (PostgreSQL)");
+      db = drizzle(pool);
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
+  }
+  return db;
+}
 
 export interface IStorage {
   // Products
@@ -56,36 +72,44 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Products
   async getProduct(id: number): Promise<Product | undefined> {
+    const db = await getDb();
     const result = await db.select().from(products).where(eq(products.id, id)).limit(1);
     return result[0];
   }
 
   async getProductBySlug(slug: string): Promise<Product | undefined> {
+    const db = await getDb();
     const result = await db.select().from(products).where(eq(products.slug, slug)).limit(1);
     return result[0];
   }
 
   async getProducts(): Promise<Product[]> {
+    const db = await getDb();
     return await db.select().from(products);
   }
 
   async getProductsByCategory(category: string): Promise<Product[]> {
+    const db = await getDb();
     return await db.select().from(products).where(eq(products.category, category));
   }
 
   async getFeaturedProducts(): Promise<Product[]> {
+    const db = await getDb();
     return await db.select().from(products).where(eq(products.featured, true));
   }
 
   async getBestsellerProducts(): Promise<Product[]> {
+    const db = await getDb();
     return await db.select().from(products).where(eq(products.bestseller, true));
   }
 
   async getNewLaunchProducts(): Promise<Product[]> {
+    const db = await getDb();
     return await db.select().from(products).where(eq(products.newLaunch, true));
   }
 
   async createProduct(productData: any): Promise<Product> {
+    const db = await getDb();
     console.log("Creating product with data:", productData);
 
     // Validate only essential required fields
@@ -125,17 +149,25 @@ export class DatabaseStorage implements IStorage {
     console.log("Inserting product:", productToInsert);
 
     try {
+      console.log("Inserting product data:", productToInsert);
       const result = await db.insert(products).values(productToInsert).returning();
-      console.log("Created product:", result[0]);
+
+      if (!result || result.length === 0) {
+        throw new Error("Product was not created - no result returned");
+      }
+
+      console.log("Product created successfully:", result[0]);
       return result[0];
     } catch (error) {
-      console.error("Database error creating product:", error);
-      throw new Error("Failed to create product in database");
+      console.error("Error creating product:", error);
+      console.error("Product data that failed:", productToInsert);
+      throw new Error(`Failed to create product: ${error.message}`);
     }
   }
 
   async updateProduct(id: number, productData: Partial<InsertProduct>): Promise<Product | undefined> {
     try {
+      const db = await getDb();
       // Clean up the data before updating
       const cleanData: any = { ...productData };
 
@@ -177,27 +209,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: number): Promise<boolean> {
+    const db = await getDb();
     const result = await db.delete(products).where(eq(products.id, id)).returning();
     return result.length > 0;
   }
 
   // Categories
   async getCategory(id: number): Promise<Category | undefined> {
+    const db = await getDb();
     const result = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
     return result[0];
   }
 
   async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    const db = await getDb();
     const result = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
     return result[0];
   }
 
   async getCategories(): Promise<Category[]> {
+    const db = await getDb();
     return await db.select().from(categories);
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
     try {
+      const db = await getDb();
       console.log("Creating category with data:", category);
       const result = await db.insert(categories).values(category).returning();
       console.log("Category created successfully:", result[0]);
@@ -209,45 +246,54 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined> {
+    const db = await getDb();
     const result = await db.update(categories).set(category).where(eq(categories.id, id)).returning();
     return result[0];
   }
 
   async deleteCategory(id: number): Promise<boolean> {
+    const db = await getDb();
     const result = await db.delete(categories).where(eq(categories.id, id)).returning();
     return result.length > 0;
   }
 
   // Subcategories
   async getSubcategory(id: number): Promise<Subcategory | undefined> {
+    const db = await getDb();
     const result = await db.select().from(subcategories).where(eq(subcategories.id, id)).limit(1);
     return result[0];
   }
 
   async getSubcategoryBySlug(slug: string): Promise<Subcategory | undefined> {
+    const db = await getDb();
     const result = await db.select().from(subcategories).where(eq(subcategories.slug, slug)).limit(1);
     return result[0];
   }
 
   async getSubcategories(): Promise<Subcategory[]> {
+    const db = await getDb();
     return await db.select().from(subcategories);
   }
 
   async getSubcategoriesByCategory(categoryId: number): Promise<Subcategory[]> {
+    const db = await getDb();
     return await db.select().from(subcategories).where(eq(subcategories.categoryId, categoryId));
   }
 
   async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
+    const db = await getDb();
     const result = await db.insert(subcategories).values(subcategory).returning();
     return result[0];
   }
 
   async updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined> {
+    const db = await getDb();
     const result = await db.update(subcategories).set(subcategory).where(eq(subcategories.id, id)).returning();
     return result[0];
   }
 
   async deleteSubcategory(id: number): Promise<boolean> {
+    const db = await getDb();
     const result = await db.delete(subcategories).where(eq(subcategories.id, id)).returning();
     return result.length > 0;
   }

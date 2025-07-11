@@ -1,26 +1,26 @@
-import { sqliteTable, text, integer, real, } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, numeric, boolean, serial, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const products = sqliteTable("products", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description").notNull(),
   shortDescription: text("short_description").notNull(),
-  price: real("price").notNull(),
-  originalPrice: real("original_price"),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  originalPrice: numeric("original_price", { precision: 10, scale: 2 }),
   category: text("category").notNull(),
   subcategory: text("subcategory"),
   imageUrl: text("image_url").notNull(),
-  rating: real("rating").notNull(),
+  rating: numeric("rating", { precision: 2, scale: 1 }).notNull(),
   reviewCount: integer("review_count").notNull().default(0),
-  inStock: integer("in_stock", { mode: "boolean" }).notNull().default(true),
-  featured: integer("featured", { mode: "boolean" }).notNull().default(false),
-  bestseller: integer("bestseller", { mode: "boolean" }).notNull().default(false),
-  newLaunch: integer("new_launch", { mode: "boolean" }).notNull().default(false),
+  inStock: boolean("in_stock").notNull().default(true),
+  featured: boolean("featured").notNull().default(false),
+  bestseller: boolean("bestseller").notNull().default(false),
+  newLaunch: boolean("new_launch").notNull().default(false),
   saleOffer: text("sale_offer"),
-  variants: text("variants"),
+  variants: jsonb("variants"),
   ingredients: text("ingredients"),
   benefits: text("benefits"),
   howToUse: text("how_to_use"),
@@ -28,8 +28,8 @@ export const products = sqliteTable("products", {
   tags: text("tags"),
 });
 
-export const categories = sqliteTable("categories", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description").notNull(),
@@ -38,8 +38,8 @@ export const categories = sqliteTable("categories", {
   productCount: integer("product_count").notNull().default(0),
 });
 
-export const subcategories = sqliteTable("subcategories", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const subcategories = pgTable("subcategories", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description").notNull(),

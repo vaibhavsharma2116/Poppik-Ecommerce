@@ -164,6 +164,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Received product data:", req.body);
       
+      // Ensure we always return JSON
+      res.setHeader('Content-Type', 'application/json');
+      
       // Validate only essential required fields
       const { name, price, category, description } = req.body;
       if (!name || !price || !category || !description) {
@@ -173,10 +176,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const product = await storage.createProduct(req.body);
+      console.log("Product created successfully:", product);
       res.status(201).json(product);
     } catch (error) {
       console.error("Product creation error:", error);
-      res.status(500).json({ error: "Failed to create product", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to create product", 
+        details: error.message || "Unknown error"
+      });
     }
   });
 

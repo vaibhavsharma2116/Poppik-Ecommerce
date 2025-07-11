@@ -33,6 +33,8 @@ export interface IStorage {
   getBestsellerProducts(): Promise<Product[]>;
   getNewLaunchProducts(): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<boolean>;
 
   // Categories
   getCategory(id: number): Promise<Category | undefined>;
@@ -84,9 +86,63 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(products).where(eq(products.newLaunch, true));
   }
 
-  async createProduct(product: InsertProduct): Promise<Product> {
-    const result = await db.insert(products).values(product).returning();
+  async createProduct(productData: any): Promise<Product> {
+    console.log("Creating product with data:", productData);
+
+    // Validate only essential required fields
+    const { name, price, category, description } = productData;
+    if (!name || !price || !category || !description) {
+      throw new Error("Missing required fields: name, price, category, and description are required");
+    }
+
+    // Generate slug from name if not provided
+    const slug = productData.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    const productToInsert = {
+      name: String(name).trim(),
+      slug,
+      description: String(description).trim(),
+      shortDescription: productData.shortDescription ? String(productData.shortDescription).trim() : description.slice(0, 100),
+      price: Number(price),
+      originalPrice: productData.originalPrice ? Number(productData.originalPrice) : null,
+      category: String(category).trim(),
+      subcategory: productData.subcategory ? String(productData.subcategory).trim() : null,
+      imageUrl: productData.imageUrl ? String(productData.imageUrl).trim() : 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+      rating: Number(productData.rating) || 4.0,
+      reviewCount: Number(productData.reviewCount) || 0,
+      inStock: Boolean(productData.inStock ?? true),
+      featured: Boolean(productData.featured ?? false),
+      bestseller: Boolean(productData.bestseller ?? false),
+      newLaunch: Boolean(productData.newLaunch ?? false),
+      saleOffer: productData.saleOffer ? String(productData.saleOffer).trim() : null,
+      variants: productData.variants ? String(productData.variants).trim() : null,
+      ingredients: productData.ingredients ? String(productData.ingredients).trim() : null,
+      benefits: productData.benefits ? String(productData.benefits).trim() : null,
+      howToUse: productData.howToUse ? String(productData.howToUse).trim() : null,
+      size: productData.size ? String(productData.size).trim() : null,
+      tags: productData.tags ? String(productData.tags).trim() : null,
+    };
+
+    console.log("Inserting product:", productToInsert);
+
+    try {
+      const result = await db.insert(products).values(productToInsert).returning();
+      console.log("Created product:", result[0]);
+      return result[0];
+    } catch (error) {
+      console.error("Database error creating product:", error);
+      throw new Error("Failed to create product in database");
+    }
+  }
+
+  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined> {
+    const result = await db.update(products).set(product).where(eq(products.id, id)).returning();
     return result[0];
+  }
+
+  async deleteProduct(id: number): Promise<boolean> {
+    const result = await db.delete(products).where(eq(products.id, id)).returning();
+    return result.length > 0;
   }
 
   // Categories

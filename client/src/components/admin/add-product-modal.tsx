@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,97 +16,213 @@ interface AddProductModalProps {
 
 export default function AddProductModal({ onAddProduct }: AddProductModalProps) {
   const [open, setOpen] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
     subcategory: '',
     price: '',
-    stock: '',
     description: '',
     shortDescription: '',
     rating: '4.0',
-    status: 'Active'
+    reviewCount: '0',
+    inStock: true,
+    featured: false,
+    bestseller: false,
+    newLaunch: false,
+    saleOffer: '',
+    size: '',
+    ingredients: '',
+    benefits: '',
+    howToUse: '',
+    tags: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const uploadImage = async (): Promise<string> => {
+    if (!selectedImage) return 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400';
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload image');
+
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      return 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400';
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newProduct = {
-      name: formData.name,
-      category: formData.category,
-      subcategory: formData.subcategory,
-      price: formData.price,
-      stock: parseInt(formData.stock),
-      description: formData.description,
-      shortDescription: formData.shortDescription,
-      rating: formData.rating,
-      status: formData.status,
-      sales: 0,
-      image: "/api/placeholder/150/150"
-    };
+    // Frontend validation for required fields
+    if (!formData.name.trim()) {
+      alert('Product name is required');
+      return;
+    }
+    
+    if (!formData.category) {
+      alert('Category is required');
+      return;
+    }
+    
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      alert('Valid price is required');
+      return;
+    }
+    
+    if (!formData.description.trim()) {
+      alert('Description is required');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // Upload image first
+      const imageUrl = await uploadImage();
+      
+      // Generate slug from product name
+      const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      
+      const selectedCategory = categories.find(cat => cat.id === parseInt(formData.category));
+      const newProduct = {
+        name: formData.name.trim(),
+        slug: slug,
+        category: selectedCategory?.name || formData.category,
+        subcategory: formData.subcategory || null,
+        price: parseFloat(formData.price),
+        description: formData.description.trim(),
+        shortDescription: formData.shortDescription.trim() || formData.description.slice(0, 100),
+        rating: parseFloat(formData.rating),
+        reviewCount: parseInt(formData.reviewCount),
+        inStock: formData.inStock,
+        featured: formData.featured,
+        bestseller: formData.bestseller,
+        newLaunch: formData.newLaunch,
+        saleOffer: formData.saleOffer || null,
+        size: formData.size || null,
+        ingredients: formData.ingredients || null,
+        benefits: formData.benefits || null,
+        howToUse: formData.howToUse || null,
+        tags: formData.tags || null,
+        imageUrl: imageUrl
+      };
 
-    onAddProduct(newProduct);
-    setOpen(false);
+      onAddProduct(newProduct);
+      setOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      alert('Failed to create product. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
       name: '',
       category: '',
       subcategory: '',
       price: '',
-      stock: '',
       description: '',
       shortDescription: '',
       rating: '4.0',
-      status: 'Active'
+      reviewCount: '0',
+      inStock: true,
+      featured: false,
+      bestseller: false,
+      newLaunch: false,
+      saleOffer: '',
+      size: '',
+      ingredients: '',
+      benefits: '',
+      howToUse: '',
+      tags: ''
     });
+    setSelectedImage(null);
+    setImagePreview('');
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  // Fetch categories and subcategories when component mounts
+  useEffect(() => {
+    const fetchCategoriesAndSubcategories = async () => {
+      try {
+        setLoading(true);
+        const [categoriesRes, subcategoriesRes] = await Promise.all([
+          fetch('/api/categories'),
+          fetch('/api/subcategories')
+        ]);
+
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategories(categoriesData);
+        }
+
+        if (subcategoriesRes.ok) {
+          const subcategoriesData = await subcategoriesRes.json();
+          setSubcategories(subcategoriesData);
+        }
+      } catch (error) {
+        console.error('Error fetching categories/subcategories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (open) {
+      fetchCategoriesAndSubcategories();
+    }
+  }, [open]);
+
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Get subcategories for selected category
-  const getSubcategoriesForCategory = (category: string) => {
-    const subcategoryMap: Record<string, { value: string; label: string }[]> = {
-      'skincare': [
-        { value: 'serums', label: 'Face Serums' },
-        { value: 'moisturizers', label: 'Moisturizers' },
-        { value: 'cleansers', label: 'Face Cleansers' },
-        { value: 'toners', label: 'Toners' },
-        { value: 'masks', label: 'Face Masks' },
-        { value: 'sunscreen', label: 'Sunscreen' },
-        { value: 'eye-care', label: 'Eye Care' },
-        { value: 'lip-care', label: 'Lip Care' }
-      ],
-      'makeup': [
-        { value: 'foundations', label: 'Foundations' },
-        { value: 'lipsticks', label: 'Lipsticks' },
-        { value: 'eyeshadows', label: 'Eyeshadows' },
-        { value: 'mascaras', label: 'Mascaras' },
-        { value: 'blushes', label: 'Blushes' },
-        { value: 'concealers', label: 'Concealers' },
-        { value: 'highlighters', label: 'Highlighters' }
-      ],
-      'body care': [
-        { value: 'moisturizers', label: 'Body Moisturizers' },
-        { value: 'scrubs', label: 'Body Scrubs' },
-        { value: 'oils', label: 'Body Oils' },
-        { value: 'cleansers', label: 'Body Cleansers' },
-        { value: 'treatments', label: 'Body Treatments' }
-      ],
-      'hair care': [
-        { value: 'shampoos', label: 'Shampoos' },
-        { value: 'conditioners', label: 'Conditioners' },
-        { value: 'oils', label: 'Hair Oils' },
-        { value: 'masks', label: 'Hair Masks' },
-        { value: 'treatments', label: 'Hair Treatments' },
-        { value: 'styling', label: 'Styling Products' }
-      ]
-    };
-    return subcategoryMap[category.toLowerCase()] || [];
+  const getSubcategoriesForCategory = (categoryId: string) => {
+    if (!categoryId) return [];
+    
+    return subcategories.filter(sub => sub.categoryId === parseInt(categoryId));
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(open) => {
+      setOpen(open);
+      if (!open) {
+        resetForm();
+      }
+    }}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
           <Plus className="mr-2 h-4 w-4" />
@@ -125,13 +241,51 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
           {/* Product Image Upload */}
           <div className="space-y-2">
             <Label>Product Image</Label>
-            <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              {imagePreview && (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Product preview"
+                    className="w-full h-32 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0"
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setImagePreview('');
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">
+                <CardContent className="flex flex-col items-center justify-center py-8">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <Label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                  </Label>
+                  {selectedImage && (
+                    <p className="text-sm text-green-600 mt-2">Selected: {selectedImage.name}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Basic Information */}
@@ -157,11 +311,11 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Skincare">Skincare</SelectItem>
-                  <SelectItem value="Makeup">Makeup</SelectItem>
-                  <SelectItem value="Body Care">Body Care</SelectItem>
-                  <SelectItem value="Hair Care">Hair Care</SelectItem>
-                  <SelectItem value="Fragrance">Fragrance</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -174,14 +328,14 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 </SelectTrigger>
                 <SelectContent>
                   {getSubcategoriesForCategory(formData.category).map((sub) => (
-                    <SelectItem key={sub.value} value={sub.value}>{sub.label}</SelectItem>
+                    <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Price and Stock */}
+          {/* Price and Details */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">Price ($) *</Label>
@@ -197,53 +351,170 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="stock">Stock Quantity *</Label>
+              <Label htmlFor="rating">Rating</Label>
               <Input
-                id="stock"
+                id="rating"
                 type="number"
-                value={formData.stock}
-                onChange={(e) => handleInputChange('stock', e.target.value)}
-                placeholder="50"
-                required
+                step="0.1"
+                min="0"
+                max="5"
+                value={formData.rating}
+                onChange={(e) => handleInputChange('rating', e.target.value)}
+                placeholder="4.0"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Low Stock">Low Stock</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="reviewCount">Review Count</Label>
+              <Input
+                id="reviewCount"
+                type="number"
+                value={formData.reviewCount}
+                onChange={(e) => handleInputChange('reviewCount', e.target.value)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {/* Additional Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="size">Size</Label>
+              <Input
+                id="size"
+                value={formData.size}
+                onChange={(e) => handleInputChange('size', e.target.value)}
+                placeholder="e.g., 50ml"
+              />
+            </div>
+          </div>
+
+          {/* Product Tags */}
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags (comma separated)</Label>
+            <Input
+              id="tags"
+              value={formData.tags}
+              onChange={(e) => handleInputChange('tags', e.target.value)}
+              placeholder="organic, cruelty-free, vegan"
+            />
+          </div>
+
+          {/* Product Flags */}
+          <div className="space-y-4">
+            <Label>Product Status & Features</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="inStock"
+                  checked={formData.inStock}
+                  onChange={(e) => handleInputChange('inStock', e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="inStock" className="text-sm">In Stock</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={formData.featured}
+                  onChange={(e) => handleInputChange('featured', e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="featured" className="text-sm">Featured</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="bestseller"
+                  checked={formData.bestseller}
+                  onChange={(e) => handleInputChange('bestseller', e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="bestseller" className="text-sm">Bestseller</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="newLaunch"
+                  checked={formData.newLaunch}
+                  onChange={(e) => handleInputChange('newLaunch', e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="newLaunch" className="text-sm">New Launch</Label>
+              </div>
             </div>
           </div>
 
           {/* Descriptions */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="shortDescription">Short Description</Label>
+              <Label htmlFor="shortDescription">Short Description (Optional)</Label>
               <Input
                 id="shortDescription"
                 value={formData.shortDescription}
                 onChange={(e) => handleInputChange('shortDescription', e.target.value)}
-                placeholder="Brief product description for listings"
+                placeholder="Brief product description for listings (auto-generated if empty)"
                 maxLength={100}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Full Description</Label>
+              <Label htmlFor="description">Full Description *</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Detailed product description, ingredients, benefits..."
-                rows={4}
+                placeholder="Detailed product description..."
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ingredients">Ingredients</Label>
+              <Textarea
+                id="ingredients"
+                value={formData.ingredients}
+                onChange={(e) => handleInputChange('ingredients', e.target.value)}
+                placeholder="List of ingredients..."
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="benefits">Benefits</Label>
+              <Textarea
+                id="benefits"
+                value={formData.benefits}
+                onChange={(e) => handleInputChange('benefits', e.target.value)}
+                placeholder="Product benefits..."
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="howToUse">How to Use</Label>
+              <Textarea
+                id="howToUse"
+                value={formData.howToUse}
+                onChange={(e) => handleInputChange('howToUse', e.target.value)}
+                placeholder="Usage instructions..."
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="saleOffer">Sale Offer</Label>
+              <Input
+                id="saleOffer"
+                value={formData.saleOffer}
+                onChange={(e) => handleInputChange('saleOffer', e.target.value)}
+                placeholder="e.g., 20% off"
               />
             </div>
           </div>
@@ -252,8 +523,12 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
-              Add Product
+            <Button 
+              type="submit" 
+              disabled={isUploadingImage || loading}
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+            >
+              {isUploadingImage ? 'Uploading Image...' : loading ? 'Creating Product...' : 'Add Product'}
             </Button>
           </DialogFooter>
         </form>

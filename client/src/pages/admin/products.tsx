@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AddProductModal from "@/components/admin/add-product-modal";
-import { Product } from "@/lib/types";
 import { 
   Plus, 
   Search, 
@@ -26,8 +25,55 @@ import {
   Package,
   TrendingUp,
   AlertTriangle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader2
 } from "lucide-react";
+
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  shortDescription: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  subcategory?: string;
+  imageUrl: string;
+  rating: number;
+  reviewCount: number;
+  inStock: boolean;
+  featured: boolean;
+  bestseller: boolean;
+  newLaunch: boolean;
+  saleOffer?: string;
+  variants?: string;
+  ingredients?: string;
+  benefits?: string;
+  howToUse?: string;
+  size?: string;
+  tags?: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl: string;
+  status: string;
+  productCount: number;
+}
+
+interface Subcategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  categoryId: number;
+  status: string;
+  productCount: number;
+}
 
 export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,89 +81,92 @@ export default function AdminProducts() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [subcategoryFilter, setSubcategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [products, setProducts] = useState([
-    { 
-      id: 1, 
-      name: "Moisturizing Face Cream", 
-      category: "Skincare", 
-      subcategory: "moisturizers",
-      price: "29.99", 
-      stock: 45, 
-      status: "Active",
-      rating: "4.8",
-      sales: 234,
-      image: "/api/placeholder/150/150"
-    },
-    { 
-      id: 2, 
-      name: "Red Velvet Lipstick", 
-      category: "Makeup", 
-      subcategory: "lipsticks",
-      price: "19.99", 
-      stock: 23, 
-      status: "Active",
-      rating: "4.6",
-      sales: 189,
-      image: "/api/placeholder/150/150"
-    },
-    { 
-      id: 3, 
-      name: "Body Lotion Vanilla", 
-      category: "Body Care", 
-      subcategory: "moisturizers",
-      price: "15.99", 
-      stock: 0, 
-      status: "Out of Stock",
-      rating: "4.3",
-      sales: 67,
-      image: "/api/placeholder/150/150"
-    },
-    { 
-      id: 4, 
-      name: "Rose Water Toner", 
-      category: "Skincare", 
-      subcategory: "toners",
-      price: "12.99", 
-      stock: 67, 
-      status: "Active",
-      rating: "4.9",
-      sales: 345,
-      image: "/api/placeholder/150/150"
-    },
-    { 
-      id: 5, 
-      name: "Matte Foundation", 
-      category: "Makeup", 
-      subcategory: "foundations",
-      price: "34.99", 
-      stock: 12, 
-      status: "Low Stock",
-      rating: "4.4",
-      sales: 156,
-      image: "/api/placeholder/150/150"
-    },
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddProduct = (newProduct: any) => {
-    const productWithId = {
-      ...newProduct,
-      id: Date.now()
-    };
-    setProducts(prev => [...prev, productWithId]);
-  };
-
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     name: '',
     price: '',
-    stock: '',
+    description: '',
+    shortDescription: '',
     category: '',
     subcategory: '',
-    status: ''
+    imageUrl: '',
+    rating: '',
+    reviewCount: '',
+    inStock: true,
+    featured: false,
+    bestseller: false,
+    newLaunch: false,
+    saleOffer: '',
+    size: '',
+    ingredients: '',
+    benefits: '',
+    howToUse: '',
+    tags: ''
   });
+
+  // Fetch data from API
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [productsRes, categoriesRes, subcategoriesRes] = await Promise.all([
+        fetch('/api/products'),
+        fetch('/api/categories'),
+        fetch('/api/subcategories')
+      ]);
+
+      if (!productsRes.ok || !categoriesRes.ok || !subcategoriesRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const [productsData, categoriesData, subcategoriesData] = await Promise.all([
+        productsRes.json(),
+        categoriesRes.json(),
+        subcategoriesRes.json()
+      ]);
+
+      setProducts(productsData);
+      setCategories(categoriesData);
+      setSubcategories(subcategoriesData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddProduct = async (newProduct: any) => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProduct),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create product');
+      }
+
+      const createdProduct = await response.json();
+      setProducts(prev => [...prev, createdProduct]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create product');
+    }
+  };
 
   const handleEditProduct = (productId: number) => {
     const product = products.find(p => p.id === productId);
@@ -125,33 +174,61 @@ export default function AdminProducts() {
       setSelectedProduct(product);
       setEditFormData({
         name: product.name,
-        price: product.price,
-        stock: product.stock.toString(),
+        price: product.price.toString(),
+        description: product.description,
+        shortDescription: product.shortDescription,
         category: product.category,
         subcategory: product.subcategory || '',
-        status: product.status
+        imageUrl: product.imageUrl,
+        rating: product.rating.toString(),
+        reviewCount: product.reviewCount.toString(),
+        inStock: product.inStock,
+        featured: product.featured,
+        bestseller: product.bestseller,
+        newLaunch: product.newLaunch,
+        saleOffer: product.saleOffer || '',
+        size: product.size || '',
+        ingredients: product.ingredients || '',
+        benefits: product.benefits || '',
+        howToUse: product.howToUse || '',
+        tags: product.tags || ''
       });
       setIsEditModalOpen(true);
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (selectedProduct) {
-      setProducts(prev => prev.map(p => 
-        p.id === selectedProduct.id 
-          ? { 
-              ...p, 
-              name: editFormData.name,
-              price: editFormData.price,
-              stock: parseInt(editFormData.stock),
-              category: editFormData.category,
-              subcategory: editFormData.subcategory,
-              status: editFormData.status
-            }
-          : p
-      ));
-      setIsEditModalOpen(false);
-      setSelectedProduct(null);
+      try {
+        const updateData = {
+          ...editFormData,
+          price: parseFloat(editFormData.price),
+          rating: parseFloat(editFormData.rating),
+          reviewCount: parseInt(editFormData.reviewCount),
+          slug: editFormData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        };
+
+        const response = await fetch(`/api/products/${selectedProduct.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update product');
+        }
+
+        const updatedProduct = await response.json();
+        setProducts(prev => prev.map(p => 
+          p.id === selectedProduct.id ? updatedProduct : p
+        ));
+        setIsEditModalOpen(false);
+        setSelectedProduct(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update product');
+      }
     }
   };
 
@@ -171,112 +248,83 @@ export default function AdminProducts() {
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedProduct) {
-      setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
-      setIsDeleteModalOpen(false);
-      setSelectedProduct(null);
-    }
-  };
+      try {
+        const response = await fetch(`/api/products/${selectedProduct.id}`, {
+          method: 'DELETE',
+        });
 
-  const handleMoreFilters = () => {
-    const sortOptions = ['Name (A-Z)', 'Name (Z-A)', 'Price (Low to High)', 'Price (High to Low)', 'Stock (Low to High)', 'Rating (High to Low)'];
-    const selected = prompt(`Choose sort option:\n${sortOptions.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nEnter number (1-6):`);
-    
-    if (selected && parseInt(selected) >= 1 && parseInt(selected) <= 6) {
-      const sortIndex = parseInt(selected) - 1;
-      let sortedProducts = [...products];
-      
-      switch (sortIndex) {
-        case 0: // Name A-Z
-          sortedProducts.sort((a, b) => a.name.localeCompare(b.name));
-          break;
-        case 1: // Name Z-A
-          sortedProducts.sort((a, b) => b.name.localeCompare(a.name));
-          break;
-        case 2: // Price Low to High
-          sortedProducts.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-          break;
-        case 3: // Price High to Low
-          sortedProducts.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-          break;
-        case 4: // Stock Low to High
-          sortedProducts.sort((a, b) => a.stock - b.stock);
-          break;
-        case 5: // Rating High to Low
-          sortedProducts.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
-          break;
+        if (!response.ok) {
+          throw new Error('Failed to delete product');
+        }
+
+        setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
+        setIsDeleteModalOpen(false);
+        setSelectedProduct(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete product');
       }
-      setProducts(sortedProducts);
     }
   };
 
   // Get subcategories for selected category
-  const getSubcategoriesForCategory = (category: string) => {
-    const subcategoryMap: Record<string, { value: string; label: string }[]> = {
-      'skincare': [
-        { value: 'serums', label: 'Face Serums' },
-        { value: 'moisturizers', label: 'Moisturizers' },
-        { value: 'cleansers', label: 'Face Cleansers' },
-        { value: 'toners', label: 'Toners' },
-        { value: 'masks', label: 'Face Masks' },
-        { value: 'sunscreen', label: 'Sunscreen' },
-        { value: 'eye-care', label: 'Eye Care' },
-        { value: 'lip-care', label: 'Lip Care' }
-      ],
-      'makeup': [
-        { value: 'foundations', label: 'Foundations' },
-        { value: 'lipsticks', label: 'Lipsticks' },
-        { value: 'eyeshadows', label: 'Eyeshadows' },
-        { value: 'mascaras', label: 'Mascaras' },
-        { value: 'blushes', label: 'Blushes' },
-        { value: 'concealers', label: 'Concealers' },
-        { value: 'highlighters', label: 'Highlighters' }
-      ],
-      'body care': [
-        { value: 'moisturizers', label: 'Body Moisturizers' },
-        { value: 'scrubs', label: 'Body Scrubs' },
-        { value: 'oils', label: 'Body Oils' },
-        { value: 'cleansers', label: 'Body Cleansers' },
-        { value: 'treatments', label: 'Body Treatments' }
-      ],
-      'haircare': [
-        { value: 'shampoos', label: 'Shampoos' },
-        { value: 'conditioners', label: 'Conditioners' },
-        { value: 'oils', label: 'Hair Oils' },
-        { value: 'masks', label: 'Hair Masks' },
-        { value: 'treatments', label: 'Hair Treatments' },
-        { value: 'styling', label: 'Styling Products' }
-      ]
-    };
-    return subcategoryMap[category.toLowerCase()] || [];
+  const getSubcategoriesForCategory = (categoryName: string) => {
+    const category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+    if (!category) return [];
+    
+    return subcategories.filter(sub => sub.categoryId === category.id);
   };
 
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.category.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesCategory = categoryFilter === 'all' || 
                            product.category.toLowerCase() === categoryFilter.toLowerCase();
-    
+
     const matchesSubcategory = subcategoryFilter === 'all' || 
                               product.subcategory?.toLowerCase() === subcategoryFilter.toLowerCase();
-    
+
     const matchesStatus = statusFilter === 'all' || 
-                         product.status.toLowerCase().replace(' ', '-') === statusFilter;
-    
+                         (statusFilter === 'active' && product.inStock) ||
+                         (statusFilter === 'out-of-stock' && !product.inStock);
+
     return matchesSearch && matchesCategory && matchesSubcategory && matchesStatus;
   });
 
-  const lowStockCount = products.filter(p => p.status === "Low Stock" || p.stock < 15).length;
-  const bestSeller = products.reduce((prev, current) => (prev.sales > current.sales) ? prev : current);
+  const lowStockCount = products.filter(p => !p.inStock).length;
+  const bestSeller = products.find(p => p.bestseller);
 
   const stats = [
     { label: "Total Products", value: products.length.toString(), icon: Package, color: "from-blue-500 to-cyan-500" },
-    { label: "Low Stock", value: lowStockCount.toString(), icon: AlertTriangle, color: "from-orange-500 to-red-500" },
-    { label: "Best Seller", value: bestSeller?.name || "N/A", icon: TrendingUp, color: "from-green-500 to-emerald-500" },
+    { label: "Out of Stock", value: lowStockCount.toString(), icon: AlertTriangle, color: "from-orange-500 to-red-500" },
+    { label: "Best Sellers", value: products.filter(p => p.bestseller).length.toString(), icon: TrendingUp, color: "from-green-500 to-emerald-500" },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={fetchData}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -329,17 +377,18 @@ export default function AdminProducts() {
               </div>
               <Select value={categoryFilter} onValueChange={(value) => {
                 setCategoryFilter(value);
-                setSubcategoryFilter('all'); // Reset subcategory when category changes
+                setSubcategoryFilter('all');
               }}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="skincare">Skincare</SelectItem>
-                  <SelectItem value="makeup">Makeup</SelectItem>
-                  <SelectItem value="body care">Body Care</SelectItem>
-                  <SelectItem value="haircare">Hair Care</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.name.toLowerCase()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
@@ -349,7 +398,7 @@ export default function AdminProducts() {
                 <SelectContent>
                   <SelectItem value="all">All Subcategories</SelectItem>
                   {categoryFilter !== 'all' && getSubcategoriesForCategory(categoryFilter).map((sub) => (
-                    <SelectItem key={sub.value} value={sub.value}>{sub.label}</SelectItem>
+                    <SelectItem key={sub.id} value={sub.name.toLowerCase()}>{sub.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -359,14 +408,12 @@ export default function AdminProducts() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="low-stock">Low Stock</SelectItem>
+                  <SelectItem value="active">In Stock</SelectItem>
                   <SelectItem value="out-of-stock">Out of Stock</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-center space-x-2">
-              
               <div className="flex items-center rounded-lg border p-1">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -404,8 +451,16 @@ export default function AdminProducts() {
           {filteredProducts.map((product) => (
             <Card key={product.id} className="border-0 shadow-lg bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300 group">
               <div className="relative">
-                <div className="aspect-square bg-slate-100 rounded-t-lg flex items-center justify-center">
-                  <ImageIcon className="h-12 w-12 text-slate-400" />
+                <div className="aspect-square bg-slate-100 rounded-t-lg flex items-center justify-center overflow-hidden">
+                  {product.imageUrl ? (
+                    <img 
+                      src={product.imageUrl} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon className="h-12 w-12 text-slate-400" />
+                  )}
                 </div>
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button variant="secondary" size="sm" className="h-8 w-8 p-0">
@@ -414,11 +469,10 @@ export default function AdminProducts() {
                 </div>
                 <Badge 
                   className={`absolute top-2 left-2 ${
-                    product.status === 'Active' ? 'bg-green-500' :
-                    product.status === 'Low Stock' ? 'bg-orange-500' : 'bg-red-500'
+                    product.inStock ? 'bg-green-500' : 'bg-red-500'
                   }`}
                 >
-                  {product.status}
+                  {product.inStock ? 'In Stock' : 'Out of Stock'}
                 </Badge>
               </div>
               <CardContent className="p-4">
@@ -434,8 +488,8 @@ export default function AdminProducts() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm text-slate-600 mb-4">
-                  <span>Stock: {product.stock}</span>
-                  <span>{product.sales} sales</span>
+                  <span>Reviews: {product.reviewCount}</span>
+                  {product.bestseller && <Badge variant="secondary">Bestseller</Badge>}
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <Button 
@@ -481,9 +535,8 @@ export default function AdminProducts() {
                   <TableHead>Category</TableHead>
                   <TableHead>Subcategory</TableHead>
                   <TableHead>Price</TableHead>
-                  <TableHead>Stock</TableHead>
                   <TableHead>Rating</TableHead>
-                  <TableHead>Sales</TableHead>
+                  <TableHead>Reviews</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -493,8 +546,16 @@ export default function AdminProducts() {
                   <TableRow key={product.id} className="hover:bg-slate-50/80">
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                          <ImageIcon className="h-5 w-5 text-slate-400" />
+                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                          {product.imageUrl ? (
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="h-5 w-5 text-slate-400" />
+                          )}
                         </div>
                         <div>
                           <div className="font-medium text-slate-900">{product.name}</div>
@@ -504,22 +565,18 @@ export default function AdminProducts() {
                     <TableCell>{product.category}</TableCell>
                     <TableCell>{product.subcategory || 'N/A'}</TableCell>
                     <TableCell className="font-medium">${product.price}</TableCell>
-                    <TableCell>{product.stock}</TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
                         {product.rating}
                       </div>
                     </TableCell>
-                    <TableCell>{product.sales}</TableCell>
+                    <TableCell>{product.reviewCount}</TableCell>
                     <TableCell>
                       <Badge 
-                        variant={
-                          product.status === 'Active' ? 'default' :
-                          product.status === 'Low Stock' ? 'secondary' : 'destructive'
-                        }
+                        variant={product.inStock ? 'default' : 'destructive'}
                       >
-                        {product.status}
+                        {product.inStock ? 'In Stock' : 'Out of Stock'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -572,210 +629,102 @@ export default function AdminProducts() {
               Product Details
             </DialogTitle>
             <DialogDescription className="text-base">
-              Complete information and analytics for the selected product
+              Complete information for the selected product
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedProduct && (
-            <div className="space-y-8 pt-6">
-              {/* Product Header */}
+            <div className="space-y-6 pt-4">
               <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                <div className="w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center shadow-inner">
-                  <ImageIcon className="h-12 w-12 text-slate-400" />
+                <div className="w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center shadow-inner overflow-hidden">
+                  {selectedProduct.imageUrl ? (
+                    <img 
+                      src={selectedProduct.imageUrl} 
+                      alt={selectedProduct.name}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    <ImageIcon className="h-12 w-12 text-slate-400" />
+                  )}
                 </div>
                 <div className="flex-1 space-y-4">
                   <div>
-                    <h3 className="text-3xl font-bold text-slate-900 mb-2">{selectedProduct.name}</h3>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2">{selectedProduct.name}</h3>
+                    <p className="text-slate-600 mb-4">{selectedProduct.description}</p>
                     <div className="flex items-center gap-3">
                       <Badge variant="outline" className="text-sm px-3 py-1">
                         {selectedProduct.category}
                       </Badge>
+                      {selectedProduct.subcategory && (
+                        <Badge variant="outline" className="text-sm px-3 py-1">
+                          {selectedProduct.subcategory}
+                        </Badge>
+                      )}
                       <Badge 
                         className={`text-sm px-3 py-1 ${
-                          selectedProduct.status === 'Active' ? 'bg-green-100 text-green-800 border-green-200' :
-                          selectedProduct.status === 'Low Stock' ? 'bg-orange-100 text-orange-800 border-orange-200' : 
+                          selectedProduct.inStock ? 'bg-green-100 text-green-800 border-green-200' :
                           'bg-red-100 text-red-800 border-red-200'
                         }`}
                       >
-                        {selectedProduct.status}
+                        {selectedProduct.inStock ? 'In Stock' : 'Out of Stock'}
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                      <div className="flex">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <Star 
-                            key={i} 
-                            className={`h-5 w-5 ${
-                              i < Math.floor(parseFloat(selectedProduct.rating)) 
-                                ? "fill-yellow-400 text-yellow-400" 
-                                : "text-slate-300"
-                            }`} 
-                          />
-                        ))}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-600">Price</Label>
+                      <p className="text-2xl font-bold text-green-600">${selectedProduct.price}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-600">Rating</Label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`h-5 w-5 ${
+                                i < Math.floor(selectedProduct.rating) 
+                                  ? "fill-yellow-400 text-yellow-400" 
+                                  : "text-slate-300"
+                              }`} 
+                            />
+                          ))}
+                        </div>
+                        <span className="text-lg font-semibold">{selectedProduct.rating}</span>
+                        <span className="text-slate-500">({selectedProduct.reviewCount} reviews)</span>
                       </div>
-                      <span className="text-lg font-semibold text-slate-700">{selectedProduct.rating}</span>
-                      <span className="text-slate-500">({selectedProduct.sales} reviews)</span>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Key Metrics */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="border-0 bg-gradient-to-br from-green-50 to-emerald-50 p-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-700">${selectedProduct.price}</div>
-                    <div className="text-sm text-green-600 font-medium">Current Price</div>
-                  </div>
-                </Card>
-                <Card className="border-0 bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-700">{selectedProduct.stock}</div>
-                    <div className="text-sm text-blue-600 font-medium">Units in Stock</div>
-                  </div>
-                </Card>
-                <Card className="border-0 bg-gradient-to-br from-purple-50 to-indigo-50 p-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-700">{selectedProduct.sales}</div>
-                    <div className="text-sm text-purple-600 font-medium">Total Sales</div>
-                  </div>
-                </Card>
-                <Card className="border-0 bg-gradient-to-br from-orange-50 to-yellow-50 p-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-700">${(parseFloat(selectedProduct.price) * selectedProduct.sales).toFixed(0)}</div>
-                    <div className="text-sm text-orange-600 font-medium">Revenue</div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Detailed Information */}
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Product Information */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="bg-slate-50 rounded-t-lg">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Package className="h-5 w-5 text-slate-600" />
-                      Product Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Category</Label>
-                        <p className="text-base text-slate-900 mt-1">{selectedProduct.category}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Subcategory</Label>
-                        <p className="text-base text-slate-900 mt-1">{selectedProduct.subcategory || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Product ID</Label>
-                        <p className="text-base text-slate-900 mt-1 font-mono">#{selectedProduct.id}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Description</Label>
-                      <p className="text-base text-slate-700 mt-2 leading-relaxed">
-                        {selectedProduct.description || "No description available for this product. This premium beauty product is carefully crafted to meet the highest quality standards."}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Short Description</Label>
-                      <p className="text-base text-slate-700 mt-2">
-                        {selectedProduct.shortDescription || "Premium beauty product with exceptional quality and results."}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Performance Analytics */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="bg-slate-50 rounded-t-lg">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <TrendingUp className="h-5 w-5 text-slate-600" />
-                      Performance Analytics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                        <span className="text-sm font-medium text-slate-600">Stock Status</span>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            selectedProduct.status === 'Active' ? 'bg-green-500' :
-                            selectedProduct.status === 'Low Stock' ? 'bg-orange-500' : 'bg-red-500'
-                          }`}></div>
-                          <span className="text-sm font-semibold">{selectedProduct.status}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                        <span className="text-sm font-medium text-slate-600">Inventory Health</span>
-                        <span className={`text-sm font-semibold ${
-                          selectedProduct.stock > 20 ? 'text-green-600' :
-                          selectedProduct.stock > 5 ? 'text-orange-600' : 'text-red-600'
-                        }`}>
-                          {selectedProduct.stock > 20 ? 'Healthy' :
-                           selectedProduct.stock > 5 ? 'Monitor' : 'Critical'}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                        <span className="text-sm font-medium text-slate-600">Customer Rating</span>
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-semibold">{selectedProduct.rating}/5.0</span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                        <span className="text-sm font-medium text-slate-600">Sales Performance</span>
-                        <span className={`text-sm font-semibold ${
-                          selectedProduct.sales > 200 ? 'text-green-600' :
-                          selectedProduct.sales > 100 ? 'text-orange-600' : 'text-slate-600'
-                        }`}>
-                          {selectedProduct.sales > 200 ? 'Excellent' :
-                           selectedProduct.sales > 100 ? 'Good' : 'Average'}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-                <Button 
-                  variant="outline" 
-                  className="flex-1 h-12 text-base font-medium hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all"
-                  onClick={() => {
-                    setIsViewModalOpen(false);
-                    handleEditProduct(selectedProduct.id);
-                  }}
-                >
-                  <Edit className="h-5 w-5 mr-2" />
-                  Edit Product
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1 h-12 text-base font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all"
-                  onClick={() => {
-                    setIsViewModalOpen(false);
-                    handleDeleteProduct(selectedProduct.id);
-                  }}
-                >
-                  <Trash2 className="h-5 w-5 mr-2" />
-                  Delete Product
-                </Button>
-                <Button 
-                  variant="default" 
-                  className="flex-1 h-12 text-base font-medium bg-slate-900 hover:bg-slate-800 transition-all"
-                  onClick={() => setIsViewModalOpen(false)}
-                >
-                  Close Details
-                </Button>
+                <div>
+                  <Label className="text-sm font-semibold text-slate-600">Short Description</Label>
+                  <p className="text-slate-700 mt-1">{selectedProduct.shortDescription}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-slate-600">Size</Label>
+                  <p className="text-slate-700 mt-1">{selectedProduct.size || 'N/A'}</p>
+                </div>
+                {selectedProduct.ingredients && (
+                  <div>
+                    <Label className="text-sm font-semibold text-slate-600">Ingredients</Label>
+                    <p className="text-slate-700 mt-1">{selectedProduct.ingredients}</p>
+                  </div>
+                )}
+                {selectedProduct.benefits && (
+                  <div>
+                    <Label className="text-sm font-semibold text-slate-600">Benefits</Label>
+                    <p className="text-slate-700 mt-1">{selectedProduct.benefits}</p>
+                  </div>
+                )}
+                {selectedProduct.howToUse && (
+                  <div className="lg:col-span-2">
+                    <Label className="text-sm font-semibold text-slate-600">How to Use</Label>
+                    <p className="text-slate-700 mt-1">{selectedProduct.howToUse}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -784,7 +733,7 @@ export default function AdminProducts() {
 
       {/* Edit Product Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="h-5 w-5 text-emerald-600" />
@@ -804,23 +753,47 @@ export default function AdminProducts() {
                 className="mt-1"
               />
             </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-short-description">Short Description</Label>
+              <Input
+                id="edit-short-description"
+                value={editFormData.shortDescription}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-price">Price ($)</Label>
                 <Input
                   id="edit-price"
+                  type="number"
+                  step="0.01"
                   value={editFormData.price}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-stock">Stock</Label>
+                <Label htmlFor="edit-rating">Rating</Label>
                 <Input
-                  id="edit-stock"
+                  id="edit-rating"
                   type="number"
-                  value={editFormData.stock}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, stock: e.target.value }))}
+                  step="0.1"
+                  min="0"
+                  max="5"
+                  value={editFormData.rating}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, rating: e.target.value }))}
                   className="mt-1"
                 />
               </div>
@@ -835,10 +808,9 @@ export default function AdminProducts() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Skincare">Skincare</SelectItem>
-                    <SelectItem value="Makeup">Makeup</SelectItem>
-                    <SelectItem value="Body Care">Body Care</SelectItem>
-                    <SelectItem value="Hair Care">Hair Care</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -850,24 +822,20 @@ export default function AdminProducts() {
                   </SelectTrigger>
                   <SelectContent>
                     {getSubcategoriesForCategory(editFormData.category).map((sub) => (
-                      <SelectItem key={sub.value} value={sub.value}>{sub.label}</SelectItem>
+                      <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div>
-              <Label htmlFor="edit-status">Status</Label>
-              <Select value={editFormData.status} onValueChange={(value) => setEditFormData(prev => ({ ...prev, status: value }))}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Low Stock">Low Stock</SelectItem>
-                  <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="edit-image-url">Image URL</Label>
+              <Input
+                id="edit-image-url"
+                value={editFormData.imageUrl}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
+                className="mt-1"
+              />
             </div>
           </div>
           <DialogFooter>
@@ -895,8 +863,16 @@ export default function AdminProducts() {
           </DialogHeader>
           {selectedProduct && (
             <div className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg border border-red-200">
-              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                <ImageIcon className="h-6 w-6 text-slate-400" />
+              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                {selectedProduct.imageUrl ? (
+                  <img 
+                    src={selectedProduct.imageUrl} 
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageIcon className="h-6 w-6 text-slate-400" />
+                )}
               </div>
               <div>
                 <p className="font-medium text-slate-900">{selectedProduct.name}</p>

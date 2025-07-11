@@ -160,6 +160,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/products", async (req, res) => {
+    try {
+      console.log("Received product data:", req.body);
+      
+      // Validate only essential required fields
+      const { name, price, category, description } = req.body;
+      if (!name || !price || !category || !description) {
+        return res.status(400).json({ 
+          error: "Missing required fields: name, price, category, and description are required" 
+        });
+      }
+
+      const product = await storage.createProduct(req.body);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Product creation error:", error);
+      res.status(500).json({ error: "Failed to create product", details: error.message });
+    }
+  });
+
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.updateProduct(parseInt(id), req.body);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteProduct(parseInt(id));
+      if (!success) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
   app.post("/api/categories", async (req, res) => {
     try {
       console.log("Received category data:", req.body);

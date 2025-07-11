@@ -183,13 +183,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      console.log(`Updating product ${id} with data:`, req.body);
+      
       const product = await storage.updateProduct(parseInt(id), req.body);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
       res.json(product);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update product" });
+      console.error("Product update error:", error);
+      res.status(500).json({ 
+        error: "Failed to update product", 
+        details: error.message 
+      });
     }
   });
 

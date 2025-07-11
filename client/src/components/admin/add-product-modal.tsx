@@ -72,30 +72,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Frontend validation for required fields
-    if (!formData.name.trim()) {
-      alert('Product name is required');
-      return;
-    }
-    
-    if (!formData.category) {
-      alert('Category is required');
-      return;
-    }
-    
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      alert('Valid price is required');
-      return;
-    }
-    
-    if (!formData.description.trim()) {
-      alert('Description is required');
-      return;
-    }
-    
     try {
-      setLoading(true);
-      
       // Upload image first
       const imageUrl = await uploadImage();
       
@@ -104,13 +81,13 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
       
       const selectedCategory = categories.find(cat => cat.id === parseInt(formData.category));
       const newProduct = {
-        name: formData.name.trim(),
+        name: formData.name,
         slug: slug,
         category: selectedCategory?.name || formData.category,
         subcategory: formData.subcategory || null,
         price: parseFloat(formData.price),
-        description: formData.description.trim(),
-        shortDescription: formData.shortDescription.trim() || formData.description.slice(0, 100),
+        description: formData.description,
+        shortDescription: formData.shortDescription,
         rating: parseFloat(formData.rating),
         reviewCount: parseInt(formData.reviewCount),
         inStock: formData.inStock,
@@ -131,9 +108,6 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
       resetForm();
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('Failed to create product. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -453,12 +427,12 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
           {/* Descriptions */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="shortDescription">Short Description (Optional)</Label>
+              <Label htmlFor="shortDescription">Short Description</Label>
               <Input
                 id="shortDescription"
                 value={formData.shortDescription}
                 onChange={(e) => handleInputChange('shortDescription', e.target.value)}
-                placeholder="Brief product description for listings (auto-generated if empty)"
+                placeholder="Brief product description for listings"
                 maxLength={100}
               />
             </div>
@@ -525,10 +499,10 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
             </Button>
             <Button 
               type="submit" 
-              disabled={isUploadingImage || loading}
+              disabled={isUploadingImage}
               className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
             >
-              {isUploadingImage ? 'Uploading Image...' : loading ? 'Creating Product...' : 'Add Product'}
+              {isUploadingImage ? 'Uploading...' : 'Add Product'}
             </Button>
           </DialogFooter>
         </form>

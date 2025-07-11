@@ -1,6 +1,6 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
-import { Pool } from "pg";
+import Database from "better-sqlite3";
 import { 
   products, 
   categories, 
@@ -16,12 +16,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Initialize PostgreSQL connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+// Initialize SQLite connection
+const sqlite = new Database("dev.db");
+const db = drizzle(sqlite);
 
-const db = drizzle(pool);
+console.log("Database connected successfully (SQLite)");
 
 export interface IStorage {
   // Products
@@ -135,9 +134,46 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined> {
-    const result = await db.update(products).set(product).where(eq(products.id, id)).returning();
-    return result[0];
+  async updateProduct(id: number, productData: Partial<InsertProduct>): Promise<Product | undefined> {
+    try {
+      // Clean up the data before updating
+      const cleanData: any = { ...productData };
+
+      // Handle numeric fields
+      if (cleanData.price !== undefined) {
+        cleanData.price = parseFloat(cleanData.price) || 0;
+      }
+      if (cleanData.rating !== undefined) {
+        cleanData.rating = parseFloat(cleanData.rating) || 0;
+      }
+      if (cleanData.reviewCount !== undefined) {
+        cleanData.reviewCount = parseInt(cleanData.reviewCount) || 0;
+      }
+
+      // Handle empty string fields - convert to null
+      const stringFields = ['subcategory', 'saleOffer', 'size', 'ingredients', 'benefits', 'howToUse', 'tags'];
+      stringFields.forEach(field => {
+        if (cleanData[field] === '') {
+          cleanData[field] = null;
+        }
+      });
+
+      // Generate slug if name is provided
+      if (cleanData.name) {
+        cleanData.slug = cleanData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+
+      const [updatedProduct] = await db
+        .update(products)
+        .set(cleanData)
+        .where(eq(products.id, id))
+        .returning();
+
+      return updatedProduct || null;
+    } catch (error) {
+      console.error("Error updating product:", error);
+      throw error;
+    }
   }
 
   async deleteProduct(id: number): Promise<boolean> {

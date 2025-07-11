@@ -171,13 +171,17 @@ export default function AdminProducts() {
   const handleEditProduct = (productId: number) => {
     const product = products.find(p => p.id === productId);
     if (product) {
+      // Find the category ID for the product's category name
+      const category = categories.find(c => c.name === product.category);
+      const categoryValue = category ? category.id.toString() : product.category;
+      
       setSelectedProduct(product);
       setEditFormData({
         name: product.name,
         price: product.price.toString(),
         description: product.description,
         shortDescription: product.shortDescription,
-        category: product.category,
+        category: categoryValue,
         subcategory: product.subcategory || '',
         imageUrl: product.imageUrl,
         rating: product.rating.toString(),
@@ -200,13 +204,27 @@ export default function AdminProducts() {
   const handleSaveEdit = async () => {
     if (selectedProduct) {
       try {
+        // Find the category name from the category ID
+        const selectedCategory = categories.find(cat => cat.id === parseInt(editFormData.category));
+        const categoryName = selectedCategory ? selectedCategory.name : editFormData.category;
+
         const updateData = {
           ...editFormData,
-          price: parseFloat(editFormData.price),
-          rating: parseFloat(editFormData.rating),
-          reviewCount: parseInt(editFormData.reviewCount),
-          slug: editFormData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          category: categoryName, // Use the category name, not the ID
+          price: parseFloat(editFormData.price) || 0,
+          rating: parseFloat(editFormData.rating) || 0,
+          reviewCount: parseInt(editFormData.reviewCount) || 0,
+          slug: editFormData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          subcategory: editFormData.subcategory || null,
+          saleOffer: editFormData.saleOffer || null,
+          size: editFormData.size || null,
+          ingredients: editFormData.ingredients || null,
+          benefits: editFormData.benefits || null,
+          howToUse: editFormData.howToUse || null,
+          tags: editFormData.tags || null
         };
+
+        console.log('Updating product with data:', updateData);
 
         const response = await fetch(`/api/products/${selectedProduct.id}`, {
           method: 'PUT',
@@ -217,7 +235,15 @@ export default function AdminProducts() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to update product');
+          const errorText = await response.text();
+          let errorMessage = 'Failed to update product';
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch {
+            errorMessage = errorText || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
 
         const updatedProduct = await response.json();
@@ -226,7 +252,9 @@ export default function AdminProducts() {
         ));
         setIsEditModalOpen(false);
         setSelectedProduct(null);
+        setError(null); // Clear any previous errors
       } catch (err) {
+        console.error('Edit product error:', err);
         setError(err instanceof Error ? err.message : 'Failed to update product');
       }
     }
@@ -269,11 +297,23 @@ export default function AdminProducts() {
   };
 
   // Get subcategories for selected category
-  const getSubcategoriesForCategory = (categoryName: string) => {
-    const category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-    if (!category) return [];
+  const getSubcategoriesForCategory = (categoryValue: string) => {
+    if (!categoryValue) return [];
+
+    // Check if categoryValue is an ID (number) or name (string)
+    let categoryId: number;
     
-    return subcategories.filter(sub => sub.categoryId === category.id);
+    if (!isNaN(parseInt(categoryValue))) {
+      // It's an ID
+      categoryId = parseInt(categoryValue);
+    } else {
+      // It's a name, find the category by name
+      const category = categories.find(c => c.name.toLowerCase() === categoryValue.toLowerCase());
+      if (!category) return [];
+      categoryId = category.id;
+    }
+
+    return subcategories.filter(sub => sub.categoryId === categoryId);
   };
 
   // Filter products based on search and filters
@@ -697,7 +737,7 @@ export default function AdminProducts() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <Label className="text-sm font-semibold text-slate-600">Short Description</Label>
@@ -743,81 +783,43 @@ export default function AdminProducts() {
               Update product information and save changes
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="edit-name">Product Name</Label>
-              <Input
-                id="edit-name"
-                value={editFormData.name}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={editFormData.description}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-short-description">Short Description</Label>
-              <Input
-                id="edit-short-description"
-                value={editFormData.shortDescription}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
-                className="mt-1"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-price">Price ($)</Label>
+          
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Product Name *</Label>
                 <Input
-                  id="edit-price"
-                  type="number"
-                  step="0.01"
-                  value={editFormData.price}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
-                  className="mt-1"
+                  id="edit-name"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Moisturizing Face Cream"
+                  required
                 />
               </div>
-              <div>
-                <Label htmlFor="edit-rating">Rating</Label>
-                <Input
-                  id="edit-rating"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="5"
-                  value={editFormData.rating}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, rating: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-category">Category</Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category *</Label>
                 <Select value={editFormData.category} onValueChange={(value) => {
                   setEditFormData(prev => ({ ...prev, category: value, subcategory: '' }));
-                }}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
+                }} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+
+              <div className="space-y-2">
                 <Label htmlFor="edit-subcategory">Subcategory</Label>
                 <Select value={editFormData.subcategory} onValueChange={(value) => setEditFormData(prev => ({ ...prev, subcategory: value }))}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select subcategory" />
                   </SelectTrigger>
                   <SelectContent>
@@ -828,16 +830,202 @@ export default function AdminProducts() {
                 </Select>
               </div>
             </div>
-            <div>
-              <Label htmlFor="edit-image-url">Image URL</Label>
+
+            {/* Price and Details */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Price ($) *</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  value={editFormData.price}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
+                  placeholder="29.99"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-rating">Rating</Label>
+                <Input
+                  id="edit-rating"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="5"
+                  value={editFormData.rating}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, rating: e.target.value }))}
+                  placeholder="4.0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-reviewCount">Review Count</Label>
+                <Input
+                  id="edit-reviewCount"
+                  type="number"
+                  value={editFormData.reviewCount}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, reviewCount: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Additional Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-size">Size</Label>
+                <Input
+                  id="edit-size"
+                  value={editFormData.size}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, size: e.target.value }))}
+                  placeholder="e.g., 50ml"
+                />
+              </div>
+            </div>
+
+            {/* Product Tags */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-tags">Tags (comma separated)</Label>
               <Input
-                id="edit-image-url"
-                value={editFormData.imageUrl}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-                className="mt-1"
+                id="edit-tags"
+                value={editFormData.tags}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, tags: e.target.value }))}
+                placeholder="organic, cruelty-free, vegan"
               />
             </div>
+
+            {/* Product Flags */}
+            <div className="space-y-4">
+              <Label>Product Status & Features</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-inStock"
+                    checked={editFormData.inStock}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, inStock: e.target.checked }))}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="edit-inStock" className="text-sm">In Stock</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-featured"
+                    checked={editFormData.featured}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, featured: e.target.checked }))}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="edit-featured" className="text-sm">Featured</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-bestseller"
+                    checked={editFormData.bestseller}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, bestseller: e.target.checked }))}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="edit-bestseller" className="text-sm">Bestseller</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-newLaunch"
+                    checked={editFormData.newLaunch}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, newLaunch: e.target.checked }))}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="edit-newLaunch" className="text-sm">New Launch</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* Descriptions */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-shortDescription">Short Description</Label>
+                <Input
+                  id="edit-shortDescription"
+                  value={editFormData.shortDescription}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
+                  placeholder="Brief product description for listings"
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Full Description *</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Detailed product description..."
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-ingredients">Ingredients</Label>
+                <Textarea
+                  id="edit-ingredients"
+                  value={editFormData.ingredients}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, ingredients: e.target.value }))}
+                  placeholder="List of ingredients..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-benefits">Benefits</Label>
+                <Textarea
+                  id="edit-benefits"
+                  value={editFormData.benefits}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, benefits: e.target.value }))}
+                  placeholder="Product benefits..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-howToUse">How to Use</Label>
+                <Textarea
+                  id="edit-howToUse"
+                  value={editFormData.howToUse}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, howToUse: e.target.value }))}
+                  placeholder="Usage instructions..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-saleOffer">Sale Offer</Label>
+                <Input
+                  id="edit-saleOffer"
+                  value={editFormData.saleOffer}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, saleOffer: e.target.value }))}
+                  placeholder="e.g., 20% off"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-imageUrl">Image URL</Label>
+                <Input
+                  id="edit-imageUrl"
+                  value={editFormData.imageUrl}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
+                  placeholder="Product image URL"
+                />
+              </div>
+            </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
               Cancel

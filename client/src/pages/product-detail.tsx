@@ -190,82 +190,157 @@ export default function ProductDetail() {
         </div>
 
         {/* Product Information Tabs */}
-        <Tabs defaultValue="description" className="mb-16">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="description">Description</TabsTrigger>
-            <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
-            <TabsTrigger value="benefits">Benefits</TabsTrigger>
-            <TabsTrigger value="how-to-use">How to Use</TabsTrigger>
-          </TabsList>
+        <div className="mb-16">
+          <Tabs defaultValue="description" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto bg-gray-50 rounded-xl p-1">
+              <TabsTrigger 
+                value="description" 
+                className="py-3 px-4 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                Description
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ingredients" 
+                className="py-3 px-4 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                Ingredients
+              </TabsTrigger>
+              <TabsTrigger 
+                value="benefits" 
+                className="py-3 px-4 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                Benefits
+              </TabsTrigger>
+              <TabsTrigger 
+                value="how-to-use" 
+                className="py-3 px-4 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                How to Use
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="description" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Product Description</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 leading-relaxed">{product.description}</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <div className="mt-8">
+              <TabsContent value="description" className="m-0">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-white">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                      </div>
+                      Product Description
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="prose prose-gray max-w-none">
+                      <p className="text-gray-700 leading-relaxed text-lg">{product.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="ingredients" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Ingredients</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {product.ingredients && product.ingredients.length > 0 ? (
-                  <ul className="space-y-2">
-                    {product.ingredients.map((ingredient, index) => (
-                      <li key={index} className="flex items-center">
-                        <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                        <span className="text-gray-600">{ingredient}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-600">Ingredient information not available.</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <TabsContent value="ingredients" className="m-0">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-white">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                      <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                        <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                      </div>
+                      Key Ingredients
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {product.ingredients ? (
+                      <div className="grid gap-3">
+                        {(Array.isArray(product.ingredients) 
+                          ? product.ingredients 
+                          : product.ingredients.split('\n').filter(ingredient => ingredient.trim())
+                        ).map((ingredient, index) => (
+                          <div key={index} className="flex items-start p-3 bg-white rounded-lg shadow-sm border border-red-100">
+                            <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-4 flex-shrink-0"></div>
+                            <span className="text-gray-700 font-medium">{ingredient.trim()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <div className="w-8 h-8 bg-red-200 rounded-full"></div>
+                        </div>
+                        <p className="text-gray-500 text-lg">Ingredient information not available.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="benefits" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Benefits</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {product.benefits && product.benefits.length > 0 ? (
-                  <ul className="space-y-2">
-                    {product.benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                        <span className="text-gray-600">{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-600">Benefit information not available.</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <TabsContent value="benefits" className="m-0">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-white">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                      </div>
+                      Key Benefits
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {product.benefits ? (
+                      <div className="grid gap-3">
+                        {(Array.isArray(product.benefits) 
+                          ? product.benefits 
+                          : product.benefits.split('\n').filter(benefit => benefit.trim())
+                        ).map((benefit, index) => (
+                          <div key={index} className="flex items-start p-3 bg-white rounded-lg shadow-sm border border-green-100">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-4 flex-shrink-0"></div>
+                            <span className="text-gray-700 font-medium">{benefit.trim()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <div className="w-8 h-8 bg-green-200 rounded-full"></div>
+                        </div>
+                        <p className="text-gray-500 text-lg">Benefit information not available.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="how-to-use" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>How to Use</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.howToUse || "Usage instructions not available for this product."}
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="how-to-use" className="m-0">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-white">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                      </div>
+                      How to Use
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {product.howToUse ? (
+                      <div className="bg-white p-6 rounded-lg shadow-sm border border-purple-100">
+                        <div className="prose prose-gray max-w-none">
+                          <p className="text-gray-700 leading-relaxed text-lg mb-0">
+                            {product.howToUse}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <div className="w-8 h-8 bg-purple-200 rounded-full"></div>
+                        </div>
+                        <p className="text-gray-500 text-lg">Usage instructions not available for this product.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
 
         {/* Related Products */}
         {filteredRelatedProducts.length > 0 && (

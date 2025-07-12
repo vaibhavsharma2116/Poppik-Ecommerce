@@ -1,18 +1,25 @@
-import { useState } from "react";
+
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Link } from "wouter";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Filter, X } from "lucide-react";
 import ProductCard from "@/components/product-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { Product, Category } from "@/lib/types";
 
 export default function CategoryPage() {
   const [, params] = useRoute("/category/:slug");
   const categorySlug = params?.slug || "";
   const [selectedSubcategory, setSelectedSubcategory] = useState("all");
+  const [sortBy, setSortBy] = useState("popular");
+  const [skinType, setSkinType] = useState("all-skin");
+  const [priceRange, setPriceRange] = useState("all-price");
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data: category, isLoading: categoryLoading } = useQuery<Category>({
     queryKey: [`/api/categories/${categorySlug}`],
@@ -24,85 +31,102 @@ export default function CategoryPage() {
     enabled: !!categorySlug,
   });
 
-  // Filter products based on selected subcategory
-  const products = allProducts?.filter(product => {
-    if (selectedSubcategory === "all") return true;
-    return product.subcategory === selectedSubcategory;
-  });
+  // Dynamic subcategories from actual products
+  const availableSubcategories = useMemo(() => {
+    if (!allProducts) return [];
+    const subcategories = [...new Set(allProducts.map(p => p.subcategory).filter(Boolean))];
+    return subcategories.map(sub => ({
+      value: sub,
+      label: sub.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    }));
+  }, [allProducts]);
 
-  // Get subcategories for current category
-  const getSubcategoriesForCategory = (category: string) => {
-    const subcategoryMap: Record<string, { value: string; label: string }[]> = {
-      skincare: [
-        { value: "serums", label: "Face Serums" },
-        { value: "moisturizers", label: "Moisturizers" },
-        { value: "cleansers", label: "Face Cleansers" },
-        { value: "sunscreen", label: "Sunscreen" },
-        { value: "toners", label: "Toners" },
-        { value: "masks", label: "Face Masks" },
-        { value: "eye-care", label: "Eye Care" },
-        { value: "lip-care", label: "Lip Care" },
-        { value: "acne-treatment", label: "Acne Treatment" },
-        { value: "anti-aging", label: "Anti-Aging" },
-        { value: "exfoliants", label: "Exfoliants" },
-        { value: "mists", label: "Face Mists" }
-      ],
-      haircare: [
-        { value: "shampoo", label: "Shampoos" },
-        { value: "conditioner", label: "Conditioners" },
-        { value: "oils", label: "Hair Oils" },
-        { value: "masks", label: "Hair Masks" },
-        { value: "scalp-care", label: "Scalp Care" },
-        { value: "styling", label: "Styling Products" },
-        { value: "growth-serum", label: "Hair Growth Serum" },
-        { value: "leave-in", label: "Leave-in Treatments" },
-        { value: "dry-shampoo", label: "Dry Shampoo" },
-        { value: "hair-color", label: "Hair Color" },
-        { value: "tools", label: "Hair Tools" },
-        { value: "heat-protection", label: "Heat Protection" }
-      ],
-      makeup: [
-        { value: "foundation", label: "Foundation" },
-        { value: "concealer", label: "Concealer" },
-        { value: "bb-cream", label: "BB Cream" },
-        { value: "highlighter", label: "Highlighter" },
-        { value: "blush", label: "Blush" },
-        { value: "bronzer", label: "Bronzer" },
-        { value: "mascara", label: "Mascara" },
-        { value: "eyeshadow", label: "Eyeshadow" },
-        { value: "eyeliner", label: "Eyeliner" },
-        { value: "lipstick", label: "Lipstick" },
-        { value: "lip-gloss", label: "Lip Gloss" },
-        { value: "lip-liner", label: "Lip Liner" },
-        { value: "makeup-tools", label: "Makeup Tools" },
-        { value: "makeup-sets", label: "Makeup Sets" }
-      ],
-      bodycare: [
-        { value: "body-wash", label: "Body Wash" },
-        { value: "body-lotion", label: "Body Lotion" },
-        { value: "body-oil", label: "Body Oil" },
-        { value: "body-butter", label: "Body Butter" },
-        { value: "body-scrub", label: "Body Scrub" },
-        { value: "soap", label: "Natural Soaps" },
-        { value: "hand-cream", label: "Hand Cream" },
-        { value: "foot-cream", label: "Foot Care" },
-        { value: "deodorant", label: "Deodorant" },
-        { value: "intimate-care", label: "Intimate Care" },
-        { value: "bath-salts", label: "Bath Salts" },
-        { value: "body-mist", label: "Body Mist" }
-      ],
-      fragrances: [
-        { value: "perfume", label: "Perfumes" },
-        { value: "eau-de-toilette", label: "Eau de Toilette" },
-        { value: "body-spray", label: "Body Spray" },
-        { value: "roll-on", label: "Roll-on Fragrances" },
-        { value: "solid-perfume", label: "Solid Perfume" },
-        { value: "gift-sets", label: "Fragrance Gift Sets" },
-        { value: "unisex", label: "Unisex Fragrances" },
-        { value: "travel-size", label: "Travel Size" }
-      ]
-    };
-    return subcategoryMap[category] || [];
+  // Dynamic price ranges from actual products
+  const priceRanges = useMemo(() => {
+    if (!allProducts) return [];
+    const prices = allProducts.map(p => p.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const range = maxPrice - minPrice;
+    
+    return [
+      { value: "all-price", label: "All Prices" },
+      { value: "0-25", label: `₹${minPrice} - ₹${Math.floor(minPrice + range * 0.25)}` },
+      { value: "25-50", label: `₹${Math.floor(minPrice + range * 0.25)} - ₹${Math.floor(minPrice + range * 0.5)}` },
+      { value: "50-75", label: `₹${Math.floor(minPrice + range * 0.5)} - ₹${Math.floor(minPrice + range * 0.75)}` },
+      { value: "75-100", label: `₹${Math.floor(minPrice + range * 0.75)} - ₹${maxPrice}` },
+    ];
+  }, [allProducts]);
+
+  // Enhanced filtering and sorting logic
+  const filteredAndSortedProducts = useMemo(() => {
+    if (!allProducts) return [];
+
+    let filtered = [...allProducts];
+
+    // Filter by subcategory
+    if (selectedSubcategory !== "all") {
+      filtered = filtered.filter(product => product.subcategory === selectedSubcategory);
+    }
+
+    // Filter by skin type (if applicable)
+    if (skinType !== "all-skin") {
+      filtered = filtered.filter(product => 
+        product.skinType?.includes(skinType) || 
+        product.description?.toLowerCase().includes(skinType)
+      );
+    }
+
+    // Filter by price range
+    if (priceRange !== "all-price") {
+      const [min, max] = priceRange.split('-').map(Number);
+      const minPrice = Math.min(...allProducts.map(p => p.price));
+      const maxPrice = Math.max(...allProducts.map(p => p.price));
+      const range = maxPrice - minPrice;
+      
+      const actualMin = minPrice + (range * min / 100);
+      const actualMax = minPrice + (range * max / 100);
+      
+      filtered = filtered.filter(product => 
+        product.price >= actualMin && product.price <= actualMax
+      );
+    }
+
+    // Sort products
+    switch (sortBy) {
+      case "price-low":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "price-high":
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case "newest":
+        filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        break;
+      case "rating":
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      default: // popular
+        filtered.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+    }
+
+    return filtered;
+  }, [allProducts, selectedSubcategory, sortBy, skinType, priceRange]);
+
+  // Active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedSubcategory !== "all") count++;
+    if (skinType !== "all-skin") count++;
+    if (priceRange !== "all-price") count++;
+    return count;
+  }, [selectedSubcategory, skinType, priceRange]);
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSelectedSubcategory("all");
+    setSkinType("all-skin");
+    setPriceRange("all-price");
   };
 
   if (categoryLoading) {
@@ -151,23 +175,35 @@ export default function CategoryPage() {
           <p className="text-gray-600 max-w-2xl mx-auto">{category.description}</p>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <Select defaultValue="all" onValueChange={(value) => setSelectedSubcategory(value)}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Products" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Products</SelectItem>
-              {getSubcategoriesForCategory(categorySlug).map((subcategory) => (
-                <SelectItem key={subcategory.value} value={subcategory.value}>
-                  {subcategory.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Filters Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filters
+              {activeFiltersCount > 0 && (
+                <Badge variant="destructive" className="ml-1">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+            
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                onClick={clearAllFilters}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Clear all
+              </Button>
+            )}
+          </div>
 
-          <Select defaultValue="popular">
+          <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -179,20 +215,85 @@ export default function CategoryPage() {
               <SelectItem value="rating">Highest Rated</SelectItem>
             </SelectContent>
           </Select>
-
-          <Select defaultValue="all-skin">
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Skin Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-skin">All Skin Types</SelectItem>
-              <SelectItem value="oily">Oily Skin</SelectItem>
-              <SelectItem value="dry">Dry Skin</SelectItem>
-              <SelectItem value="sensitive">Sensitive Skin</SelectItem>
-              <SelectItem value="combination">Combination Skin</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
+
+        {/* Active Filters */}
+        {activeFiltersCount > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {selectedSubcategory !== "all" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {availableSubcategories.find(s => s.value === selectedSubcategory)?.label}
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setSelectedSubcategory("all")}
+                />
+              </Badge>
+            )}
+            {skinType !== "all-skin" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {skinType.charAt(0).toUpperCase() + skinType.slice(1)} Skin
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setSkinType("all-skin")}
+                />
+              </Badge>
+            )}
+            {priceRange !== "all-price" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {priceRanges.find(p => p.value === priceRange)?.label}
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setPriceRange("all-price")}
+                />
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Expandable Filters */}
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
+            <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Products" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Products</SelectItem>
+                {availableSubcategories.map((subcategory) => (
+                  <SelectItem key={subcategory.value} value={subcategory.value}>
+                    {subcategory.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={skinType} onValueChange={setSkinType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Skin Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-skin">All Skin Types</SelectItem>
+                <SelectItem value="oily">Oily Skin</SelectItem>
+                <SelectItem value="dry">Dry Skin</SelectItem>
+                <SelectItem value="sensitive">Sensitive Skin</SelectItem>
+                <SelectItem value="combination">Combination Skin</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={priceRange} onValueChange={setPriceRange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Price Range" />
+              </SelectTrigger>
+              <SelectContent>
+                {priceRanges.map((range) => (
+                  <SelectItem key={range.value} value={range.value}>
+                    {range.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Products Grid */}
         {productsLoading ? (
@@ -208,10 +309,10 @@ export default function CategoryPage() {
               </Card>
             ))}
           </div>
-        ) : products && products.length > 0 ? (
+        ) : filteredAndSortedProducts && filteredAndSortedProducts.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {filteredAndSortedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -219,17 +320,33 @@ export default function CategoryPage() {
             {/* Product count */}
             <div className="text-center mt-12">
               <p className="text-gray-600">
-                Showing {products.length} product{products.length !== 1 ? 's' : ''} in {category.name}
+                Showing {filteredAndSortedProducts.length} of {allProducts?.length || 0} product{filteredAndSortedProducts.length !== 1 ? 's' : ''} in {category.name}
+                {activeFiltersCount > 0 && (
+                  <span className="ml-2 text-sm">
+                    ({activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} applied)
+                  </span>
+                )}
               </p>
             </div>
           </>
         ) : (
           <div className="text-center py-16">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 mb-8">Try adjusting your filters or check back later.</p>
-            <Link href="/">
-              <span className="text-red-500 hover:text-red-600 font-medium">← Continue Shopping</span>
-            </Link>
+            <p className="text-gray-600 mb-8">
+              {activeFiltersCount > 0 
+                ? "Try adjusting your filters to see more products."
+                : "Check back later for new products in this category."
+              }
+            </p>
+            {activeFiltersCount > 0 ? (
+              <Button onClick={clearAllFilters} variant="outline">
+                Clear All Filters
+              </Button>
+            ) : (
+              <Link href="/">
+                <span className="text-red-500 hover:text-red-600 font-medium">← Continue Shopping</span>
+              </Link>
+            )}
           </div>
         )}
       </div>

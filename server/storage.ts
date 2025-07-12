@@ -4,13 +4,16 @@ import { Pool } from "pg";
 import { 
   products, 
   categories, 
-  subcategories, 
+  subcategories,
+  users,
   type Product, 
   type Category, 
-  type Subcategory, 
+  type Subcategory,
+  type User,
   type InsertProduct, 
   type InsertCategory, 
-  type InsertSubcategory 
+  type InsertSubcategory,
+  type InsertUser
 } from "@shared/schema";
 import dotenv from "dotenv";
 
@@ -39,6 +42,13 @@ async function getDb() {
 }
 
 export interface IStorage {
+  // Users
+  getUser(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
+
   // Products
   getProduct(id: number): Promise<Product | undefined>;
   getProductBySlug(slug: string): Promise<Product | undefined>;
@@ -70,6 +80,37 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Users
+  async getUser(id: number): Promise<User | undefined> {
+    const db = await getDb();
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const db = await getDb();
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
+    const db = await getDb();
+    const result = await db.insert(users).values(userData).returning();
+    return result[0];
+  }
+
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const db = await getDb();
+    const result = await db.update(users).set(userData).where(eq(users.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const db = await getDb();
+    const result = await db.delete(users).where(eq(users.id, id)).returning();
+    return result.length > 0;
+  }
+
   // Products
   async getProduct(id: number): Promise<Product | undefined> {
     const db = await getDb();

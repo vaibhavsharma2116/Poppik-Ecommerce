@@ -22,14 +22,38 @@ export default function Signup() {
     subscribeNewsletter: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
       return;
     }
-    // Handle signup logic here
-    console.log("Signup attempt:", formData);
+    
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store token in localStorage
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        
+        alert("Account created successfully!");
+        window.location.href = "/profile"; // Redirect to profile
+      } else {
+        alert(data.error || "Failed to create account");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("Failed to create account. Please try again.");
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

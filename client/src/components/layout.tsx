@@ -40,7 +40,7 @@ export default function Layout({ children }: LayoutProps) {
             categoriesRes.json(),
             subcategoriesRes.json()
           ]);
-          
+
           // Filter only active categories
           setCategories(categoriesData.filter((cat: Category) => cat.status === 'Active'));
           setSubcategories(subcategoriesData.filter((sub: Subcategory) => sub.status === 'Active'));
@@ -73,7 +73,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-white">
-  
+
 
       {/* Main Header */}
       <header className=" bg-white border-b border-gray-200">
@@ -207,7 +207,7 @@ export default function Layout({ children }: LayoutProps) {
                   {/* Dynamic Categories */}
                   {!loading && categories.map((category) => {
                     const categorySubcategories = getSubcategoriesForCategory(category.id);
-                    
+
                     if (categorySubcategories.length > 0) {
                       return (
                         <NavigationMenuItem key={category.id}>
@@ -245,7 +245,7 @@ export default function Layout({ children }: LayoutProps) {
                                   </NavigationMenuLink>
                                 ))}
                               </div>
-                              
+
                               {categorySubcategories.length > 4 && (
                                 <div className="space-y-4">
                                   <div className="border-b border-gray-200 pb-2">
@@ -276,7 +276,7 @@ export default function Layout({ children }: LayoutProps) {
                                 <div className="border-b border-gray-200 pb-2">
                                   <h4 className="text-sm font-semibold text-red-500 uppercase tracking-wider">Featured</h4>
                                 </div>
-                                
+
                                 <div className="bg-gradient-to-br from-red-50 to-pink-50 p-4 rounded-lg border border-red-100">
                                   <NavigationMenuLink asChild>
                                     <Link href={`/category/${category.slug}`} className="block">

@@ -4,6 +4,8 @@ import multer from "multer";
 import { storage } from "./storage";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -38,6 +40,107 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { firstName, lastName, email, phone, password, confirmPassword } = req.body;
+      
+      // Validation
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ error: "All required fields must be provided" });
+      }
+      
+      if (password !== confirmPassword) {
+        return res.status(400).json({ error: "Passwords don't match" });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists with this email" });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create user
+      const user = await storage.createUser({
+        firstName,
+        lastName,
+        email,
+        phone,
+        password: hashedPassword
+      });
+      
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET || "your-secret-key",
+        { expiresIn: "24h" }
+      );
+      
+      // Return user data (without password) and token
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({
+        message: "User created successfully",
+        user: userWithoutPassword,
+        token
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // Validation
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      // Find user
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      // Check password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET || "your-secret-key",
+        { expiresIn: "24h" }
+      );
+      
+      // Return user data (without password) and token
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({
+        message: "Login successful",
+        user: userWithoutPassword,
+        token
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ message: "Logged out successfully" });
+  });
+
   // Serve uploaded images
   app.use("/api/images", (req, res, next) => {
     const imagePath = path.join(uploadsDir, req.path);

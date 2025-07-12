@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, User, ShoppingCart, Menu, X, ChevronRight } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, User, Heart, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -21,10 +21,78 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [cartCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+
+    // Load initial cart count
+    const savedCartCount = localStorage.getItem("cartCount");
+    if (savedCartCount) {
+      setCartCount(parseInt(savedCartCount));
+    }
+
+    // Load initial wishlist count
+    const savedWishlist = localStorage.getItem("wishlist");
+    if (savedWishlist) {
+      try {
+        const wishlist = JSON.parse(savedWishlist);
+        setWishlistCount(wishlist.length);
+      } catch (error) {
+        console.error("Error parsing wishlist data:", error);
+      }
+    }
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      const updatedCartCount = localStorage.getItem("cartCount");
+      if (updatedCartCount) {
+        setCartCount(parseInt(updatedCartCount));
+      }
+    };
+
+    // Listen for wishlist updates
+    const handleWishlistUpdate = () => {
+      const updatedWishlist = localStorage.getItem("wishlist");
+      if (updatedWishlist) {
+        try {
+          const wishlist = JSON.parse(updatedWishlist);
+          setWishlistCount(wishlist.length);
+        } catch (error) {
+          console.error("Error parsing wishlist data:", error);
+          setWishlistCount(0);
+        }
+      } else {
+        setWishlistCount(0);
+      }
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    window.addEventListener("wishlistUpdated", handleWishlistUpdate);
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+      window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    window.location.href = "/";
+  };
 
   // Fetch categories and subcategories
   useEffect(() => {
@@ -110,9 +178,15 @@ export default function Layout({ children }: LayoutProps) {
                 <Search className="h-5 w-5" />
               </Button>
 
-              <Link href="/auth/login">
-                <Button variant="ghost" size="sm">
-                  <User className="h-5 w-5" />
+              {/* Wishlist Icon */}
+              <Link href="/wishlist">
+                <Button variant="ghost" size="sm" className="relative">
+                  <Heart className="h-5 w-5" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {wishlistCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
 
@@ -126,6 +200,29 @@ export default function Layout({ children }: LayoutProps) {
                   )}
                 </Button>
               </Link>
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <Link href="/profile">
+                    <Button variant="ghost" size="sm" className="hidden md:flex">
+                      Welcome, {user.firstName}
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleLogout}
+                    title="Logout"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </div>
+              ) : (
+                <Link href="/auth/login">
+                  <Button variant="ghost" size="sm">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
 
               {/* Mobile Menu */}
               <Sheet>
@@ -163,6 +260,48 @@ export default function Layout({ children }: LayoutProps) {
                       </Link>
                     ))}
                   </div>
+                  <div className="flex flex-col space-y-4 pt-4 border-t">
+                {user ? (
+                  <>
+                    <Link href="/profile" onClick={() => setIsSearchOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start">
+                        <User className="h-4 w-4 mr-2" />
+                        My Profile ({user.firstName})
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-red-600"
+                      onClick={() => {
+                        handleLogout();
+                        setIsSearchOpen(false);
+                      }}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <Link href="/auth/login" onClick={() => setIsSearchOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <User className="h-4 w-4 mr-2" />
+                      Login / Signup
+                    </Button>
+                  </Link>
+                )}
+                <Link href="/wishlist" onClick={() => setIsSearchOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Heart className="h-4 w-4 mr-2" />
+                    Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
+                  </Button>
+                </Link>
+                <Link href="/cart" onClick={() => setIsSearchOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Cart
+                  </Button>
+                </Link>
+              </div>
                 </SheetContent>
               </Sheet>
             </div>

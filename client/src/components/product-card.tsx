@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Star } from "lucide-react";
+import { Star, Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/lib/types";
 
 interface ProductCardProps {
@@ -11,6 +13,86 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, className = "" }: ProductCardProps) {
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const { toast } = useToast();
+
+  // Check if product is in wishlist
+  useEffect(() => {
+    const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    setIsInWishlist(wishlist.some((item: any) => item.id === product.id));
+  }, [product.id]);
+
+  const toggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    const existingIndex = wishlist.findIndex((item: any) => item.id === product.id);
+
+    if (existingIndex >= 0) {
+      // Remove from wishlist
+      wishlist.splice(existingIndex, 1);
+      setIsInWishlist(false);
+      toast({
+        title: "Removed from Wishlist",
+        description: `${product.name} has been removed from your wishlist`,
+        variant: "destructive",
+      });
+    } else {
+      // Add to wishlist
+      const wishlistItem = {
+        id: product.id,
+        name: product.name,
+        price: `₹${product.price}`,
+        originalPrice: product.originalPrice ? `₹${product.originalPrice}` : undefined,
+        image: product.imageUrl,
+        inStock: true,
+        category: product.category,
+        rating: product.rating,
+      };
+      wishlist.push(wishlistItem);
+      setIsInWishlist(true);
+      toast({
+        title: "Added to Wishlist",
+        description: `${product.name} has been added to your wishlist`,
+      });
+    }
+
+    localStorage.setItem("wishlist", JSON.stringify(wishlist));
+    window.dispatchEvent(new Event("wishlistUpdated"));
+  };
+
+  const addToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existingItem = cart.find((cartItem: any) => cartItem.id === product.id);
+    
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: `₹${product.price}`,
+        originalPrice: product.originalPrice ? `₹${product.originalPrice}` : undefined,
+        image: product.imageUrl,
+        quantity: 1,
+        inStock: true
+      });
+    }
+    
+    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("cartCount", cart.reduce((total: number, item: any) => total + item.quantity, 0).toString());
+    window.dispatchEvent(new Event("cartUpdated"));
+    
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} has been added to your cart`,
+    });
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -32,6 +114,12 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
             {product.saleOffer}
           </Badge>
         )}
+        <button
+          onClick={toggleWishlist}
+          className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors z-10"
+        >
+          <Heart className={`h-4 w-4 ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
+        </button>
         <Link href={`/product/${product.slug}`}>
           <img
             src={product.imageUrl}
@@ -76,11 +164,18 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
           </div>
 
           {product.variants?.colors || product.variants?.shades ? (
-            <Button size="sm" className="btn-primary text-xs px-3 py-2">
-              Select Shade
-            </Button>
+            <Link href={`/product/${product.slug}`}>
+              <Button size="sm" className="btn-primary text-xs px-3 py-2">
+                Select Shade
+              </Button>
+            </Link>
           ) : (
-            <Button size="sm" className="btn-primary text-xs px-3 py-2">
+            <Button 
+              size="sm" 
+              className="btn-primary text-xs px-3 py-2 flex items-center gap-1"
+              onClick={addToCart}
+            >
+              <ShoppingCart className="h-3 w-3" />
               Add to Cart
             </Button>
           )}

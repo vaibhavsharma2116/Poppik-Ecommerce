@@ -12,10 +12,13 @@ import About from "@/pages/about";
 import Contact from "@/pages/contact";
 import Login from "@/pages/auth/login";
 import Signup from "@/pages/auth/signup";
-import Profile from "@/pages/profile";
-import Cart from "@/pages/cart";
-import Checkout from "@/pages/checkout"; // Uncomment this line if you have a Checkout page
-// import Checkout from "@/pages/checkout"
+import Profile from "./pages/profile";
+import CartPage from './pages/cart';
+import Checkout from "./pages/checkout";
+import Wishlist from "./pages/wishlist";
+import OrderHistory from "./pages/order-history";
+import TrackOrder from "@/pages/track-order";
+import ChangePassword from "./pages/change-password";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminProducts from "@/pages/admin/products";
 import AdminCategories from "@/pages/admin/category";
@@ -41,7 +44,7 @@ function Router() {
           </Switch>
         </AdminLayout>
       </Route>
-      
+
       {/* Public Routes */}
       <Route>
         <Layout>
@@ -54,8 +57,12 @@ function Router() {
             <Route path="/auth/login" component={Login} />
             <Route path="/auth/signup" component={Signup} />
             <Route path="/profile" component={Profile} />
-            <Route path="/cart" component={Cart} />
+            <Route path="/cart" component={CartPage} />
             <Route path="/checkout" component={Checkout} />
+            <Route path="/wishlist" component={Wishlist} />
+            <Route path="/order-history" component={OrderHistory} />
+            <Route path="/track-order/:orderId" component={TrackOrder} />
+            <Route path="/change-password" component={ChangePassword} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

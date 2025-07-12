@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { ChevronRight, Star, ShoppingCart, Heart } from "lucide-react";
@@ -13,6 +14,8 @@ import type { Product } from "@/lib/types";
 export default function ProductDetail() {
   const [, params] = useRoute("/product/:slug");
   const productSlug = params?.slug || "";
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  //const { toast } = useToast(); // Removed this line as useToast is not imported
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: [`/api/products/${productSlug}`],
@@ -23,6 +26,50 @@ export default function ProductDetail() {
     queryKey: [`/api/products/category/${product?.category}`],
     enabled: !!product?.category,
   });
+
+  useEffect(() => {
+    if (product) {
+      const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+      setIsInWishlist(wishlist.some((item: any) => item.id === product.id));
+    }
+  }, [product]);
+
+  const toggleWishlist = () => {
+    if (!product) return;
+
+    const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    const existingIndex = wishlist.findIndex((item: any) => item.id === product.id);
+
+    if (existingIndex >= 0) {
+      wishlist.splice(existingIndex, 1);
+      setIsInWishlist(false);
+     /* toast({
+        title: "Removed from Wishlist",
+        description: `${product.name} has been removed from your wishlist`,
+        variant: "destructive",
+      });*/ // Removed toast function
+    } else {
+      const wishlistItem = {
+        id: product.id,
+        name: product.name,
+        price: `₹${product.price}`,
+        originalPrice: product.originalPrice ? `₹${product.originalPrice}` : undefined,
+        image: product.imageUrl,
+        inStock: true,
+        category: product.category,
+        rating: product.rating,
+      };
+      wishlist.push(wishlistItem);
+      setIsInWishlist(true);
+      /*toast({
+        title: "Added to Wishlist",
+        description: `${product.name} has been added to your wishlist`,
+      });*/ // Removed toast function
+    }
+
+    localStorage.setItem("wishlist", JSON.stringify(wishlist));
+    window.dispatchEvent(new Event("wishlistUpdated"));
+  };
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -176,8 +223,8 @@ export default function ProductDetail() {
                 <ShoppingCart className="w-5 h-5 mr-2" />
                 Add to Cart
               </Button>
-              <Button size="lg" variant="outline">
-                <Heart className="w-5 h-5" />
+              <Button size="lg" variant="outline" onClick={toggleWishlist} >
+                <Heart className={`w-5 h-5 ${isInWishlist ? "fill-red-600 text-red-600" : ""}`} />
               </Button>
             </div>
 

@@ -6,6 +6,17 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { eq, desc } from "drizzle-orm";
+import { Pool } from "pg";
+import { ordersTable, orderItemsTable } from "../shared/schema";
+
+// Database connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/my_pgdb",
+});
+
+const db = drizzle(pool);
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -44,29 +55,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const { firstName, lastName, email, phone, password, confirmPassword } = req.body;
-      
+
       // Validation
       if (!firstName || !lastName || !email || !password) {
         return res.status(400).json({ error: "All required fields must be provided" });
       }
-      
+
       if (password !== confirmPassword) {
         return res.status(400).json({ error: "Passwords don't match" });
       }
-      
+
       if (password.length < 6) {
         return res.status(400).json({ error: "Password must be at least 6 characters" });
       }
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ error: "User already exists with this email" });
       }
-      
+
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
-      
+
       // Create user
       const user = await storage.createUser({
         firstName,
@@ -75,14 +86,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone,
         password: hashedPassword
       });
-      
+
       // Generate JWT token
       const token = jwt.sign(
         { userId: user.id, email: user.email },
         process.env.JWT_SECRET || "your-secret-key",
         { expiresIn: "24h" }
       );
-      
+
       // Return user data (without password) and token
       const { password: _, ...userWithoutPassword } = user;
       res.status(201).json({
@@ -99,31 +110,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       // Validation
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
       }
-      
+
       // Find user
       const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({ error: "Invalid email or password" });
       }
-      
+
       // Check password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: "Invalid email or password" });
       }
-      
+
       // Generate JWT token
       const token = jwt.sign(
         { userId: user.id, email: user.email },
         process.env.JWT_SECRET || "your-secret-key",
         { expiresIn: "24h" }
       );
-      
+
       // Return user data (without password) and token
       const { password: _, ...userWithoutPassword } = user;
       res.json({
@@ -144,12 +155,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded images
   app.use("/api/images", (req, res, next) => {
     const imagePath = path.join(uploadsDir, req.path);
-    
+
     // Check if file exists
     if (!fs.existsSync(imagePath)) {
       return res.status(404).json({ error: "Image not found" });
     }
-    
+
     // Set appropriate content type based on file extension
     const extension = path.extname(imagePath).toLowerCase();
     const contentType = {
@@ -159,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       '.gif': 'image/gif',
       '.webp': 'image/webp'
     }[extension] || 'image/jpeg';
-    
+
     res.set('Content-Type', contentType);
     res.sendFile(imagePath);
   });
@@ -266,10 +277,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/products", async (req, res) => {
     try {
       console.log("Received product data:", req.body);
-      
+
       // Ensure we always return JSON
       res.setHeader('Content-Type', 'application/json');
-      
+
       // Validate only essential required fields
       const { name, price, category, description } = req.body;
       if (!name || !price || !category || !description) {
@@ -294,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       console.log(`Updating product ${id} with data:`, req.body);
-      
+
       const product = await storage.updateProduct(parseInt(id), req.body);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
@@ -325,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/categories", async (req, res) => {
     try {
       console.log("Received category data:", req.body);
-      
+
       // Validate required fields
       const { name, description, imageUrl } = req.body;
       if (!name || !description || !imageUrl) {
@@ -336,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate slug from name
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      
+
       const categoryData = {
         ...req.body,
         slug,
@@ -445,6 +456,406 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete subcategory" });
     }
   });
+
+  // Orders endpoints
+  app.get("/api/orders", async (req, res) => {
+    try {
+      const userId = req.query.userId;
+
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      // Get orders from database
+      const orders = await db
+        .select()
+        .from(ordersTable)
+        .where(eq(ordersTable.userId, Number(userId)))
+        .orderBy(desc(ordersTable.createdAt));
+
+      // Get order items for each order
+      const ordersWithItems = await Promise.all(
+        orders.map(async (order) => {
+          const items = await db
+            .select({
+              id: orderItemsTable.id,
+              name: orderItemsTable.productName,
+              quantity: orderItemsTable.quantity,
+              price: orderItemsTable.price,
+              image: orderItemsTable.productImage,
+            })
+            .from(orderItemsTable)
+            .where(eq(orderItemsTable.orderId, order.id));
+
+          return {
+            id: `ORD-${order.id.toString().padStart(3, '0')}`,
+            date: order.createdAt.toISOString().split('T')[0],
+            status: order.status,
+            total: `₹${order.totalAmount}`,
+            items,
+            trackingNumber: order.trackingNumber,
+            estimatedDelivery: order.estimatedDelivery?.toISOString().split('T')[0],
+            shippingAddress: order.shippingAddress,
+            paymentMethod: order.paymentMethod,
+            userId: order.userId,
+          };
+        })
+      );
+
+      res.json(ordersWithItems);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.get("/api/orders/:id", async (req, res) => {
+    try {
+      const orderId = req.params.id.replace('ORD-', '');
+
+      const order = await db
+        .select()
+        .from(ordersTable)
+        .where(eq(ordersTable.id, Number(orderId)))
+        .limit(1);
+
+      if (order.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      const items = await db
+        .select({
+          id: orderItemsTable.id,
+          name: orderItemsTable.productName,
+          quantity: orderItemsTable.quantity,
+          price: orderItemsTable.price,
+          image: orderItemsTable.productImage,
+        })
+        .from(orderItemsTable)
+        .where(eq(orderItemsTable.orderId, order[0].id));
+
+      const orderWithItems = {
+        id: `ORD-${order[0].id.toString().padStart(3, '0')}`,
+        date: order[0].createdAt.toISOString().split('T')[0],
+        status: order[0].status,
+        total: `₹${order[0].totalAmount}`,
+        items,
+        trackingNumber: order[0].trackingNumber,
+        estimatedDelivery: order[0].estimatedDelivery?.toISOString().split('T')[0],
+        shippingAddress: order[0].shippingAddress,
+        paymentMethod: order[0].paymentMethod,
+        userId: order[0].userId,
+      };
+
+      res.json(orderWithItems);
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      res.status(500).json({ error: "Failed to fetch order" });
+    }
+  });
+
+  // Create sample orders for testing (you can call this endpoint to populate test data)
+  app.post("/api/orders/sample", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      // Check if user already has orders
+      const existingOrders = await db
+        .select()
+        .from(ordersTable)
+        .where(eq(ordersTable.userId, Number(userId)));
+
+      if (existingOrders.length > 0) {
+        return res.json({ message: "User already has orders", orders: existingOrders.length });
+      }
+
+      // Create sample orders with current dates
+      const now = new Date();
+      const sampleOrders = [
+        {
+          userId: Number(userId),
+          totalAmount: 1299,
+          status: 'delivered' as const,
+          paymentMethod: 'Credit Card',
+          shippingAddress: '123 Beauty Street, Mumbai, Maharashtra 400001',
+          trackingNumber: 'TRK001234567',
+          estimatedDelivery: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
+          createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+        },
+        {
+          userId: Number(userId),
+          totalAmount: 899,
+          status: 'shipped' as const,
+          paymentMethod: 'UPI',
+          shippingAddress: '456 Glow Avenue, Delhi, Delhi 110001',
+          trackingNumber: 'TRK001234568',
+          estimatedDelivery: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+          createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+        },
+        {
+          userId: Number(userId),
+          totalAmount: 1599,
+          status: 'processing' as const,
+          paymentMethod: 'Net Banking',
+          shippingAddress: '789 Skincare Lane, Bangalore, Karnataka 560001',
+          trackingNumber: null,
+          estimatedDelivery: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+        }
+      ];
+
+      const createdOrders = await db.insert(ordersTable).values(sampleOrders).returning();
+
+      // Create sample order items
+      const sampleItems = [
+        // Order 1 items
+        {
+          orderId: createdOrders[0].id,
+          productId: 1,
+          productName: 'Vitamin C Face Serum',
+          productImage: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+          quantity: 1,
+          price: '₹699',
+        },
+        {
+          orderId: createdOrders[0].id,
+          productId: 2,
+          productName: 'Hair Growth Serum',
+          productImage: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+          quantity: 1,
+          price: '₹599',
+        },
+        // Order 2 items
+        {
+          orderId: createdOrders[1].id,
+          productId: 3,
+          productName: 'Anti-Aging Night Cream',
+          productImage: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+          quantity: 1,
+          price: '₹899',
+        },
+        // Order 3 items
+        {
+          orderId: createdOrders[2].id,
+          productId: 4,
+          productName: 'Hyaluronic Acid Serum',
+          productImage: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+          quantity: 2,
+          price: '₹799',
+        }
+      ];
+
+      await db.insert(orderItemsTable).values(sampleItems);
+
+      res.json({ message: "Sample orders created successfully", orders: createdOrders.length });
+    } catch (error) {
+      console.error("Error creating sample orders:", error);
+      res.status(500).json({ error: "Failed to create sample orders" });
+    }
+  });
+
+  // Create new order
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const { userId, totalAmount, status, paymentMethod, shippingAddress, items } = req.body;
+
+      if (!userId || !totalAmount || !items || items.length === 0) {
+        return res.status(400).json({ error: "Missing required order data" });
+      }
+
+      // Create order
+      const orderData = {
+        userId: Number(userId),
+        totalAmount: Number(totalAmount),
+        status: status || 'pending',
+        paymentMethod: paymentMethod || 'Credit Card',
+        shippingAddress,
+        trackingNumber: null,
+        estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        createdAt: new Date(),
+      };
+
+      const createdOrders = await db.insert(ordersTable).values(orderData).returning();
+      const order = createdOrders[0];
+
+      // Create order items
+      const orderItems = items.map((item: any) => ({
+        orderId: order.id,
+        productId: item.productId || item.id,
+        productName: item.productName || item.name,
+        productImage: item.productImage || item.image,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      await db.insert(orderItemsTable).values(orderItems);
+
+      // Generate order ID
+      const orderId = `ORD-${order.id.toString().padStart(3, '0')}`;
+
+      res.status(201).json({ 
+        message: "Order created successfully",
+        orderId,
+        order: {
+          id: orderId,
+          totalAmount: order.totalAmount,
+          status: order.status,
+          createdAt: order.createdAt
+        }
+      });
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ error: "Failed to create order" });
+    }
+  });
+
+  // Update order status (for admin)
+  app.put("/api/orders/:id/status", async (req, res) => {
+    try {
+      const orderId = req.params.id.replace('ORD-', '');
+      const { status, trackingNumber } = req.body;
+
+      const updateData: any = { status };
+      if (trackingNumber) {
+        updateData.trackingNumber = trackingNumber;
+      }
+
+      await db
+        .update(ordersTable)
+        .set(updateData)
+        .where(eq(ordersTable.id, Number(orderId)));
+
+      res.json({ message: "Order status updated successfully" });
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ error: "Failed to update order status" });
+    }
+  });
+
+  // Get order tracking details
+  app.get("/api/orders/:id/tracking", async (req, res) => {
+    try {
+      const orderId = req.params.id.replace('ORD-', '');
+
+      const order = await db
+        .select()
+        .from(ordersTable)
+        .where(eq(ordersTable.id, Number(orderId)))
+        .limit(1);
+
+      if (order.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      const orderData = order[0];
+      
+      // Generate tracking timeline based on order status
+      const trackingTimeline = generateTrackingTimeline(orderData.status, orderData.createdAt, orderData.estimatedDelivery);
+
+      const trackingInfo = {
+        orderId: `ORD-${orderData.id.toString().padStart(3, '0')}`,
+        status: orderData.status,
+        trackingNumber: orderData.trackingNumber,
+        estimatedDelivery: orderData.estimatedDelivery?.toISOString().split('T')[0],
+        timeline: trackingTimeline,
+        currentStep: getCurrentStep(orderData.status),
+        totalAmount: orderData.totalAmount,
+        shippingAddress: orderData.shippingAddress,
+        createdAt: orderData.createdAt.toISOString().split('T')[0]
+      };
+
+      res.json(trackingInfo);
+    } catch (error) {
+      console.error("Error fetching tracking info:", error);
+      res.status(500).json({ error: "Failed to fetch tracking information" });
+    }
+  });
+
+  // Helper function to generate tracking timeline
+  function generateTrackingTimeline(status: string, createdAt: Date, estimatedDelivery: Date | null) {
+    const timeline = [
+      {
+        step: "Order Placed",
+        status: "completed",
+        date: createdAt.toISOString().split('T')[0],
+        time: createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        description: "Your order has been placed successfully"
+      }
+    ];
+
+    const orderDate = new Date(createdAt);
+
+    if (status === 'processing' || status === 'shipped' || status === 'delivered') {
+      timeline.push({
+        step: "Processing",
+        status: "completed",
+        date: new Date(orderDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: "10:00 AM",
+        description: "Your order is being prepared for shipment"
+      });
+    } else if (status === 'pending') {
+      timeline.push({
+        step: "Processing",
+        status: "pending",
+        date: new Date(orderDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: "Expected by 10:00 AM",
+        description: "Your order will be processed within 24 hours"
+      });
+    }
+
+    if (status === 'shipped' || status === 'delivered') {
+      timeline.push({
+        step: "Shipped",
+        status: "completed",
+        date: new Date(orderDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: "02:30 PM",
+        description: "Your order has been shipped and is on the way"
+      });
+    } else if (status === 'processing') {
+      timeline.push({
+        step: "Shipped",
+        status: "pending",
+        date: new Date(orderDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: "Expected by 2:00 PM",
+        description: "Your order will be shipped soon"
+      });
+    }
+
+    if (status === 'delivered') {
+      timeline.push({
+        step: "Delivered",
+        status: "completed",
+        date: estimatedDelivery?.toISOString().split('T')[0] || new Date(orderDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: "11:45 AM",
+        description: "Your order has been delivered successfully"
+      });
+    } else if (status === 'shipped') {
+      timeline.push({
+        step: "Delivered",
+        status: "pending",
+        date: estimatedDelivery?.toISOString().split('T')[0] || new Date(orderDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: "Expected delivery",
+        description: "Your order is out for delivery"
+      });
+    }
+
+    return timeline;
+  }
+
+  // Helper function to get current step
+  function getCurrentStep(status: string): number {
+    switch (status) {
+      case 'pending': return 0;
+      case 'processing': return 1;
+      case 'shipped': return 2;
+      case 'delivered': return 3;
+      default: return 0;
+    }
+  }
 
   const httpServer = createServer(app);
   return httpServer;

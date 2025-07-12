@@ -128,7 +128,7 @@ export default function Profile() {
                 </Button>
                 <Button 
                   variant="destructive" 
-                  className="w-full"
+                  className="w-full bg-red-600 hover:bg-red-700"
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
@@ -205,20 +205,21 @@ export default function Profile() {
                       View Cart
                     </Button>
                   </Link>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => alert("Order history feature coming soon!")}
-                  >
-                    Order History
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => alert("Wishlist feature coming soon!")}
-                  >
-                    My Wishlist
-                  </Button>
+                  <Link href="/order-history">
+                    <Button variant="outline" className="w-full justify-start">
+                      Order History
+                    </Button>
+                  </Link>
+                  <Link href="/wishlist">
+                    <Button variant="outline" className="w-full justify-start">
+                      My Wishlist
+                    </Button>
+                  </Link>
+                  <Link href="/change-password">
+                    <Button variant="outline" className="w-full justify-start">
+                      Change Password
+                    </Button>
+                  </Link>
                   <Link href="/contact">
                     <Button variant="outline" className="w-full justify-start">
                       Contact Support

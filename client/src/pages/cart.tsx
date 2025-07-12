@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 interface CartItem {
   id: number;
@@ -19,29 +20,36 @@ interface CartItem {
 }
 
 export default function Cart() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "10% Vitamin C Face Serum",
-      price: "₹699",
-      originalPrice: "₹999",
-      image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
-      quantity: 2,
-      variant: "30ml",
-      inStock: true
-    },
-    {
-      id: 2,
-      name: "Hair Growth Serum",
-      price: "₹899",
-      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
-      quantity: 1,
-      variant: "50ml",
-      inStock: true
-    }
-  ]);
-
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [promoCode, setPromoCode] = useState("");
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Load cart from localStorage on component mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      try {
+        const parsedCart = JSON.parse(savedCart);
+        setCartItems(parsedCart);
+      } catch (error) {
+        console.error("Error parsing cart data:", error);
+        setCartItems([]);
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  // Save cart to localStorage whenever cartItems changes
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem("cart", JSON.stringify(cartItems));
+      // Update cart count in localStorage for layout component
+      localStorage.setItem("cartCount", cartItems.reduce((total, item) => total + item.quantity, 0).toString());
+      // Dispatch custom event to update layout
+      window.dispatchEvent(new Event("cartUpdated"));
+    }
+  }, [cartItems, loading]);
 
   const updateQuantity = (id: number, newQuantity: number) => {
     if (newQuantity === 0) {
@@ -53,10 +61,43 @@ export default function Cart() {
         item.id === id ? { ...item, quantity: newQuantity } : item
       )
     );
+    toast({
+      title: "Cart Updated",
+      description: "Item quantity has been updated",
+    });
   };
 
   const removeItem = (id: number) => {
+    const item = cartItems.find(item => item.id === id);
     setCartItems(items => items.filter(item => item.id !== id));
+    toast({
+      title: "Item Removed",
+      description: `${item?.name} has been removed from your cart`,
+      variant: "destructive",
+    });
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+    toast({
+      title: "Cart Cleared",
+      description: "All items have been removed from your cart",
+    });
+  };
+
+  const applyPromoCode = () => {
+    if (promoCode.toLowerCase() === "save10") {
+      toast({
+        title: "Promo Code Applied",
+        description: "10% discount has been applied to your order",
+      });
+    } else if (promoCode) {
+      toast({
+        title: "Invalid Promo Code",
+        description: "The promo code you entered is not valid",
+        variant: "destructive",
+      });
+    }
   };
 
   const calculateSubtotal = () => {
@@ -68,8 +109,19 @@ export default function Cart() {
 
   const subtotal = calculateSubtotal();
   const shipping = subtotal > 599 ? 0 : 99;
-  const discount = 0; // Apply promo code discount
+  const discount = promoCode.toLowerCase() === "save10" ? Math.floor(subtotal * 0.1) : 0;
   const total = subtotal + shipping - discount;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading cart...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -99,8 +151,17 @@ export default function Cart() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Continue Shopping
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-          <p className="text-gray-600 mt-2">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+              <p className="text-gray-600 mt-2">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart</p>
+            </div>
+            {cartItems.length > 0 && (
+              <Button variant="outline" onClick={clearCart} className="text-red-600 border-red-600 hover:bg-red-50">
+                Clear Cart
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -181,11 +242,11 @@ export default function Cart() {
                   <label className="text-sm font-medium text-gray-700">Promo Code</label>
                   <div className="flex space-x-2">
                     <Input
-                      placeholder="Enter code"
+                      placeholder="Enter code (try SAVE10)"
                       value={promoCode}
                       onChange={(e) => setPromoCode(e.target.value)}
                     />
-                    <Button variant="outline" size="sm">Apply</Button>
+                    <Button variant="outline" size="sm" onClick={applyPromoCode}>Apply</Button>
                   </div>
                 </div>
 

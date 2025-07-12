@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Eye, 
   Search, 
@@ -26,7 +27,10 @@ import {
   User,
   Phone,
   Mail,
-  MapPin
+  MapPin,
+  Edit,
+  Save,
+  RefreshCw
 } from "lucide-react";
 
 interface Order {
@@ -39,7 +43,7 @@ interface Order {
   };
   date: string;
   total: string;
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   items: number;
   paymentMethod: string;
   trackingNumber?: string;
@@ -50,6 +54,9 @@ interface Order {
     price: string;
     image: string;
   }>;
+  userId?: number;
+  totalAmount?: number;
+  shippingAddress?: string;
 }
 
 export default function AdminOrders() {
@@ -58,104 +65,38 @@ export default function AdminOrders() {
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingTracking, setEditingTracking] = useState<string | null>(null);
+  const [trackingInput, setTrackingInput] = useState('');
+  const { toast } = useToast();
 
-  const orders: Order[] = [
-    { 
-      id: '#ORD-001', 
-      customer: {
-        name: 'Sarah Johnson',
-        email: 'sarah@example.com',
-        phone: '+1 234-567-8901',
-        address: '123 Beauty Street, Cosmetic City, CC 12345'
-      },
-      date: '2024-01-15', 
-      total: '$87.96', 
-      status: 'Delivered', 
-      items: 3,
-      paymentMethod: 'Credit Card',
-      trackingNumber: 'DP123456789',
-      estimatedDelivery: '2024-01-18',
-      products: [
-        { name: 'Vitamin C Serum', quantity: 1, price: '$29.99', image: '/api/placeholder/50/50' },
-        { name: 'Moisturizer', quantity: 2, price: '$28.99', image: '/api/placeholder/50/50' }
-      ]
-    },
-    { 
-      id: '#ORD-002', 
-      customer: {
-        name: 'Emily Davis',
-        email: 'emily@example.com',
-        phone: '+1 234-567-8902',
-        address: '456 Glow Avenue, Beauty Town, BT 67890'
-      },
-      date: '2024-01-14', 
-      total: '$45.99', 
-      status: 'Processing', 
-      items: 2,
-      paymentMethod: 'PayPal',
-      estimatedDelivery: '2024-01-20',
-      products: [
-        { name: 'Face Mask', quantity: 1, price: '$25.99', image: '/api/placeholder/50/50' },
-        { name: 'Cleanser', quantity: 1, price: '$20.00', image: '/api/placeholder/50/50' }
-      ]
-    },
-    { 
-      id: '#ORD-003', 
-      customer: {
-        name: 'Jessica Brown',
-        email: 'jessica@example.com',
-        phone: '+1 234-567-8903',
-        address: '789 Skincare Lane, Wellness City, WC 54321'
-      },
-      date: '2024-01-14', 
-      total: '$129.97', 
-      status: 'Shipped', 
-      items: 4,
-      paymentMethod: 'Credit Card',
-      trackingNumber: 'DP987654321',
-      estimatedDelivery: '2024-01-19',
-      products: [
-        { name: 'Anti-Aging Cream', quantity: 1, price: '$49.99', image: '/api/placeholder/50/50' },
-        { name: 'Eye Serum', quantity: 2, price: '$39.99', image: '/api/placeholder/50/50' }
-      ]
-    },
-    { 
-      id: '#ORD-004', 
-      customer: {
-        name: 'Amanda Wilson',
-        email: 'amanda@example.com',
-        phone: '+1 234-567-8904',
-        address: '321 Natural Boulevard, Organic City, OC 98765'
-      },
-      date: '2024-01-13', 
-      total: '$67.98', 
-      status: 'Pending', 
-      items: 3,
-      paymentMethod: 'Bank Transfer',
-      estimatedDelivery: '2024-01-22',
-      products: [
-        { name: 'Sunscreen', quantity: 2, price: '$22.99', image: '/api/placeholder/50/50' },
-        { name: 'Lip Balm', quantity: 1, price: '$22.00', image: '/api/placeholder/50/50' }
-      ]
-    },
-    { 
-      id: '#ORD-005', 
-      customer: {
-        name: 'Rachel Garcia',
-        email: 'rachel@example.com',
-        phone: '+1 234-567-8905',
-        address: '654 Radiance Road, Glow City, GC 13579'
-      },
-      date: '2024-01-13', 
-      total: '$34.99', 
-      status: 'Cancelled', 
-      items: 1,
-      paymentMethod: 'Credit Card',
-      products: [
-        { name: 'Night Cream', quantity: 1, price: '$34.99', image: '/api/placeholder/50/50' }
-      ]
-    },
-  ];
+  // Fetch all orders from backend
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/orders');
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+      } else {
+        throw new Error('Failed to fetch orders');
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch orders",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   // Filter orders based on search term, status, and date
   const filteredOrders = orders.filter(order => {
@@ -173,38 +114,41 @@ export default function AdminOrders() {
 
   // Calculate stats
   const totalOrders = orders.length;
-  const pendingOrders = orders.filter(o => o.status === 'Pending').length;
-  const processingOrders = orders.filter(o => o.status === 'Processing').length;
-  const shippedOrders = orders.filter(o => o.status === 'Shipped').length;
-  const deliveredOrders = orders.filter(o => o.status === 'Delivered').length;
+  const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  const processingOrders = orders.filter(o => o.status === 'processing').length;
+  const shippedOrders = orders.filter(o => o.status === 'shipped').length;
+  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
 
-  const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total.replace('$', '')), 0);
+  const totalRevenue = orders.reduce((sum, order) => {
+    const amount = order.totalAmount || parseFloat(order.total.replace(/[₹$,]/g, ''));
+    return sum + amount;
+  }, 0);
 
   const stats = [
     { label: "Total Orders", value: totalOrders.toString(), icon: Package, color: "from-blue-500 to-cyan-500" },
     { label: "Pending", value: pendingOrders.toString(), icon: Clock, color: "from-yellow-500 to-orange-500" },
     { label: "Processing", value: processingOrders.toString(), icon: AlertCircle, color: "from-purple-500 to-pink-500" },
-    { label: "Revenue", value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign, color: "from-green-500 to-emerald-500" },
+    { label: "Revenue", value: `₹${totalRevenue.toFixed(2)}`, icon: DollarSign, color: "from-green-500 to-emerald-500" },
   ];
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Pending': return <Clock className="h-4 w-4" />;
-      case 'Processing': return <AlertCircle className="h-4 w-4" />;
-      case 'Shipped': return <Truck className="h-4 w-4" />;
-      case 'Delivered': return <CheckCircle className="h-4 w-4" />;
-      case 'Cancelled': return <XCircle className="h-4 w-4" />;
+      case 'pending': return <Clock className="h-4 w-4" />;
+      case 'processing': return <AlertCircle className="h-4 w-4" />;
+      case 'shipped': return <Truck className="h-4 w-4" />;
+      case 'delivered': return <CheckCircle className="h-4 w-4" />;
+      case 'cancelled': return <XCircle className="h-4 w-4" />;
       default: return <Package className="h-4 w-4" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Delivered': return 'default';
-      case 'Shipped': return 'secondary';
-      case 'Processing': return 'outline';
-      case 'Pending': return 'destructive';
-      case 'Cancelled': return 'destructive';
+      case 'delivered': return 'default';
+      case 'shipped': return 'secondary';
+      case 'processing': return 'outline';
+      case 'pending': return 'destructive';
+      case 'cancelled': return 'destructive';
       default: return 'outline';
     }
   };
@@ -214,35 +158,101 @@ export default function AdminOrders() {
     setIsDetailsOpen(true);
   };
 
-  const handleStatusChange = (orderId: string, newStatus: string) => {
-    // Implementation for status change
-    const updatedOrders = orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus as Order['status'] } : order
-    );
-    console.log(`Order ${orderId} status changed to ${newStatus}`);
-    // In a real app, you would update the state and make an API call here
-  };
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-  const handleUpdateTracking = (order: Order) => {
-    const trackingNumber = prompt('Enter tracking number:');
-    if (trackingNumber) {
-      console.log(`Updating tracking for order ${order.id} with tracking number: ${trackingNumber}`);
-      // In a real app, you would update the order with the new tracking number
+      if (response.ok) {
+        // Update local state
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId ? { ...order, status: newStatus as Order['status'] } : order
+          )
+        );
+        
+        toast({
+          title: "Success",
+          description: `Order ${orderId} status updated to ${newStatus}`,
+        });
+
+        // Send notification to customer
+        await handleSendNotification(orderId, newStatus);
+      } else {
+        throw new Error('Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleSendNotification = (order: Order) => {
-    const notificationTypes = ['Order Confirmation', 'Shipping Update', 'Delivery Notification'];
-    const notificationType = prompt(`Select notification type:\n${notificationTypes.map((type, index) => `${index + 1}. ${type}`).join('\n')}`);
-    
-    if (notificationType) {
-      console.log(`Sending notification to ${order.customer.email} for order ${order.id}`);
-      // In a real app, you would send an email notification
+  const handleUpdateTracking = async (orderId: string, trackingNumber: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ trackingNumber }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId ? { ...order, trackingNumber } : order
+          )
+        );
+        
+        setEditingTracking(null);
+        setTrackingInput('');
+        
+        toast({
+          title: "Success",
+          description: `Tracking number updated for order ${orderId}`,
+        });
+      } else {
+        throw new Error('Failed to update tracking number');
+      }
+    } catch (error) {
+      console.error('Error updating tracking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update tracking number",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendNotification = async (orderId: string, status: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/notify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        console.log(`Notification sent for order ${orderId} with status ${status}`);
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
     }
   };
 
   const handleDownloadInvoice = (order: Order) => {
-    // Create a simple invoice content
     const invoiceContent = `
 INVOICE
 Order ID: ${order.id}
@@ -261,7 +271,6 @@ Phone: ${order.customer.phone}
 Address: ${order.customer.address}
     `;
 
-    // Create and download the invoice
     const element = document.createElement('a');
     const file = new Blob([invoiceContent], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
@@ -270,6 +279,32 @@ Address: ${order.customer.address}
     element.click();
     document.body.removeChild(element);
   };
+
+  const startEditingTracking = (orderId: string, currentTracking?: string) => {
+    setEditingTracking(orderId);
+    setTrackingInput(currentTracking || '');
+  };
+
+  const saveTracking = (orderId: string) => {
+    if (trackingInput.trim()) {
+      handleUpdateTracking(orderId, trackingInput.trim());
+    }
+  };
+
+  const cancelEditingTracking = () => {
+    setEditingTracking(null);
+    setTrackingInput('');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 space-y-6 p-8 pt-6">
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -282,6 +317,10 @@ Address: ${order.customer.address}
           <p className="text-slate-600 mt-1">Track and manage customer orders efficiently</p>
         </div>
         <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={fetchOrders}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -375,7 +414,7 @@ Address: ${order.customer.address}
                   <TableHead className="font-semibold">Items</TableHead>
                   <TableHead className="font-semibold">Total</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Payment</TableHead>
+                  <TableHead className="font-semibold">Tracking</TableHead>
                   <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -398,16 +437,55 @@ Address: ${order.customer.address}
                     <TableCell>{order.items} items</TableCell>
                     <TableCell className="font-semibold text-slate-900">{order.total}</TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={getStatusColor(order.status)}
-                        className="flex items-center gap-1 w-fit"
-                      >
-                        {getStatusIcon(order.status)}
-                        {order.status}
-                      </Badge>
+                      <Select onValueChange={(value) => handleStatusChange(order.id, value)}>
+                        <SelectTrigger className="w-[120px]">
+                          <Badge 
+                            variant={getStatusColor(order.status)}
+                            className="flex items-center gap-1 w-fit"
+                          >
+                            {getStatusIcon(order.status)}
+                            {order.status}
+                          </Badge>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="processing">Processing</SelectItem>
+                          <SelectItem value="shipped">Shipped</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-slate-600">{order.paymentMethod}</span>
+                      {editingTracking === order.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={trackingInput}
+                            onChange={(e) => setTrackingInput(e.target.value)}
+                            placeholder="Enter tracking number"
+                            className="w-32"
+                          />
+                          <Button size="sm" onClick={() => saveTracking(order.id)}>
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={cancelEditingTracking}>
+                            <XCircle className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-600">
+                            {order.trackingNumber || 'Not assigned'}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditingTracking(order.id, order.trackingNumber)}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -419,18 +497,6 @@ Address: ${order.customer.address}
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        <Select onValueChange={(value) => handleStatusChange(order.id, value)}>
-                          <SelectTrigger className="w-[100px] h-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
-                            <SelectItem value="cancelled">Cancel</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -515,7 +581,7 @@ Address: ${order.customer.address}
                       <Button 
                         className="w-full justify-start" 
                         variant="outline"
-                        onClick={() => handleUpdateTracking(selectedOrder)}
+                        onClick={() => startEditingTracking(selectedOrder.id, selectedOrder.trackingNumber)}
                       >
                         <Truck className="h-4 w-4 mr-2" />
                         Update Tracking
@@ -523,7 +589,7 @@ Address: ${order.customer.address}
                       <Button 
                         className="w-full justify-start" 
                         variant="outline"
-                        onClick={() => handleSendNotification(selectedOrder)}
+                        onClick={() => handleSendNotification(selectedOrder.id, selectedOrder.status)}
                       >
                         <Mail className="h-4 w-4 mr-2" />
                         Send Notification

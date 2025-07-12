@@ -9,7 +9,7 @@ import jwt from "jsonwebtoken";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc } from "drizzle-orm";
 import { Pool } from "pg";
-import { ordersTable, orderItemsTable } from "../shared/schema";
+import { ordersTable, orderItemsTable, users } from "../shared/schema";
 
 // Database connection
 const pool = new Pool({
@@ -457,6 +457,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Orders endpoints
+  app.get("/api/admin/orders", async (req, res) => {
+    try {
+      // Get all orders from database
+      const orders = await db
+        .select()
+        .from(ordersTable)
+        .orderBy(desc(ordersTable.createdAt));
+
+      // Get order items for each order and user info
+      const ordersWithDetails = await Promise.all(
+        orders.map(async (order) => {
+          const items = await db
+            .select({
+              id: orderItemsTable.id,
+              name: orderItemsTable.productName,
+              quantity: orderItemsTable.quantity,
+              price: orderItemsTable.price,
+              image: orderItemsTable.productImage,
+            })
+            .from(orderItemsTable)
+            .where(eq(orderItemsTable.orderId, order.id));
+
+          // Get user info
+          const user = await db
+            .select({
+              firstName: users.firstName,
+              lastName: users.lastName,
+              email: users.email,
+              phone: users.phone,
+            })
+            .from(users)
+            .where(eq(users.id, order.userId))
+            .limit(1);
+
+          const userData = user[0] || { firstName: 'Unknown', lastName: 'Customer', email: 'unknown@email.com', phone: 'N/A' };
+
+          return {
+            id: `ORD-${order.id.toString().padStart(3, '0')}`,
+            customer: {
+              name: `${userData.firstName} ${userData.lastName}`,
+              email: userData.email,
+              phone: userData.phone || 'N/A',
+              address: order.shippingAddress,
+            },
+            date: order.createdAt.toISOString().split('T')[0],
+            total: `₹${order.totalAmount}`,
+            status: order.status,
+            items: items.length,
+            paymentMethod: order.paymentMethod,
+            trackingNumber: order.trackingNumber,
+            estimatedDelivery: order.estimatedDelivery?.toISOString().split('T')[0],
+            products: items,
+            userId: order.userId,
+            totalAmount: order.totalAmount,
+            shippingAddress: order.shippingAddress,
+          };
+        })
+      );
+
+      res.json(ordersWithDetails);
+    } catch (error) {
+      console.error("Error fetching admin orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  // Send order notification
+  app.post("/api/orders/:id/notify", async (req, res) => {
+    try {
+      const orderId = req.params.id.replace('ORD-', '');
+      const { status } = req.body;
+
+      // Get order and user info
+      const order = await db
+        .select()
+        .from(ordersTable)
+        .where(eq(ordersTable.id, Number(orderId)))
+        .limit(1);
+
+      if (order.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, order[0].userId))
+        .limit(1);
+
+      if (user.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Here you would typically send an email notification
+      // For now, we'll just log it
+      console.log(`Sending ${status} notification to ${user[0].email} for order ORD-${orderId}`);
+      
+      // You can integrate with email services like SendGrid, Mailgun, etc.
+      // Example notification content based on status
+      const notifications = {
+        pending: "Your order has been received and is being processed.",
+        processing: "Your order is being prepared for shipment.",
+        shipped: "Your order has been shipped and is on its way!",
+        delivered: "Your order has been delivered successfully.",
+        cancelled: "Your order has been cancelled."
+      };
+
+      res.json({ 
+        message: "Notification sent successfully",
+        notification: notifications[status] || "Order status updated"
+      });
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      res.status(500).json({ error: "Failed to send notification" });
+    }
+  });
+
   // Orders endpoints
   app.get("/api/orders", async (req, res) => {
     try {
@@ -661,41 +779,198 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new order
   app.post("/api/orders", async (req, res) => {
     try {
+      console.log("Received order data:", req.body);
+      
       const { userId, totalAmount, status, paymentMethod, shippingAddress, items } = req.body;
 
-      if (!userId || !totalAmount || !items || items.length === 0) {
-        return res.status(400).json({ error: "Missing required order data" });
+      // Validate required fields
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      if (!totalAmount || isNaN(Number(totalAmount))) {
+        return res.status(400).json({ error: "Valid total amount is required" });
+      }
+      
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "Order items are required" });
+      }
+      
+      if (!shippingAddress) {
+
+  // Create sample orders for all users (for testing)
+  app.post("/api/orders/create-sample-data", async (req, res) => {
+    try {
+      // Get all users
+      const allUsers = await db.select().from(users);
+      
+      if (allUsers.length === 0) {
+        return res.status(400).json({ error: "No users found. Please create a user account first." });
+      }
+
+      let ordersCreated = 0;
+
+      for (const user of allUsers) {
+        // Check if user already has orders
+        const existingOrders = await db
+          .select()
+          .from(ordersTable)
+          .where(eq(ordersTable.userId, user.id));
+
+        if (existingOrders.length > 0) {
+          continue; // Skip users who already have orders
+        }
+
+        // Create sample orders with current dates
+        const now = new Date();
+        const sampleOrders = [
+          {
+            userId: user.id,
+            totalAmount: 1299,
+            status: 'delivered' as const,
+            paymentMethod: 'Credit Card',
+            shippingAddress: `${user.firstName} ${user.lastName}, 123 Beauty Street, Mumbai, Maharashtra 400001`,
+            trackingNumber: `TRK00${user.id}234567`,
+            estimatedDelivery: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
+            createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+          },
+          {
+            userId: user.id,
+            totalAmount: 899,
+            status: 'shipped' as const,
+            paymentMethod: 'UPI',
+            shippingAddress: `${user.firstName} ${user.lastName}, 456 Glow Avenue, Delhi, Delhi 110001`,
+            trackingNumber: `TRK00${user.id}234568`,
+            estimatedDelivery: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+            createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+          },
+          {
+            userId: user.id,
+            totalAmount: 1599,
+            status: 'processing' as const,
+            paymentMethod: 'Net Banking',
+            shippingAddress: `${user.firstName} ${user.lastName}, 789 Skincare Lane, Bangalore, Karnataka 560001`,
+            trackingNumber: null,
+            estimatedDelivery: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+            createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+          }
+        ];
+
+        const createdOrders = await db.insert(ordersTable).values(sampleOrders).returning();
+
+        // Create sample order items
+        const sampleItems = [
+          // Order 1 items
+          {
+            orderId: createdOrders[0].id,
+            productId: 1,
+            productName: 'Vitamin C Face Serum',
+            productImage: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+            quantity: 1,
+            price: '₹699',
+          },
+          {
+            orderId: createdOrders[0].id,
+            productId: 2,
+            productName: 'Hair Growth Serum',
+            productImage: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+            quantity: 1,
+            price: '₹599',
+          },
+          // Order 2 items
+          {
+            orderId: createdOrders[1].id,
+            productId: 3,
+            productName: 'Anti-Aging Night Cream',
+            productImage: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+            quantity: 1,
+            price: '₹899',
+          },
+          // Order 3 items
+          {
+            orderId: createdOrders[2].id,
+            productId: 4,
+            productName: 'Hyaluronic Acid Serum',
+            productImage: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+            quantity: 2,
+            price: '₹799',
+          }
+        ];
+
+        await db.insert(orderItemsTable).values(sampleItems);
+        ordersCreated += createdOrders.length;
+      }
+
+      res.json({ 
+        message: "Sample orders created successfully", 
+        ordersCreated,
+        usersProcessed: allUsers.length
+      });
+    } catch (error) {
+      console.error("Error creating sample orders:", error);
+      res.status(500).json({ error: "Failed to create sample orders" });
+    }
+  });
+
+
+        return res.status(400).json({ error: "Shipping address is required" });
+      }
+
+      // Parse and validate totalAmount
+      const parsedTotalAmount = Number(totalAmount);
+      if (parsedTotalAmount <= 0) {
+        return res.status(400).json({ error: "Total amount must be greater than 0" });
       }
 
       // Create order
       const orderData = {
         userId: Number(userId),
-        totalAmount: Number(totalAmount),
+        totalAmount: Math.round(parsedTotalAmount), // Round to nearest integer for database
         status: status || 'pending',
         paymentMethod: paymentMethod || 'Credit Card',
-        shippingAddress,
+        shippingAddress: shippingAddress.toString(),
         trackingNumber: null,
         estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         createdAt: new Date(),
       };
 
+      console.log("Creating order with data:", orderData);
+
       const createdOrders = await db.insert(ordersTable).values(orderData).returning();
       const order = createdOrders[0];
 
-      // Create order items
-      const orderItems = items.map((item: any) => ({
-        orderId: order.id,
-        productId: item.productId || item.id,
-        productName: item.productName || item.name,
-        productImage: item.productImage || item.image,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+      console.log("Order created:", order);
+
+      // Validate and create order items
+      const orderItems = items.map((item: any, index: number) => {
+        if (!item.productName && !item.name) {
+          throw new Error(`Item ${index + 1} is missing product name`);
+        }
+        if (!item.quantity || isNaN(Number(item.quantity))) {
+          throw new Error(`Item ${index + 1} has invalid quantity`);
+        }
+        if (!item.price) {
+          throw new Error(`Item ${index + 1} is missing price`);
+        }
+
+        return {
+          orderId: order.id,
+          productId: Number(item.productId || item.id || 0),
+          productName: item.productName || item.name,
+          productImage: item.productImage || item.image || '',
+          quantity: Number(item.quantity),
+          price: item.price.toString(),
+        };
+      });
+
+      console.log("Creating order items:", orderItems);
 
       await db.insert(orderItemsTable).values(orderItems);
 
       // Generate order ID
       const orderId = `ORD-${order.id.toString().padStart(3, '0')}`;
+
+      console.log("Order created successfully with ID:", orderId);
 
       res.status(201).json({ 
         message: "Order created successfully",
@@ -709,7 +984,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error creating order:", error);
-      res.status(500).json({ error: "Failed to create order" });
+      res.status(500).json({ 
+        error: "Failed to create order",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

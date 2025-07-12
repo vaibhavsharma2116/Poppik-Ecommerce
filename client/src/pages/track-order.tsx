@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, MapPin, Phone, Calendar } from "lucide-react";
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, MapPin, Phone, Calendar, RefreshCw, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,17 @@ interface TrackingInfo {
   totalAmount: number;
   shippingAddress: string;
   createdAt: string;
+  customerInfo?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  items?: Array<{
+    name: string;
+    quantity: number;
+    price: string;
+    image: string;
+  }>;
 }
 
 export default function TrackOrderPage() {
@@ -36,6 +47,7 @@ export default function TrackOrderPage() {
   const [trackingInfo, setTrackingInfo] = useState<TrackingInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
 
   // Get order ID from URL params if present
@@ -44,7 +56,9 @@ export default function TrackOrderPage() {
     const orderId = params.get('orderId');
     if (orderId) {
       setOrderIdInput(orderId);
-      handleTrackOrder(orderId);
+      setTimeout(() => {
+        handleTrackOrder(orderId);
+      }, 100);
     }
   }, []);
 
@@ -84,6 +98,32 @@ export default function TrackOrderPage() {
     }
   };
 
+  const handleRefreshTracking = async () => {
+    if (!trackingInfo) return;
+    
+    setRefreshing(true);
+    try {
+      const response = await fetch(`/api/orders/${trackingInfo.orderId}/tracking`);
+      if (response.ok) {
+        const data = await response.json();
+        setTrackingInfo(data);
+        toast({
+          title: "Updated",
+          description: "Tracking information refreshed",
+        });
+      }
+    } catch (error) {
+      console.error('Refresh error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh tracking information",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -101,27 +141,48 @@ export default function TrackOrderPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'shipped': return 'bg-purple-100 text-purple-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'processing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'shipped': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStepIcon = (stepStatus: string) => {
     switch (stepStatus) {
       case 'completed':
-        return <CheckCircle className="h-6 w-6 text-green-600" />;
+        return (
+          <div className="h-8 w-8 rounded-full bg-green-100 border-2 border-green-500 flex items-center justify-center">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+          </div>
+        );
       case 'active':
-        return <div className="h-6 w-6 rounded-full bg-blue-600 flex items-center justify-center">
-          <div className="h-3 w-3 rounded-full bg-white"></div>
-        </div>;
+        return (
+          <div className="h-8 w-8 rounded-full bg-blue-100 border-2 border-blue-500 flex items-center justify-center">
+            <div className="h-3 w-3 rounded-full bg-blue-600 animate-pulse"></div>
+          </div>
+        );
       case 'pending':
-        return <div className="h-6 w-6 rounded-full border-2 border-gray-300 bg-white"></div>;
+        return (
+          <div className="h-8 w-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
+            <div className="h-3 w-3 rounded-full bg-gray-300"></div>
+          </div>
+        );
       default:
-        return <div className="h-6 w-6 rounded-full border-2 border-gray-300 bg-white"></div>;
+        return (
+          <div className="h-8 w-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
+            <div className="h-3 w-3 rounded-full bg-gray-300"></div>
+          </div>
+        );
     }
+  };
+
+  const getProgressPercentage = () => {
+    if (!trackingInfo) return 0;
+    const completedSteps = trackingInfo.timeline.filter(step => step.status === 'completed').length;
+    return (completedSteps / trackingInfo.timeline.length) * 100;
   };
 
   return (
@@ -134,13 +195,16 @@ export default function TrackOrderPage() {
             Back to Order History
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Track Your Order</h1>
-          <p className="text-gray-600 mt-2">Enter your order ID to track your package</p>
+          <p className="text-gray-600 mt-2">Enter your order ID to track your package in real-time</p>
         </div>
 
         {/* Search Form */}
-        <Card className="mb-8">
+        <Card className="mb-8 shadow-lg">
           <CardHeader>
-            <CardTitle>Enter Order Details</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Enter Order Details
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4">
@@ -152,21 +216,35 @@ export default function TrackOrderPage() {
                   value={orderIdInput}
                   onChange={(e) => setOrderIdInput(e.target.value)}
                   className="mt-1"
+                  onKeyPress={(e) => e.key === 'Enter' && handleTrackOrder()}
                 />
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end gap-2">
                 <Button 
                   onClick={() => handleTrackOrder()}
                   disabled={loading}
                   className="bg-red-600 hover:bg-red-700"
                 >
                   {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Package className="h-4 w-4 mr-2" />
                   )}
                   Track Order
                 </Button>
+                {trackingInfo && (
+                  <Button 
+                    onClick={handleRefreshTracking}
+                    disabled={refreshing}
+                    variant="outline"
+                  >
+                    {refreshing ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
             {error && (
@@ -181,7 +259,7 @@ export default function TrackOrderPage() {
         {trackingInfo && (
           <div className="space-y-6">
             {/* Order Status Card */}
-            <Card>
+            <Card className="shadow-lg">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -190,26 +268,45 @@ export default function TrackOrderPage() {
                       Order {trackingInfo.orderId}
                     </CardTitle>
                     <p className="text-gray-600 mt-1">
-                      Placed on {new Date(trackingInfo.createdAt).toLocaleDateString('en-IN')}
+                      Placed on {new Date(trackingInfo.createdAt).toLocaleDateString('en-IN', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
                     </p>
                   </div>
-                  <Badge className={`${getStatusColor(trackingInfo.status)} px-3 py-1`}>
+                  <Badge className={`${getStatusColor(trackingInfo.status)} px-4 py-2 text-sm font-medium border`}>
                     {trackingInfo.status.charAt(0).toUpperCase() + trackingInfo.status.slice(1)}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Progress</span>
+                    <span className="text-sm font-medium text-gray-900">{Math.round(getProgressPercentage())}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${getProgressPercentage()}%` }}
+                    ></div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-gray-500" />
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <MapPin className="h-5 w-5 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Shipping Address</p>
                       <p className="text-sm text-gray-600">{trackingInfo.shippingAddress}</p>
                     </div>
                   </div>
                   {trackingInfo.trackingNumber && (
-                    <div className="flex items-center gap-2">
-                      <Truck className="h-4 w-4 text-gray-500" />
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <Truck className="h-5 w-5 text-gray-500" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Tracking Number</p>
                         <p className="text-sm text-gray-600 font-mono">{trackingInfo.trackingNumber}</p>
@@ -217,8 +314,8 @@ export default function TrackOrderPage() {
                     </div>
                   )}
                   {trackingInfo.estimatedDelivery && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <Calendar className="h-5 w-5 text-gray-500" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Expected Delivery</p>
                         <p className="text-sm text-gray-600">
@@ -232,10 +329,13 @@ export default function TrackOrderPage() {
             </Card>
 
             {/* Tracking Timeline */}
-            <Card>
+            <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle>Tracking Timeline</CardTitle>
-                <p className="text-gray-600">Follow your order's journey</p>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  Tracking Timeline
+                </CardTitle>
+                <p className="text-gray-600">Follow your order's journey step by step</p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
@@ -244,22 +344,22 @@ export default function TrackOrderPage() {
                       <div className="flex flex-col items-center">
                         {getStepIcon(step.status)}
                         {index < trackingInfo.timeline.length - 1 && (
-                          <div className={`w-0.5 h-12 mt-2 ${
-                            step.status === 'completed' ? 'bg-green-600' : 'bg-gray-300'
+                          <div className={`w-0.5 h-16 mt-2 ${
+                            step.status === 'completed' ? 'bg-green-500' : 'bg-gray-300'
                           }`}></div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className={`font-medium ${
+                      <div className="flex-1 min-w-0 pb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className={`font-semibold ${
                             step.status === 'completed' ? 'text-green-900' : 
                             step.status === 'active' ? 'text-blue-900' : 'text-gray-500'
                           }`}>
                             {step.step}
                           </h4>
                           <div className="text-right">
-                            <p className="text-sm text-gray-600">{step.date}</p>
-                            <p className="text-sm text-gray-500">{step.time}</p>
+                            <p className="text-sm font-medium text-gray-900">{step.date}</p>
+                            <p className="text-xs text-gray-500">{step.time}</p>
                           </div>
                         </div>
                         <p className={`text-sm ${
@@ -268,6 +368,14 @@ export default function TrackOrderPage() {
                         }`}>
                           {step.description}
                         </p>
+                        {step.status === 'active' && (
+                          <div className="mt-2">
+                            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                              <div className="w-2 h-2 bg-blue-600 rounded-full mr-2 animate-pulse"></div>
+                              In Progress
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -276,50 +384,85 @@ export default function TrackOrderPage() {
             </Card>
 
             {/* Order Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Amount</span>
-                  <span className="text-lg font-semibold text-gray-900">₹{trackingInfo.totalAmount.toLocaleString()}</span>
-                </div>
-                <Separator className="my-4" />
-                <div className="flex gap-3">
-                  <Link href="/order-history">
-                    <Button variant="outline" size="sm">
-                      View All Orders
-                    </Button>
-                  </Link>
-                  {trackingInfo.status === 'delivered' && (
-                    <Button variant="outline" size="sm">
-                      Download Invoice
-                    </Button>
-                  )}
-                  {trackingInfo.status !== 'delivered' && trackingInfo.status !== 'cancelled' && (
-                    <Button variant="outline" size="sm">
-                      Contact Support
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Order Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Order Total</span>
+                      <span className="text-xl font-bold text-gray-900">₹{trackingInfo.totalAmount.toLocaleString()}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex gap-3">
+                      <Link href="/order-history">
+                        <Button variant="outline" size="sm" className="flex-1">
+                          View All Orders
+                        </Button>
+                      </Link>
+                      {trackingInfo.status === 'delivered' && (
+                        <Button variant="outline" size="sm" className="flex-1">
+                          Download Invoice
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Need Help?
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">
+                      Have questions about your order? We're here to help!
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <Button variant="outline" size="sm" className="justify-start">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Contact Support
+                      </Button>
+                      <Button variant="outline" size="sm" className="justify-start">
+                        <Mail className="h-4 w-4 mr-2" />
+                        Email Us
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
         {/* No tracking info placeholder */}
         {!trackingInfo && !loading && (
-          <Card>
+          <Card className="shadow-lg">
             <CardContent className="text-center py-12">
               <Package className="mx-auto h-16 w-16 text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Tracking Information</h3>
-              <p className="text-gray-600 mb-6">Enter your order ID above to view tracking details</p>
-              <Link href="/order-history">
-                <Button variant="outline">
-                  View Order History
-                </Button>
-              </Link>
+              <p className="text-gray-600 mb-6">Enter your order ID above to view real-time tracking details</p>
+              <div className="flex justify-center gap-4">
+                <Link href="/order-history">
+                  <Button variant="outline">
+                    View Order History
+                  </Button>
+                </Link>
+                <Link href="/">
+                  <Button className="bg-red-600 hover:bg-red-700">
+                    Continue Shopping
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         )}

@@ -117,3 +117,18 @@ export const orderItemsTable = pgTable("order_items", {
 
 export const insertOrderItemSchema = createInsertSchema(orderItemsTable);
 export const selectOrderItemSchema = createSelectSchema(orderItemsTable);
+
+// Order notifications table
+export const orderNotificationsTable = pgTable("order_notifications", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").references(() => ordersTable.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // email, sms, push
+  status: text("status").notNull(), // sent, failed, pending
+  message: text("message").notNull(),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertOrderNotificationSchema = createInsertSchema(orderNotificationsTable);
+export const selectOrderNotificationSchema = createSelectSchema(orderNotificationsTable);

@@ -132,22 +132,3 @@ export const orderNotificationsTable = pgTable("order_notifications", {
 
 export const insertOrderNotificationSchema = createInsertSchema(orderNotificationsTable);
 export const selectOrderNotificationSchema = createSelectSchema(orderNotificationsTable);
-
-// Contact submissions table
-export const contactSubmissionsTable = pgTable("contact_submissions", {
-  id: serial("id").primaryKey(),
-  firstName: varchar("first_name", { length: 100 }).notNull(),
-  lastName: varchar("last_name", { length: 100 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  subject: varchar("subject", { length: 255 }),
-  message: text("message").notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("unread"), // unread, read, responded
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  respondedAt: timestamp("responded_at"),
-});
-
-export const insertContactSubmissionSchema = createInsertSchema(contactSubmissionsTable);
-export const selectContactSubmissionSchema = createSelectSchema(contactSubmissionsTable);
-
-export type ContactSubmission = typeof contactSubmissionsTable.$inferSelect;
-export type InsertContactSubmission = typeof contactSubmissionsTable.$inferInsert;

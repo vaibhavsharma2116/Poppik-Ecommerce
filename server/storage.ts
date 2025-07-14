@@ -6,17 +6,14 @@ import {
   categories, 
   subcategories,
   users,
-  contactSubmissionsTable,
   type Product, 
   type Category, 
   type Subcategory,
   type User,
-  type ContactSubmission,
   type InsertProduct, 
   type InsertCategory, 
   type InsertSubcategory,
-  type InsertUser,
-  type InsertContactSubmission
+  type InsertUser
 } from "@shared/schema";
 import dotenv from "dotenv";
 
@@ -48,11 +45,9 @@ async function getDb() {
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
-  getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
-  updateUserPassword(id: number, hashedPassword: string): Promise<void>;
   deleteUser(id: number): Promise<boolean>;
 
   // Products
@@ -83,13 +78,6 @@ export interface IStorage {
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
   updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
   deleteSubcategory(id: number): Promise<boolean>;
-
-  // Contact Submissions
-  getContactSubmissions(): Promise<ContactSubmission[]>;
-  getContactSubmission(id: number): Promise<ContactSubmission | undefined>;
-  createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission>;
-  updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<ContactSubmission | undefined>;
-  deleteContactSubmission(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -122,17 +110,6 @@ export class DatabaseStorage implements IStorage {
     const db = await getDb();
     const result = await db.delete(users).where(eq(users.id, id)).returning();
     return result.length > 0;
-  }
-
-  async getUserById(id: number): Promise<User | undefined> {
-    const db = await getDb();
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    return result[0];
-  }
-
-  async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
-    const db = await getDb();
-    await db.update(users).set({ password: hashedPassword }).where(eq(users.id, id));
   }
 
   // Products
@@ -360,40 +337,6 @@ export class DatabaseStorage implements IStorage {
   async deleteSubcategory(id: number): Promise<boolean> {
     const db = await getDb();
     const result = await db.delete(subcategories).where(eq(subcategories.id, id)).returning();
-    return result.length > 0;
-  }
-
-  // Contact Submissions
-  async getContactSubmissions(): Promise<ContactSubmission[]> {
-    const db = await getDb();
-    return await db.select().from(contactSubmissionsTable).orderBy(desc(contactSubmissionsTable.createdAt));
-  }
-
-  async getContactSubmission(id: number): Promise<ContactSubmission | undefined> {
-    const db = await getDb();
-    const result = await db.select().from(contactSubmissionsTable).where(eq(contactSubmissionsTable.id, id)).limit(1);
-    return result[0];
-  }
-
-  async createContactSubmission(submissionData: InsertContactSubmission): Promise<ContactSubmission> {
-    const db = await getDb();
-    const result = await db.insert(contactSubmissionsTable).values(submissionData).returning();
-    return result[0];
-  }
-
-  async updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<ContactSubmission | undefined> {
-    const db = await getDb();
-    const updateData: any = { status };
-    if (respondedAt) {
-      updateData.respondedAt = respondedAt;
-    }
-    const result = await db.update(contactSubmissionsTable).set(updateData).where(eq(contactSubmissionsTable.id, id)).returning();
-    return result[0];
-  }
-
-  async deleteContactSubmission(id: number): Promise<boolean> {
-    const db = await getDb();
-    const result = await db.delete(contactSubmissionsTable).where(eq(contactSubmissionsTable.id, id)).returning();
     return result.length > 0;
   }
 }

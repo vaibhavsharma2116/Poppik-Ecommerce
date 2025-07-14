@@ -27,6 +27,9 @@ import AdminOrders from "@/pages/admin/orders";
 import AdminCustomers from "@/pages/admin/customers";
 import AdminSettings from "@/pages/admin/settings";
 import NotFound from "@/pages/not-found";
+import { lazy, Suspense } from 'react';
+
+const AdminReports = lazy(() => import("./pages/admin/reports"));
 
 function Router() {
   return (
@@ -41,6 +44,11 @@ function Router() {
             <Route path="/orders" component={AdminOrders} />
             <Route path="/customers" component={AdminCustomers} />
             <Route path="/settings" component={AdminSettings} />
+            <Route path="/reports">
+              <Suspense fallback={<div className="flex items-center justify-center h-64">Loading reports...</div>}>
+                <AdminReports />
+              </Suspense>
+            </Route>
             <Route component={NotFound} />
           </Switch>
         </AdminLayout>

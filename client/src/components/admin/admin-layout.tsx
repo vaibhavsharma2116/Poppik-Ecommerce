@@ -88,11 +88,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
+      const userStr = localStorage.getItem('user');
 
       // If no token or user data, redirect to login
-      if (!token || !user) {
+      if (!token || !userStr) {
+        console.log('No authentication found, redirecting to login');
         setLocation('/auth/login');
+        return;
+      }
+
+      let user;
+      try {
+        user = JSON.parse(userStr);
+      } catch (error) {
+        console.log('Invalid user data, redirecting to login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setLocation('/auth/login');
+        return;
+      }
+
+      // Check if user is admin
+      if (user.role !== 'admin') {
+        console.log('User is not admin, redirecting to profile');
+        setLocation('/profile');
         return;
       }
 
@@ -105,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         });
 
         if (!response.ok) {
-          // Token is invalid, remove from storage and redirect
+          console.log('Token validation failed, redirecting to login');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setLocation('/auth/login');
@@ -359,19 +378,95 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
             </Button>
 
-            <div className="flex items-center space-x-3 border-l border-slate-200 pl-4">
-              <div className="relative">
-                <div className="w-9 h-9 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center shadow-md">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-              </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium text-slate-900">Admin User</p>
-                <p className="text-xs text-slate-500">Super Admin</p>
-              </div>
-              <ChevronDown className="h-4 w-4 text-slate-400" />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center space-x-3 border-l border-slate-200 pl-4 h-auto p-2">
+                  <div className="relative">
+                    <div className="w-9 h-9 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center shadow-md">
+                      {(() => {
+                        const userStr = localStorage.getItem('user');
+                        if (userStr) {
+                          try {
+                            const user = JSON.parse(userStr);
+                            if (user.firstName && user.lastName) {
+                              return (
+                                <span className="text-white text-sm font-medium">
+                                  {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                                </span>
+                              );
+                            } else if (user.name) {
+                              const names = user.name.split(' ');
+                              return (
+                                <span className="text-white text-sm font-medium">
+                                  {names[0].charAt(0)}{names[1] ? names[1].charAt(0) : ''}
+                                </span>
+                              );
+                            } else if (user.email) {
+                              return (
+                                <span className="text-white text-sm font-medium">
+                                  {user.email.charAt(0).toUpperCase()}
+                                </span>
+                              );
+                            }
+                          } catch (error) {
+                            // fallback to icon
+                          }
+                        }
+                        return <User className="h-5 w-5 text-white" />;
+                      })()}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                  </div>
+                  <div className="hidden md:block text-left">
+                    <p className="text-sm font-medium text-slate-900">
+                      {(() => {
+                        const userStr = localStorage.getItem('user');
+                        if (userStr) {
+                          try {
+                            const user = JSON.parse(userStr);
+                            return user.firstName && user.lastName 
+                              ? `${user.firstName} ${user.lastName}`
+                              : user.name || user.email || 'Admin User';
+                          } catch (error) {
+                            return 'Admin User';
+                          }
+                        }
+                        return 'Admin User';
+                      })()}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {(() => {
+                        const userStr = localStorage.getItem('user');
+                        if (userStr) {
+                          try {
+                            const user = JSON.parse(userStr);
+                            return user.role === 'admin' ? 'Super Admin' : 'Admin';
+                          } catch (error) {
+                            return 'Admin';
+                          }
+                        }
+                        return 'Admin';
+                      })()}
+                    </p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 

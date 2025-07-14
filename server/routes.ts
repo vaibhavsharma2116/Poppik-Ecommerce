@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET || "your-secret-key",
         { expiresIn: "24h" }
       );
@@ -139,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET || "your-secret-key",
         { expiresIn: "24h" }
       );
@@ -872,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderId: createdOrders[2].id,
           productId: 4,
           productName: 'Hyaluronic Acid Serum',
-          productImage: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+          productImage: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
           quantity: 2,
           price: '₹799',
         }
@@ -1598,7 +1598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // In a real application, you would also:
-      // // 1. Send an email notification to your support team
+      // // 1. Send anemail notification to your support team
       // 2. Send a confirmation email to the customer
 
       res.json({ 
@@ -2047,21 +2047,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/validate", (req, res) => {
     try {
       const authHeader = req.headers.authorization;
-      
+
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ error: "No valid token provided" });
       }
 
       const token = authHeader.substring(7);
-      
-      // In a real application, you would verify the JWT token here
-      // For now, we'll just check if the token exists
-      if (!token) {
+
+      // Verify JWT token
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+        res.json({ valid: true, message: "Token is valid", user: decoded });
+      } catch (jwtError) {
         return res.status(401).json({ error: "Invalid token" });
       }
-
-      // Token is valid
-      res.json({ valid: true, message: "Token is valid" });
     } catch (error) {
       console.error("Token validation error:", error);
       res.status(401).json({ error: "Token validation failed" });
@@ -2122,7 +2121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let orders = [];
       try {
         const allOrders = await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
-        
+
         orders = await Promise.all(
           allOrders.filter(order => {
             const orderId = `ORD-${order.id.toString().padStart(3, '0')}`;

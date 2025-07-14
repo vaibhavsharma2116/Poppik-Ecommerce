@@ -36,7 +36,12 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(data.user));
         
         alert("Login successful!");
-        window.location.href = "/profile"; // Redirect to profile
+        // Redirect based on user role
+        if (data.user.role === "admin") {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/profile";
+        } 
       } else {
         alert(data.error || "Invalid credentials");
       }

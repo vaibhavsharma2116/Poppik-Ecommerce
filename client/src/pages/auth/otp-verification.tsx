@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Phone, RefreshCw } from "lucide-react";
@@ -9,16 +8,18 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useToast } from "@/hooks/use-toast";
 
 interface OTPVerificationProps {
-  mobile?: string;
-  onVerified?: (mobile: string) => void;
+  email?: string;
+  onVerified?: (email: string) => void;
 }
 
-export default function OTPVerification({ mobile: propMobile, onVerified }: OTPVerificationProps) {
-  const [mobile, setMobile] = useState(propMobile || "");
+export default function OTPVerification({ email: propEmail, onVerified }: OTPVerificationProps) {
+  const [email, setEmail] = useState(propEmail || "");
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [currentOTP, setCurrentOTP] = useState<string>("");
+  const [showDevOTP, setShowDevOTP] = useState(false);
   const { toast } = useToast();
 
   // Countdown timer for resend
@@ -29,11 +30,25 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
     }
   }, [countdown]);
 
+  // Fetch current OTP for development
+  const fetchCurrentOTP = async () => {
+    try {
+      const response = await fetch(`/api/auth/get-otp/${email}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentOTP(data.otp);
+        setShowDevOTP(true);
+      }
+    } catch (error) {
+      console.log("Could not fetch OTP for development");
+    }
+  };
+
   const sendOTP = async () => {
-    if (!mobile) {
+    if (!email) {
       toast({
         title: "Error",
-        description: "Please enter mobile number",
+        description: "Please enter email address",
         variant: "destructive",
       });
       return;
@@ -41,12 +56,12 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
 
     setIsResending(true);
     try {
-      const response = await fetch("/api/auth/send-otp", {
+      const response = await fetch("http://localhost:5005/api/auth/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ mobile }),
+        body: JSON.stringify({ email }),
       });
 
       // Check if response is JSON
@@ -60,9 +75,14 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
       if (response.ok) {
         toast({
           title: "Success",
-          description: "OTP sent to your mobile number",
+          description: "OTP generated successfully!",
         });
         setCountdown(60); // 60 seconds countdown
+
+        // Fetch the OTP for development display
+        setTimeout(() => {
+          fetchCurrentOTP();
+        }, 1000);
       } else {
         toast({
           title: "Error",
@@ -83,7 +103,7 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
   };
 
   const verifyOTP = async () => {
-    if (!mobile || !otp || otp.length !== 6) {
+    if (!email || !otp || otp.length !== 6) {
       toast({
         title: "Error",
         description: "Please enter valid 6-digit OTP",
@@ -94,12 +114,12 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/verify-otp", {
+      const response = await fetch("http://localhost:5005/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ mobile, otp }),
+        body: JSON.stringify({ email, otp }),
       });
 
       // Check if response is JSON
@@ -113,11 +133,11 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
       if (response.ok && data.verified) {
         toast({
           title: "Success",
-          description: "Mobile number verified successfully",
+          description: "Email address verified successfully",
         });
-        
+
         if (onVerified) {
-          onVerified(mobile);
+          onVerified(email);
         } else {
           // Redirect to login or signup completion
           window.location.href = "/auth/login";
@@ -148,25 +168,43 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
           <Link href="/">
             <h1 className="text-3xl font-bold text-red-600 mb-2">Poppik</h1>
           </Link>
-          <p className="text-gray-600">Verify your mobile number</p>
+          <p className="text-gray-600">Verify your email address</p>
         </div>
 
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">OTP Verification</CardTitle>
             <CardDescription className="text-center">
-              Enter the 6-digit code sent to your mobile number
+              Enter the 6-digit code sent to your email address
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Mobile Number Display */}
+            {/* Email Display */}
+            {/* Email Number Display */}
             <div className="space-y-2">
-              <Label>Mobile Number</Label>
+              <Label>Email Address</Label>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <Phone className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">+91 {mobile}</span>
+                <span className="font-medium">{email}</span>
               </div>
             </div>
+
+            {/* Development OTP Display */}
+            {showDevOTP && currentOTP && (
+              <div className="space-y-2">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-blue-600 font-medium mb-2">
+                    🔐 Development Mode - Your OTP:
+                  </p>
+                  <p className="text-2xl font-bold text-blue-800 tracking-wider">
+                    {currentOTP}
+                  </p>
+                  <p className="text-xs text-blue-500 mt-2">
+                    (This is shown because no SMS service is configured)
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* OTP Input */}
             <div className="space-y-4">
@@ -187,6 +225,19 @@ export default function OTPVerification({ mobile: propMobile, onVerified }: OTPV
                   </InputOTPGroup>
                 </InputOTP>
               </div>
+              {showDevOTP && currentOTP && (
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setOtp(currentOTP)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    Auto-fill OTP
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Verify Button */}

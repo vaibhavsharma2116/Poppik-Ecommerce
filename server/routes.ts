@@ -153,24 +153,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Logged out successfully" });
   });
 
+  // Development endpoint to get current OTP (remove in production)
+  app.get("/api/auth/get-otp/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      // Only allow in development
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ error: "This endpoint is not available in production" });
+      }
+      
+      const otpData = OTPService['otpStorage']?.get(email);
+      
+      if (!otpData) {
+        return res.status(404).json({ error: "No OTP found for this email address" });
+      }
+      
+      if (new Date() > otpData.expiresAt) {
+        return res.status(410).json({ error: "OTP has expired" });
+      }
+      
+      res.json({ 
+        email, 
+        otp: otpData.otp, 
+        expiresAt: otpData.expiresAt,
+        timeLeft: Math.ceil((otpData.expiresAt.getTime() - Date.now()) / 1000)
+      });
+    } catch (error) {
+      console.error("Get OTP error:", error);
+      res.status(500).json({ error: "Failed to get OTP" });
+    }
+  });
+
   // OTP routes
   app.post("/api/auth/send-otp", async (req, res) => {
     try {
       console.log("Send OTP request received:", req.body);
       
-      const { mobile } = req.body;
+      const { email } = req.body;
 
-      if (!mobile) {
-        return res.status(400).json({ error: "Mobile number is required" });
+      if (!email) {
+        return res.status(400).json({ error: "Email address is required" });
       }
 
-      // Validate mobile number format (Indian format)
-      const mobileRegex = /^[6-9]\d{9}$/;
-      if (!mobileRegex.test(mobile)) {
-        return res.status(400).json({ error: "Invalid mobile number format" });
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Invalid email address format" });
       }
 
-      const result = await OTPService.sendOTP(mobile);
+      const result = await OTPService.sendOTP(email);
       
       console.log("OTP send result:", result);
       
@@ -189,13 +221,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Verify OTP request received:", req.body);
       
-      const { mobile, otp } = req.body;
+      const { email, otp } = req.body;
 
-      if (!mobile || !otp) {
-        return res.status(400).json({ error: "Mobile number and OTP are required" });
+      if (!email || !otp) {
+        return res.status(400).json({ error: "Email address and OTP are required" });
       }
 
-      const result = await OTPService.verifyOTP(mobile, otp);
+      const result = await OTPService.verifyOTP(email, otp);
       
       console.log("OTP verify result:", result);
       

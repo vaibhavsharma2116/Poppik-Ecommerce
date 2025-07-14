@@ -1,5 +1,5 @@
-
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 interface OTPData {
   otp: string;
@@ -12,34 +12,59 @@ interface OTPData {
 const otpStorage = new Map<string, OTPData>();
 
 export class OTPService {
+  // Expose storage for development endpoint access
+  static get otpStorage() {
+    return otpStorage;
+  }
+
+  // Create email transporter
+  private static createTransporter() {
+    return nodemailer.createTransporter({
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.EMAIL_PORT || '587'),
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+
   private static generateOTP(): string {
+    if (process.env.STATIC_OTP === 'true') {
+      return '123456'; // Use static OTP for testing
+    }
     return crypto.randomInt(100000, 999999).toString();
   }
 
-  static async sendOTP(mobile: string): Promise<{ success: boolean; message: string }> {
+  static async sendOTP(email: string): Promise<{ success: boolean; message: string }> {
     try {
       // Generate 6-digit OTP
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
       // Store OTP
-      otpStorage.set(mobile, {
+      otpStorage.set(email, {
         otp,
-        mobile,
+        mobile: email, // Using email field for consistency
         expiresAt,
         verified: false
       });
 
-      // In production, integrate with SMS service like Twilio, MSG91, etc.
-      // For development, we'll just log the OTP
-      console.log(`OTP for ${mobile}: ${otp}`);
-      
-      // Simulate SMS sending
-      // await this.sendSMS(mobile, `Your OTP is: ${otp}. Valid for 5 minutes.`);
+      // Send OTP via email
+      const emailSent = await this.sendEmail(email, otp);
+
+      if (!emailSent) {
+        console.error('Failed to send OTP email');
+        return {
+          success: false,
+          message: 'Failed to send OTP email'
+        };
+      }
 
       return {
         success: true,
-        message: 'OTP sent successfully'
+        message: 'OTP sent to your email successfully'
       };
     } catch (error) {
       console.error('Error sending OTP:', error);
@@ -50,8 +75,8 @@ export class OTPService {
     }
   }
 
-  static async verifyOTP(mobile: string, otp: string): Promise<{ success: boolean; message: string }> {
-    const otpData = otpStorage.get(mobile);
+  static async verifyOTP(email: string, otp: string): Promise<{ success: boolean; message: string }> {
+    const otpData = otpStorage.get(email);
 
     if (!otpData) {
       return {
@@ -61,7 +86,7 @@ export class OTPService {
     }
 
     if (new Date() > otpData.expiresAt) {
-      otpStorage.delete(mobile);
+      otpStorage.delete(email);
       return {
         success: false,
         message: 'OTP has expired'
@@ -77,7 +102,7 @@ export class OTPService {
 
     // Mark as verified
     otpData.verified = true;
-    otpStorage.set(mobile, otpData);
+    otpStorage.set(email, otpData);
 
     return {
       success: true,
@@ -85,29 +110,91 @@ export class OTPService {
     };
   }
 
-  static isVerified(mobile: string): boolean {
-    const otpData = otpStorage.get(mobile);
+  static isVerified(email: string): boolean {
+    const otpData = otpStorage.get(email);
     return otpData?.verified === true;
   }
 
-  static clearOTP(mobile: string): void {
-    otpStorage.delete(mobile);
+  static clearOTP(email: string): void {
+    otpStorage.delete(email);
   }
 
-  // For production, implement actual SMS sending
-  private static async sendSMS(mobile: string, message: string): Promise<void> {
-    // Example integration with MSG91 or Twilio
-    // const response = await fetch('https://api.msg91.com/api/v5/otp', {
-    //   method: 'POST',
-    //   headers: {
-    //     'authkey': process.env.MSG91_API_KEY,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify({
-    //     template_id: process.env.MSG91_TEMPLATE_ID,
-    //     mobile: mobile,
-    //     otp: otp
-    //   })
-    // });
+  // Email-based OTP system using Nodemailer
+  private static async sendEmail(email: string, otp: string): Promise<boolean> {
+    try {
+      const transporter = this.createTransporter();
+
+      // Verify connection configuration
+      await transporter.verify();
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your OTP Code - Beauty Store',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">Beauty Store</h1>
+              <p style="color: white; margin: 5px 0; opacity: 0.9;">Your OTP Verification Code</p>
+            </div>
+            
+            <div style="padding: 30px; background: #f8f9fa;">
+              <h2 style="color: #333; margin-bottom: 20px;">Hello!</h2>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                You requested an OTP for verification. Please use the code below to complete your action:
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <div style="background: #e74c3c; color: white; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 8px; display: inline-block;">
+                  ${otp}
+                </div>
+              </div>
+              
+              <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #856404; font-size: 14px;">
+                  <strong>⏰ Important:</strong> This OTP is valid for 5 minutes only.
+                </p>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; line-height: 1.6;">
+                If you didn't request this OTP, please ignore this email. For security reasons, please do not share this code with anyone.
+              </p>
+              
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+              
+              <div style="text-align: center; color: #999; font-size: 12px;">
+                <p>Beauty Store - Premium Beauty & Skincare Products</p>
+                <p>Generated at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+              </div>
+            </div>
+          </div>
+        `,
+        text: `
+Your OTP Code: ${otp}
+
+This code is valid for 5 minutes only.
+Generated at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+
+Beauty Store - Premium Beauty & Skincare Products
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      // Also log to console for development
+      console.log('\n' + '='.repeat(50));
+      console.log('📧 EMAIL OTP SENT');
+      console.log('='.repeat(50));
+      console.log(`📧 Email: ${email}`);
+      console.log(`🔐 OTP Code: ${otp}`);
+      console.log(`⏰ Valid for: 5 minutes`);
+      console.log(`📅 Generated at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+      console.log('='.repeat(50) + '\n');
+
+      return true;
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      return false;
+    }
   }
 }

@@ -103,11 +103,29 @@ export default function ChangePassword() {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // For demo purposes, we'll just show success
-      // In a real app, you would make an API call here
+      const user = localStorage.getItem("user");
+      if (!user) {
+        throw new Error("User not found. Please log in again.");
+      }
+
+      const userData = JSON.parse(user);
+      const response = await fetch(`/api/users/${userData.id}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
+
       setSuccess(true);
       toast({
         title: "Password Changed",
@@ -123,7 +141,7 @@ export default function ChangePassword() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to change password. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to change password. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
   id: number;
@@ -19,6 +23,14 @@ interface UserProfile {
 export default function Profile() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Get user data from localStorage
@@ -55,6 +67,92 @@ export default function Profile() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleEditProfile = () => {
+    if (user) {
+      setEditFormData({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone || ''
+      });
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      // First, test if the API is reachable
+      console.log('Testing API connection...');
+      const healthResponse = await fetch('/api/health');
+      if (!healthResponse.ok) {
+        throw new Error('API server is not reachable');
+      }
+      const healthData = await healthResponse.json();
+      console.log('API health check:', healthData);
+      
+      console.log('Updating profile for user:', user.id);
+      console.log('Profile data:', editFormData);
+      const requestData = {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        phone: editFormData.phone
+      };
+      
+      console.log('Sending PUT request to:', `/api/users/${user.id}`);
+      console.log('Request data:', requestData);
+      
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Server returned non-JSON response:", text);
+        console.error("This usually means the API route is not being handled by the server");
+        throw new Error("API server error: The profile update endpoint is not responding correctly");
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      const data = await response.json();
+      const updatedUser = data.user || data;
+      
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated.",
+      });
+      
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error("Profile update error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) {
@@ -121,7 +219,7 @@ export default function Profile() {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => alert("Edit profile feature coming soon!")}
+                  onClick={handleEditProfile}
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
@@ -231,6 +329,60 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                value={editFormData.firstName}
+                onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                placeholder="Enter your first name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                value={editFormData.lastName}
+                onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                placeholder="Enter your last name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                placeholder="Enter your phone number"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveProfile} 
+              disabled={isSaving}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

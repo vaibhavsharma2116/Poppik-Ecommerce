@@ -10,7 +10,15 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"updated_at" timestamp DEFAULT now(),
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
-
+CREATE TABLE contacts (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE "order_notifications" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"order_id" integer NOT NULL,

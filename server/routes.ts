@@ -51,6 +51,15 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "OK", 
+      message: "API server is running",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {
     try {
@@ -150,6 +159,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/logout", (req, res) => {
     res.json({ message: "Logged out successfully" });
+  });
+
+  // Profile update endpoint
+  app.put("/api/users/:id", async (req, res) => {
+    try {
+      console.log(`PUT /api/users/${req.params.id} - Request received`);
+      console.log('Request body:', req.body);
+      console.log('Request headers:', req.headers);
+      
+      // Set content type to ensure JSON response
+      res.setHeader('Content-Type', 'application/json');
+      
+      const { id } = req.params;
+      const { firstName, lastName, phone } = req.body;
+
+      console.log(`Updating user ${id} with:`, { firstName, lastName, phone });
+
+      // Validation
+      if (!firstName || !lastName) {
+        return res.status(400).json({ error: "First name and last name are required" });
+      }
+
+      // Validate ID
+      const userId = parseInt(id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+
+      // Update user in database
+      const updatedUser = await storage.updateUser(userId, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone ? phone.trim() : null
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      console.log("User updated successfully:", updatedUser);
+
+      // Return updated user data (without password)
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json({
+        message: "Profile updated successfully",
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error("Profile update error:", error);
+      res.status(500).json({ error: "Failed to update profile", details: error.message });
+    }
+  });
+
+  // Change password endpoint
+  app.put("/api/users/:id/password", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { currentPassword, newPassword } = req.body;
+
+      // Validation
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "New password must be at least 6 characters" });
+      }
+
+      // Get user
+      const user = await storage.getUserById(parseInt(id));
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check current password
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password
+      await storage.updateUserPassword(parseInt(id), hashedNewPassword);
+
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error("Password change error:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
   });
 
   
@@ -1136,6 +1236,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       default: return 0;
     }
   }
+
+  // Contact form submission endpoint
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { firstName, lastName, email, subject, message } = req.body;
+
+      // Validation
+      if (!firstName || !lastName || !email || !message) {
+        return res.status(400).json({ error: "All required fields must be provided" });
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Please provide a valid email address" });
+      }
+
+      // Save contact form submission to database
+      const submissionData = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        subject: subject ? subject.trim() : null,
+        message: message.trim(),
+        status: "unread"
+      };
+
+      const savedSubmission = await storage.createContactSubmission(submissionData);
+
+      console.log("Contact form submission saved:", {
+        id: savedSubmission.id,
+        firstName,
+        lastName,
+        email,
+        subject: subject || "General Inquiry",
+        timestamp: savedSubmission.createdAt
+      });
+
+      // In a real application, you would also:
+      // 1. Send an email notification to your support team
+      // 2. Send a confirmation email to the customer
+      
+      res.json({ 
+        message: "Thank you for your message! We'll get back to you within 24 hours.",
+        success: true,
+        submissionId: savedSubmission.id
+      });
+    } catch (error) {
+      console.error("Contact form submission error:", error);
+      res.status(500).json({ error: "Failed to submit contact form" });
+    }
+  });
+
+  // Contact submissions management endpoints (Admin)
+  app.get("/api/admin/contact-submissions", async (req, res) => {
+    try {
+      const submissions = await storage.getContactSubmissions();
+      res.json(submissions);
+    } catch (error) {
+      console.error("Error fetching contact submissions:", error);
+      res.status(500).json({ error: "Failed to fetch contact submissions" });
+    }
+  });
+
+  app.get("/api/admin/contact-submissions/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const submission = await storage.getContactSubmission(parseInt(id));
+      if (!submission) {
+        return res.status(404).json({ error: "Contact submission not found" });
+      }
+      res.json(submission);
+    } catch (error) {
+      console.error("Error fetching contact submission:", error);
+      res.status(500).json({ error: "Failed to fetch contact submission" });
+    }
+  });
+
+  app.put("/api/admin/contact-submissions/:id/status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!["unread", "read", "responded"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be: unread, read, or responded" });
+      }
+
+      const respondedAt = status === "responded" ? new Date() : undefined;
+      const updatedSubmission = await storage.updateContactSubmissionStatus(parseInt(id), status, respondedAt);
+
+      if (!updatedSubmission) {
+        return res.status(404).json({ error: "Contact submission not found" });
+      }
+
+      res.json({
+        message: "Contact submission status updated successfully",
+        submission: updatedSubmission
+      });
+    } catch (error) {
+      console.error("Error updating contact submission status:", error);
+      res.status(500).json({ error: "Failed to update contact submission status" });
+    }
+  });
+
+  app.delete("/api/admin/contact-submissions/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteContactSubmission(parseInt(id));
+      if (!success) {
+        return res.status(404).json({ error: "Contact submission not found" });
+      }
+      res.json({ success: true, message: "Contact submission deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting contact submission:", error);
+      res.status(500).json({ error: "Failed to delete contact submission" });
+    }
+  });
 
   // Invoice download endpoint
   app.get("/api/orders/:id/invoice", async (req, res) => {

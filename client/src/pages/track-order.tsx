@@ -428,11 +428,21 @@ export default function TrackOrderPage() {
                       Have questions about your order? We're here to help!
                     </p>
                     <div className="flex flex-col gap-2">
-                      <Button variant="outline" size="sm" className="justify-start">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="justify-start"
+                        onClick={() => window.open('tel:+919876543210', '_self')}
+                      >
                         <Phone className="h-4 w-4 mr-2" />
                         Contact Support
                       </Button>
-                      <Button variant="outline" size="sm" className="justify-start">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="justify-start"
+                        onClick={() => window.open('mailto:support@beautystore.com?subject=Order Support Request - ' + (trackingInfo?.orderId || 'General'), '_blank')}
+                      >
                         <Mail className="h-4 w-4 mr-2" />
                         Email Us
                       </Button>

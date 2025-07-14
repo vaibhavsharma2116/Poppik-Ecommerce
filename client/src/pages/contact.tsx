@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { useToast } from "@/hooks/use-toast";
 
 export default function Contact() {
@@ -22,7 +22,7 @@ export default function Contact() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
@@ -34,20 +34,46 @@ export default function Contact() {
       return;
     }
 
-    // Simulate form submission
-    toast({
-      title: "Message sent successfully!",
-      description: "We'll get back to you within 24 hours.",
-    });
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
 
-    // Reset form
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      subject: "",
-      message: "",
-    });
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Message sent successfully!",
+          description: data.message,
+        });
+
+        // Reset form
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          subject: "",
+          message: "",
+        });
+      } else {
+        toast({
+          title: "Failed to send message",
+          description: data.error || "Please try again later",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Contact form error:", error);
+      toast({
+        title: "Failed to send message",
+        description: "Please check your connection and try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const contactInfo = [
@@ -139,17 +165,13 @@ export default function Contact() {
 
                 <div>
                   <Label htmlFor="subject">Subject</Label>
-                  <Select onValueChange={(value) => handleInputChange("subject", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="product-inquiry">Product Inquiry</SelectItem>
-                      <SelectItem value="skin-consultation">Skin Consultation</SelectItem>
-                      <SelectItem value="order-support">Order Support</SelectItem>
-                      <SelectItem value="general">General Question</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="subject"
+                    type="text"
+                    value={formData.subject}
+                    onChange={(e) => handleInputChange("subject", e.target.value)}
+                    placeholder="Enter your subject"
+                  />
                 </div>
 
                 <div>

@@ -1,28 +1,40 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'wouter';
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from "react";
+import { useLocation, Link } from "wouter";
 import { 
   LayoutDashboard, 
   Package, 
   ShoppingCart, 
   Users, 
-  Settings, 
-  LogOut,
+  Settings,
+  FolderTree,
   Menu,
+  X,
   Search,
   Bell,
-  Moon,
-  Sun,
-  ChevronDown,
   User,
-  Shield,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Sun,
+  Moon,
   Activity,
-  TrendingUp,
-  FolderTree
+  ChevronDown
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import AdminSearchCommand from "./admin-search-command";
+import { cn } from "@/lib/utils";
 
 const sidebarItems = [
   {
@@ -66,12 +78,167 @@ const sidebarItems = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(true);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+
+      // If no token or user data, redirect to login
+      if (!token || !user) {
+        setLocation('/auth/login');
+        return;
+      }
+
+      try {
+        // Validate token with server
+        const response = await fetch('/api/auth/validate', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          // Token is invalid, remove from storage and redirect
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setLocation('/auth/login');
+          return;
+        }
+
+        // User is authenticated
+        setIsAuthenticating(false);
+      } catch (error) {
+        console.error('Auth validation error:', error);
+        // On error, remove token and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setLocation('/auth/login');
+      }
+    };
+
+    checkAuth();
+  }, [setLocation]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setLocation('/auth/login');
+  };
+
+  // Global keyboard shortcut for search
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Debug function to check search dialog state
+  const handleSearchClick = () => {
+    console.log('Search clicked, current state:', isSearchOpen);
+    setIsSearchOpen(true);
+    console.log('Search state after click:', true);
+  };
+
+  // Show loading screen while authenticating
+  if (isAuthenticating) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex h-screen", darkMode ? "dark" : "")}>
+      {/* Mobile sidebar overlay */}
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-slate-600 hover:text-slate-900 md:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0">
+          <div className="flex flex-col h-full bg-gradient-to-b from-slate-900 to-slate-800">
+            {/* Mobile Logo */}
+            <div className="flex items-center justify-center h-20 px-4 border-b border-slate-700/50">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center">
+                  <Activity className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">Beauty Admin</h1>
+                  <p className="text-xs text-slate-400">v2.0 Dashboard</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Navigation */}
+            <nav className="flex-1 px-3 py-6 space-y-1">
+              {sidebarItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location === item.href;
+
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      "group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200",
+                      isActive
+                        ? "bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-white border border-pink-500/30 shadow-lg"
+                        : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                    )}
+                  >
+                    <Icon className={cn("flex-shrink-0 transition-colors w-5 h-5 mr-4")} />
+                    <span className="flex-1">{item.title}</span>
+                    {item.badge && (
+                      <Badge variant="secondary" className="ml-auto bg-slate-700 text-slate-300 text-xs">
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Mobile Footer */}
+            <div className="px-3 py-4 border-t border-slate-700/50">
+              <Button
+                variant="ghost"
+                onClick={handleLogout}
+                className="w-full text-slate-300 hover:bg-slate-700/50 hover:text-white justify-start"
+              >
+                <LogOut className="transition-colors w-4 h-4 mr-3" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Sidebar */}
       <div className={cn(
         "flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 shadow-2xl transition-all duration-300",
@@ -132,7 +299,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Footer */}
         <div className="px-3 py-4 border-t border-slate-700/50">
           <Button 
-            variant="ghost" 
+            variant="ghost"
+            onClick={handleLogout}
             className={cn(
               "w-full text-slate-300 hover:bg-slate-700/50 hover:text-white",
               sidebarCollapsed ? "px-3" : "justify-start"
@@ -158,11 +326,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Menu className="h-5 w-5" />
             </Button>
 
-            <div className="relative hidden md:block">
+            {/* Search Bar */}
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search anything..."
-                className="pl-10 w-64 bg-slate-100/50 border-slate-200 focus:bg-white"
+                placeholder="Search products, orders, customers... (Ctrl+K)"
+                className="pl-10 bg-white/80 border-slate-200/60 placeholder:text-slate-400 cursor-pointer"
+                onClick={handleSearchClick}
+                onFocus={(e) => {
+                  e.preventDefault();
+                  e.target.blur();
+                  handleSearchClick();
+                }}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    setIsSearchOpen(true);
+                  }
+                }}
+                readOnly
               />
             </div>
           </div>
@@ -197,6 +379,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100/50">
           {children}
         </main>
+
+        {/* Global Search Command */}
+        <AdminSearchCommand 
+          open={isSearchOpen} 
+          onOpenChange={setIsSearchOpen} 
+        />
       </div>
     </div>
   );

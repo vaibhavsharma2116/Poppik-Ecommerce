@@ -7,7 +7,7 @@ import fs from "fs";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, gte, lte, like, isNull, asc, or, sql } from "drizzle-orm";
 import { Pool } from "pg";
 import { ordersTable, orderItemsTable, users } from "../shared/schema";
 
@@ -167,10 +167,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`PUT /api/users/${req.params.id} - Request received`);
       console.log('Request body:', req.body);
       console.log('Request headers:', req.headers);
-      
+
       // Set content type to ensure JSON response
       res.setHeader('Content-Type', 'application/json');
-      
+
       const { id } = req.params;
       const { firstName, lastName, phone } = req.body;
 
@@ -252,7 +252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  
+
 
   // Serve uploaded images
   app.use("/api/images", (req, res, next) => {
@@ -665,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Here you would typically send an email notification
       // For now, we'll just log it
       console.log(`Sending ${status} notification to ${user[0].email} for order ORD-${orderId}`);
-      
+
       // You can integrate with email services like SendGrid, Mailgun, etc.
       // Example notification content based on status
       const notifications = {
@@ -787,7 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders/sample", async (req, res) => {
     try {
       const { userId } = req.body;
-      
+
       if (!userId) {
         return res.status(400).json({ error: "User ID is required" });
       }
@@ -891,22 +891,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req, res) => {
     try {
       console.log("Received order data:", req.body);
-      
+
       const { userId, totalAmount, status, paymentMethod, shippingAddress, items } = req.body;
 
       // Validate required fields
       if (!userId) {
         return res.status(400).json({ error: "User ID is required" });
       }
-      
+
       if (!totalAmount || isNaN(Number(totalAmount))) {
         return res.status(400).json({ error: "Valid total amount is required" });
       }
-      
+
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "Order items are required" });
       }
-      
+
       if (!shippingAddress) {
 
   // Create sample orders for all users (for testing)
@@ -914,7 +914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get all users
       const allUsers = await db.select().from(users);
-      
+
       if (allUsers.length === 0) {
         return res.status(400).json({ error: "No users found. Please create a user account first." });
       }
@@ -1141,7 +1141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const orderData = order[0];
-      
+
       // Generate tracking timeline based on order status
       const trackingTimeline = generateTrackingTimeline(orderData.status, orderData.createdAt, orderData.estimatedDelivery);
 
@@ -1256,7 +1256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { name: 'Rahul Kumar', email: 'rahul@example.com', phone: '+91 65432 10987' },
       { name: 'Ananya Singh', email: 'ananya@example.com', phone: '+91 54321 09876' }
     ];
-    
+
     const products = [
       { name: 'Vitamin C Face Serum', price: '₹699', image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300' },
       { name: 'Hair Growth Serum', price: '₹599', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300' },
@@ -1267,31 +1267,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const orders = [];
     const now = new Date();
-    
+
     // Generate orders for the past year
     for (let i = 0; i < 50; i++) {
       const customer = customers[Math.floor(Math.random() * customers.length)];
       const status = statuses[Math.floor(Math.random() * statuses.length)];
       const orderDate = new Date(now.getTime() - Math.random() * 365 * 24 * 60 * 60 * 1000);
-      
+
       // Generate 1-3 products per order
       const orderProducts = [];
       const numProducts = Math.floor(Math.random() * 3) + 1;
       let totalAmount = 0;
-      
+
       for (let j = 0; j < numProducts; j++) {
         const product = products[Math.floor(Math.random() * products.length)];
         const quantity = Math.floor(Math.random() * 3) + 1;
         const price = parseInt(product.price.replace(/[₹,]/g, ''));
-        
+
         orderProducts.push({
           ...product,
           quantity,
         });
-        
+
         totalAmount += price * quantity;
       }
-      
+
       orders.push({
         id: `ORD-${(i + 1).toString().padStart(3, '0')}`,
         customer: {
@@ -1313,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         shippingAddress: `${customer.name}, ${Math.floor(Math.random() * 999) + 1} Sample Street, Mumbai, Maharashtra 400001`,
       });
     }
-    
+
     return orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
@@ -1456,7 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const orderCount = userOrders.length;
           const totalSpent = userOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-          
+
           // Determine customer status based on orders and total spent
           let status = 'New';
           if (orderCount === 0) {
@@ -1493,7 +1493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/customers/:id", async (req, res) => {
     try {
       const customerId = parseInt(req.params.id);
-      
+
       // Get user details
       const user = await db
         .select({
@@ -1598,9 +1598,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // In a real application, you would also:
-      // 1. Send an email notification to your support team
+      // // 1. Send an email notification to your support team
       // 2. Send a confirmation email to the customer
-      
+
       res.json({ 
         message: "Thank you for your message! We'll get back to you within 24 hours.",
         success: true,
@@ -1730,7 +1730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set headers for file download
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="Invoice-ORD-${order[0].id.toString().padStart(3, '0')}.html"`);
-      
+
       res.send(invoiceHtml);
     } catch (error) {
       console.error("Error generating invoice:", error);
@@ -1744,7 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const price = parseInt(item.price.replace(/[₹,]/g, ""));
       return sum + (price * item.quantity);
     }, 0);
-    
+
     const tax = Math.round(subtotal * 0.18); // 18% GST
     const total = subtotal + tax;
 
@@ -1760,7 +1760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
@@ -1768,7 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             background: #f4f4f4;
             padding: 20px;
         }
-        
+
         .invoice-container {
             max-width: 800px;
             margin: 0 auto;
@@ -1777,27 +1777,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        
+
         .header {
             text-align: center;
             margin-bottom: 40px;
             border-bottom: 2px solid #e74c3c;
             padding-bottom: 20px;
         }
-        
+
         .company-name {
             font-size: 32px;
             font-weight: bold;
             color: #e74c3c;
             margin-bottom: 10px;
         }
-        
+
         .company-details {
             color: #666;
             font-size: 14px;
             line-height: 1.4;
         }
-        
+
         .invoice-title {
             font-size: 28px;
             font-weight: bold;
@@ -1805,30 +1805,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             margin: 30px 0;
             color: #333;
         }
-        
+
         .invoice-info {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 40px;
             margin-bottom: 40px;
         }
-        
+
         .info-section h3 {
             color: #e74c3c;
             font-size: 16px;
             margin-bottom: 15px;
             font-weight: bold;
         }
-        
+
         .info-section p {
             margin-bottom: 8px;
             font-size: 14px;
         }
-        
+
         .customer-info {
             text-align: right;
         }
-        
+
         .status-badge {
             display: inline-block;
             background: #27ae60;
@@ -1839,14 +1839,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             font-weight: bold;
             text-transform: uppercase;
         }
-        
+
         .items-table {
             width: 100%;
             border-collapse: collapse;
             margin: 30px 0;
             font-size: 14px;
         }
-        
+
         .items-table th {
             background: #e74c3c;
             color: white;
@@ -1854,43 +1854,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             text-align: left;
             font-weight: bold;
         }
-        
+
         .items-table td {
             padding: 15px;
             border-bottom: 1px solid #eee;
         }
-        
+
         .items-table tbody tr:nth-child(even) {
             background: #f9f9f9;
         }
-        
+
         .items-table .text-right {
             text-align: right;
         }
-        
+
         .totals {
             margin-top: 30px;
             display: flex;
             justify-content: flex-end;
         }
-        
+
         .totals-table {
             width: 300px;
         }
-        
+
         .totals-table tr {
             border-bottom: 1px solid #eee;
         }
-        
+
         .totals-table td {
             padding: 8px 0;
             font-size: 14px;
         }
-        
+
         .totals-table .text-right {
             text-align: right;
         }
-        
+
         .grand-total {
             font-weight: bold;
             font-size: 18px;
@@ -1898,7 +1898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             border-top: 2px solid #e74c3c !important;
             padding-top: 15px !important;
         }
-        
+
         .footer {
             margin-top: 50px;
             padding-top: 20px;
@@ -1907,11 +1907,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             color: #666;
             font-size: 13px;
         }
-        
+
         .footer p {
             margin-bottom: 8px;
         }
-        
+
         @media print {
             body {
                 background: white;
@@ -1947,7 +1947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
                 ${order.trackingNumber ? `<p><strong>Tracking:</strong> ${order.trackingNumber}</p>` : ''}
             </div>
-            
+
             <div class="info-section customer-info">
                 <h3>Bill To</h3>
                 <p><strong>${customer.firstName} ${customer.lastName}</strong></p>
@@ -2015,6 +2015,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
 </body>
 </html>`;
   }
+
+  app.get("/api/products/featured", async (req, res) => {
+    try {
+      const products = await storage.getFeaturedProducts();
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch featured products" });
+    }
+  });
+
+  app.get("/api/search", async (req, res) => {
+    try {
+      const query = req.query.q;
+
+      if (!query || query.trim().length === 0) {
+        return res.json([]);
+      }
+
+      const products = await storage.searchProducts(query);
+      return res.json(products);
+
+    } catch (error) {
+      console.error("Search error:", error);
+      res.status(500).json({ error: "Failed to perform search" });
+    }
+  });
+
+  // Admin global search endpoint
+  // Token validation endpoint
+  app.get("/api/auth/validate", (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: "No valid token provided" });
+      }
+
+      const token = authHeader.substring(7);
+      
+      // In a real application, you would verify the JWT token here
+      // For now, we'll just check if the token exists
+      if (!token) {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+
+      // Token is valid
+      res.json({ valid: true, message: "Token is valid" });
+    } catch (error) {
+      console.error("Token validation error:", error);
+      res.status(401).json({ error: "Token validation failed" });
+    }
+  });
+
+  app.get("/api/admin/search", async (req, res) => {
+    try {
+      const query = req.query.q;
+
+      if (!query || query.trim().length === 0) {
+        return res.json({ products: [], customers: [], orders: [] });
+      }
+
+      const searchTerm = query.toString().toLowerCase();
+
+      // Search products
+      let products = [];
+      try {
+        const allProducts = await storage.getProducts();
+        products = allProducts.filter(product => 
+          product.name.toLowerCase().includes(searchTerm) ||
+          product.category.toLowerCase().includes(searchTerm) ||
+          (product.subcategory && product.subcategory.toLowerCase().includes(searchTerm)) ||
+          (product.tags && product.tags.toLowerCase().includes(searchTerm))
+        ).slice(0, 5);
+      } catch (error) {
+        console.log("Products search failed, using empty array");
+      }
+
+      // Search customers
+      let customers = [];
+      try {
+        const allUsers = await db.select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          phone: users.phone,
+        }).from(users);
+
+        customers = allUsers.filter(user => 
+          user.firstName.toLowerCase().includes(searchTerm) ||
+          user.lastName.toLowerCase().includes(searchTerm) ||
+          user.email.toLowerCase().includes(searchTerm) ||
+          `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm)
+        ).map(user => ({
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          phone: user.phone || 'N/A'
+        })).slice(0, 5);
+      } catch (error) {
+        console.log("Customers search failed, using empty array");
+      }
+
+      // Search orders
+      let orders = [];
+      try {
+        const allOrders = await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
+        
+        orders = await Promise.all(
+          allOrders.filter(order => {
+            const orderId = `ORD-${order.id.toString().padStart(3, '0')}`;
+            return orderId.toLowerCase().includes(searchTerm) ||
+                   order.status.toLowerCase().includes(searchTerm);
+          }).slice(0, 5).map(async (order) => {
+            // Get user info for the order
+            const user = await db
+              .select({
+                firstName: users.firstName,
+                lastName: users.lastName,
+                email: users.email,
+              })
+              .from(users)
+              .where(eq(users.id, order.userId))
+              .limit(1);
+
+            const userData = user[0] || { firstName: 'Unknown', lastName: 'Customer', email: 'unknown@email.com' };
+
+            return {
+              id: `ORD-${order.id.toString().padStart(3, '0')}`,
+              customerName: `${userData.firstName} ${userData.lastName}`,
+              customerEmail: userData.email,
+              date: order.createdAt.toISOString().split('T')[0],
+              status: order.status,
+              total: `₹${order.totalAmount}`
+            };
+          })
+        );
+      } catch (error) {
+        console.log("Orders search failed, using empty array");
+      }
+
+      res.json({ products, customers, orders });
+    } catch (error) {
+      console.error("Admin search error:", error);
+      res.status(500).json({ error: "Failed to perform admin search" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

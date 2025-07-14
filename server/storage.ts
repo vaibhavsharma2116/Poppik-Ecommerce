@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Pool } from "pg";
 import { 
   products, 
@@ -338,6 +338,58 @@ export class DatabaseStorage implements IStorage {
     const db = await getDb();
     const result = await db.delete(subcategories).where(eq(subcategories.id, id)).returning();
     return result.length > 0;
+  }
+
+  async searchProducts(query: string): Promise<Product[]> {
+    const db = await getDb();
+    const searchTerm = `%${query.toLowerCase()}%`;
+    
+    // Using SQL LIKE for case-insensitive search
+    const result = await db.select().from(products).where(
+      sql`LOWER(${products.name}) LIKE ${searchTerm} 
+          OR LOWER(${products.category}) LIKE ${searchTerm} 
+          OR LOWER(${products.subcategory}) LIKE ${searchTerm}
+          OR LOWER(${products.tags}) LIKE ${searchTerm}`
+    ).limit(10);
+    
+    return result;
+  }
+
+  async getUserById(id: number): Promise<User | undefined> {
+    const db = await getDb();
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async updateUserPassword(id: number, hashedPassword: string): Promise<boolean> {
+    const db = await getDb();
+    const result = await db.update(users).set({ password: hashedPassword }).where(eq(users.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async createContactSubmission(submissionData: any): Promise<any> {
+    // Placeholder for contact submission - would need a table for this
+    return { id: 1, ...submissionData, createdAt: new Date() };
+  }
+
+  async getContactSubmissions(): Promise<any[]> {
+    // Placeholder for contact submissions
+    return [];
+  }
+
+  async getContactSubmission(id: number): Promise<any> {
+    // Placeholder for single contact submission
+    return null;
+  }
+
+  async updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<any> {
+    // Placeholder for updating contact submission status
+    return null;
+  }
+
+  async deleteContactSubmission(id: number): Promise<boolean> {
+    // Placeholder for deleting contact submission
+    return false;
   }
 }
 

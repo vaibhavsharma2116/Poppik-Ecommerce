@@ -21,6 +21,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchCommandOpen, setIsSearchCommandOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -138,6 +139,22 @@ export default function Layout({ children }: LayoutProps) {
     if (href === "/") return location === "/";
     return location.startsWith(href);
   };
+
+  useEffect(() => {
+    setIsSearchOpen(false);
+  }, [location]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchCommandOpen(true);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -306,6 +323,12 @@ export default function Layout({ children }: LayoutProps) {
               </Sheet>
             </div>
           </div>
+
+          {/* Search Command */}
+          {/* <SearchCommand
+            open={isSearchCommandOpen}
+            onOpenChange={setIsSearchCommandOpen}
+          /> */}
 
           {/* Mobile Search Bar */}
           {isSearchOpen && (

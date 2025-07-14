@@ -10,12 +10,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProductCard from "@/components/product-card";
 import type { Product } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProductDetail() {
   const [, params] = useRoute("/product/:slug");
   const productSlug = params?.slug || "";
   const [isInWishlist, setIsInWishlist] = useState(false);
-  //const { toast } = useToast(); // Removed this line as useToast is not imported
+  const { toast } = useToast();
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: [`/api/products/${productSlug}`],
@@ -40,7 +41,11 @@ export default function ProductDetail() {
     // Check if user is logged in
     const user = localStorage.getItem("user");
     if (!user) {
-      alert("Please log in to add items to your wishlist");
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your wishlist",
+        variant: "destructive",
+      });
       window.location.href = "/auth/login";
       return;
     }
@@ -51,11 +56,10 @@ export default function ProductDetail() {
     if (existingIndex >= 0) {
       wishlist.splice(existingIndex, 1);
       setIsInWishlist(false);
-     /* toast({
+      toast({
         title: "Removed from Wishlist",
         description: `${product.name} has been removed from your wishlist`,
-        variant: "destructive",
-      });*/ // Removed toast function
+      });
     } else {
       const wishlistItem = {
         id: product.id,
@@ -69,14 +73,56 @@ export default function ProductDetail() {
       };
       wishlist.push(wishlistItem);
       setIsInWishlist(true);
-      /*toast({
+      toast({
         title: "Added to Wishlist",
         description: `${product.name} has been added to your wishlist`,
-      });*/ // Removed toast function
+      });
     }
 
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
     window.dispatchEvent(new Event("wishlistUpdated"));
+  };
+
+  const addToCart = () => {
+    if (!product) return;
+
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your cart",
+        variant: "destructive",
+      });
+      window.location.href = "/auth/login";
+      return;
+    }
+
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existingItem = cart.find((cartItem: any) => cartItem.id === product.id);
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: `₹${product.price}`,
+        originalPrice: product.originalPrice ? `₹${product.originalPrice}` : undefined,
+        image: product.imageUrl,
+        quantity: 1,
+        inStock: true
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("cartCount", cart.reduce((total: number, item: any) => total + item.quantity, 0).toString());
+    window.dispatchEvent(new Event("cartUpdated"));
+
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} has been added to your cart`,
+    });
   };
 
   const renderStars = (rating: number) => {

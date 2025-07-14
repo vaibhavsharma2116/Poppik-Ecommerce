@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Phone, RefreshCw } from "lucide-react";
+import { Mail, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -56,7 +56,7 @@ export default function OTPVerification({ email: propEmail, onVerified }: OTPVer
 
     setIsResending(true);
     try {
-      const response = await fetch("http://localhost:5005/api/auth/send-otp", {
+      const response = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -114,7 +114,7 @@ export default function OTPVerification({ email: propEmail, onVerified }: OTPVer
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:5005/api/auth/verify-otp", {
+      const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -180,11 +180,10 @@ export default function OTPVerification({ email: propEmail, onVerified }: OTPVer
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Email Display */}
-            {/* Email Number Display */}
             <div className="space-y-2">
               <Label>Email Address</Label>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                <Phone className="h-4 w-4 text-gray-500" />
+                <Mail className="h-4 w-4 text-gray-500" />
                 <span className="font-medium">{email}</span>
               </div>
             </div>
@@ -200,7 +199,7 @@ export default function OTPVerification({ email: propEmail, onVerified }: OTPVer
                     {currentOTP}
                   </p>
                   <p className="text-xs text-blue-500 mt-2">
-                    (This is shown because no SMS service is configured)
+                    (This is shown for development purposes)
                   </p>
                 </div>
               </div>

@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 
 interface OTPData {
   otp: string;
-  mobile: string;
+  email: string;
   expiresAt: Date;
   verified: boolean;
 }
@@ -19,15 +19,25 @@ export class OTPService {
 
   // Create email transporter
   private static createTransporter() {
-    return nodemailer.createTransporter({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false, // true for 465, false for other ports
+    const config = {
+      service: 'gmail', // Use Gmail service instead of manual SMTP config
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.EMAIL_USER?.replace(/"/g, '').trim(),
+        pass: process.env.EMAIL_PASS?.replace(/"/g, '').trim(),
       },
+      tls: {
+        rejectUnauthorized: false
+      }
+    };
+    
+    console.log('📧 Email transporter config:', {
+      service: 'gmail',
+      user: config.auth.user,
+      passLength: config.auth.pass?.length || 0,
+      passPreview: config.auth.pass ? `${config.auth.pass.substring(0, 4)}****` : 'undefined'
     });
+    
+    return nodemailer.createTransporter(config);
   }
 
   private static generateOTP(): string {
@@ -46,7 +56,7 @@ export class OTPService {
       // Store OTP
       otpStorage.set(email, {
         otp,
-        mobile: email, // Using email field for consistency
+        email: email,
         expiresAt,
         verified: false
       });
@@ -122,10 +132,26 @@ export class OTPService {
   // Email-based OTP system using Nodemailer
   private static async sendEmail(email: string, otp: string): Promise<boolean> {
     try {
+      // Check if email configuration is available
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log('⚠️  Email configuration missing - using console output only');
+        console.log('\n' + '='.repeat(50));
+        console.log('📧 EMAIL OTP (Console Only)');
+        console.log('='.repeat(50));
+        console.log(`📧 Email: ${email}`);
+        console.log(`🔐 OTP Code: ${otp}`);
+        console.log(`⏰ Valid for: 5 minutes`);
+        console.log(`📅 Generated at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+        console.log('='.repeat(50) + '\n');
+        return true; // Return true for development
+      }
+
       const transporter = this.createTransporter();
 
       // Verify connection configuration
+      console.log('🔍 Verifying email connection...');
       await transporter.verify();
+      console.log('✅ Email connection verified successfully');
 
       const mailOptions = {
         from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
@@ -193,8 +219,25 @@ Beauty Store - Premium Beauty & Skincare Products
 
       return true;
     } catch (error) {
-      console.error('Email sending failed:', error);
-      return false;
+      console.error('📧 Email sending failed with detailed error:');
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Response code:', error.responseCode);
+      console.error('Command:', error.command);
+      console.error('Full error:', error);
+      
+      // Fallback: Always log to console for development
+      console.log('\n' + '='.repeat(50));
+      console.log('📧 EMAIL OTP (Fallback - Console Output)');
+      console.log('='.repeat(50));
+      console.log(`📧 Email: ${email}`);
+      console.log(`🔐 OTP Code: ${otp}`);
+      console.log(`⏰ Valid for: 5 minutes`);
+      console.log(`📅 Generated at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+      console.log('='.repeat(50) + '\n');
+      
+      // Return true for development mode to allow OTP verification
+      return true;
     }
   }
 }

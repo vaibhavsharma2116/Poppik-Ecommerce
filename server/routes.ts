@@ -10,7 +10,6 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc } from "drizzle-orm";
 import { Pool } from "pg";
 import { ordersTable, orderItemsTable, users } from "../shared/schema";
-import { OTPService } from "./otp-service";
 
 // Database connection
 const pool = new Pool({
@@ -153,94 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Logged out successfully" });
   });
 
-  // Development endpoint to get current OTP (remove in production)
-  app.get("/api/auth/get-otp/:email", async (req, res) => {
-    try {
-      const { email } = req.params;
-      
-      // Only allow in development
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ error: "This endpoint is not available in production" });
-      }
-      
-      const otpData = OTPService['otpStorage']?.get(email);
-      
-      if (!otpData) {
-        return res.status(404).json({ error: "No OTP found for this email address" });
-      }
-      
-      if (new Date() > otpData.expiresAt) {
-        return res.status(410).json({ error: "OTP has expired" });
-      }
-      
-      res.json({ 
-        email, 
-        otp: otpData.otp, 
-        expiresAt: otpData.expiresAt,
-        timeLeft: Math.ceil((otpData.expiresAt.getTime() - Date.now()) / 1000)
-      });
-    } catch (error) {
-      console.error("Get OTP error:", error);
-      res.status(500).json({ error: "Failed to get OTP" });
-    }
-  });
-
-  // OTP routes
-  app.post("/api/auth/send-otp", async (req, res) => {
-    try {
-      console.log("Send OTP request received:", req.body);
-      
-      const { email } = req.body;
-
-      if (!email) {
-        return res.status(400).json({ error: "Email address is required" });
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: "Invalid email address format" });
-      }
-
-      const result = await OTPService.sendOTP(email);
-      
-      console.log("OTP send result:", result);
-      
-      if (result.success) {
-        res.json({ message: result.message });
-      } else {
-        res.status(500).json({ error: result.message });
-      }
-    } catch (error) {
-      console.error("Send OTP error:", error);
-      res.status(500).json({ error: "Failed to send OTP" });
-    }
-  });
-
-  app.post("/api/auth/verify-otp", async (req, res) => {
-    try {
-      console.log("Verify OTP request received:", req.body);
-      
-      const { email, otp } = req.body;
-
-      if (!email || !otp) {
-        return res.status(400).json({ error: "Email address and OTP are required" });
-      }
-
-      const result = await OTPService.verifyOTP(email, otp);
-      
-      console.log("OTP verify result:", result);
-      
-      if (result.success) {
-        res.json({ message: result.message, verified: true });
-      } else {
-        res.status(400).json({ error: result.message, verified: false });
-      }
-    } catch (error) {
-      console.error("Verify OTP error:", error);
-      res.status(500).json({ error: "Failed to verify OTP" });
-    }
-  });
+  
 
   // Serve uploaded images
   app.use("/api/images", (req, res, next) => {

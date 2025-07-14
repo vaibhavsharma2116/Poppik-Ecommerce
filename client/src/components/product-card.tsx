@@ -83,20 +83,25 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
     const user = localStorage.getItem("user");
     if (!user) {
       toast({
-        title: "Login Required",
+        title: "Authentication Required",
         description: "Please log in to add items to your cart",
         variant: "destructive",
       });
-      // Redirect to login page
-      window.location.href = "/auth/login";
+      setTimeout(() => {
+        window.location.href = "/auth/login";
+      }, 1500);
       return;
     }
 
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     const existingItem = cart.find((cartItem: any) => cartItem.id === product.id);
-    
+
     if (existingItem) {
       existingItem.quantity += 1;
+      toast({
+        title: "Cart Updated",
+        description: `${product.name} quantity increased to ${existingItem.quantity}`,
+      });
     } else {
       cart.push({
         id: product.id,
@@ -107,16 +112,15 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
         quantity: 1,
         inStock: true
       });
+      toast({
+        title: "Added to Cart",
+        description: `${product.name} has been successfully added to your cart`,
+      });
     }
-    
+
     localStorage.setItem("cart", JSON.stringify(cart));
     localStorage.setItem("cartCount", cart.reduce((total: number, item: any) => total + item.quantity, 0).toString());
     window.dispatchEvent(new Event("cartUpdated"));
-    
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} has been added to your cart`,
-    });
   };
 
   const renderStars = (rating: number) => {

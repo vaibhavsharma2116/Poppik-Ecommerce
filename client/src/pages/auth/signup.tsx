@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "wouter";
 import { Eye, EyeOff, Mail, Lock, User, Phone, CheckCircle } from "lucide-react";
@@ -26,54 +25,31 @@ export default function Signup() {
     subscribeNewsletter: false
   });
 
-  const sendOTP = async () => {
-    if (!formData.phone) {
-      alert("Please enter mobile number");
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      alert("Please fill in all required fields");
       return;
     }
 
-    try {
-      const response = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ mobile: formData.phone }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setIsOtpSent(true);
-        alert("OTP sent to your mobile number");
-      } else {
-        alert(data.error || "Failed to send OTP");
-      }
-    } catch (error) {
-      console.error("Send OTP error:", error);
-      alert("Failed to send OTP. Please try again.");
-    }
-  };
-
-  const handleMobileVerified = () => {
-    setMobileVerified(true);
-    setStep(1); // Go back to form
-    alert("Mobile number verified successfully!");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
       return;
     }
 
-    if (!mobileVerified) {
-      alert("Please verify your mobile number first");
+    if (formData.password.length < 6) {
+      alert("Password must be at least 6 characters");
       return;
     }
-    
+
+    if (!formData.agreeToTerms) {
+      alert("Please agree to the terms and conditions");
+      return;
+    }
+
+
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
@@ -82,14 +58,14 @@ export default function Signup() {
         },
         body: JSON.stringify(formData),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         // Store token in localStorage
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        
+
         alert("Account created successfully!");
         window.location.href = "/profile"; // Redirect to profile
       } else {
@@ -109,29 +85,6 @@ export default function Signup() {
     }));
   };
 
-  // Show OTP verification if in step 2
-  if (step === 2) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <OTPVerification 
-            mobile={formData.phone}
-            onVerified={handleMobileVerified}
-          />
-          <div className="text-center mt-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => setStep(1)}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              ← Back to Form
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -150,7 +103,7 @@ export default function Signup() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSignup} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
@@ -199,41 +152,18 @@ export default function Signup() {
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="Enter your phone (10 digits)"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className={`pl-10 ${mobileVerified ? 'pr-10' : ''}`}
-                      required
-                      disabled={mobileVerified}
-                    />
-                    {mobileVerified && (
-                      <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-                  {!mobileVerified && formData.phone && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStep(2)}
-                      className="w-full"
-                    >
-                      Verify Mobile Number
-                    </Button>
-                  )}
-                  {mobileVerified && (
-                    <p className="text-sm text-green-600 flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Mobile number verified
-                    </p>
-                  )}
+                <div className="relative">
+                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="Enter your phone (10 digits)"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="pl-10"
+                    required
+                  />
                 </div>
               </div>
 

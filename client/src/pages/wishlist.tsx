@@ -25,6 +25,13 @@ export default function Wishlist() {
 
   // Load wishlist from localStorage on component mount
   useEffect(() => {
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const savedWishlist = localStorage.getItem("wishlist");
     if (savedWishlist) {
       try {
@@ -98,6 +105,32 @@ export default function Wishlist() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading wishlist...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is logged in
+  const user = localStorage.getItem("user");
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <Heart className="mx-auto h-24 w-24 text-gray-300 mb-6" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Please Log In</h2>
+            <p className="text-gray-600 mb-8">You need to be logged in to view your wishlist.</p>
+            <Link href="/auth/login">
+              <Button className="bg-red-600 hover:bg-red-700 mr-4">
+                Log In
+              </Button>
+            </Link>
+            <Link href="/auth/signup">
+              <Button variant="outline">
+                Sign Up
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );

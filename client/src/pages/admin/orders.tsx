@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -103,12 +102,12 @@ export default function AdminOrders() {
     const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || order.status.toLowerCase() === statusFilter.toLowerCase();
-    
+
     // Date filtering logic can be enhanced based on requirements
     const matchesDate = dateFilter === 'all' || true; // Simplified for demo
-    
+
     return matchesSearch && matchesStatus && matchesDate;
   });
 
@@ -175,7 +174,7 @@ export default function AdminOrders() {
             order.id === orderId ? { ...order, status: newStatus as Order['status'] } : order
           )
         );
-        
+
         toast({
           title: "Success",
           description: `Order ${orderId} status updated to ${newStatus}`,
@@ -213,10 +212,10 @@ export default function AdminOrders() {
             order.id === orderId ? { ...order, trackingNumber } : order
           )
         );
-        
+
         setEditingTracking(null);
         setTrackingInput('');
-        
+
         toast({
           title: "Success",
           description: `Tracking number updated for order ${orderId}`,
@@ -253,31 +252,12 @@ export default function AdminOrders() {
   };
 
   const handleDownloadInvoice = (order: Order) => {
-    const invoiceContent = `
-INVOICE
-Order ID: ${order.id}
-Customer: ${order.customer.name}
-Date: ${order.date}
-Total: ${order.total}
-Status: ${order.status}
-
-Products:
-${order.products.map(product => `- ${product.name} (Qty: ${product.quantity}) - ${product.price}`).join('\n')}
-
-Customer Information:
-Name: ${order.customer.name}
-Email: ${order.customer.email}
-Phone: ${order.customer.phone}
-Address: ${order.customer.address}
-    `;
-
-    const element = document.createElement('a');
-    const file = new Blob([invoiceContent], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `invoice-${order.id}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    const link = document.createElement('a');
+    link.href = `/api/orders/${order.id}/invoice`;
+    link.download = `Invoice-${order.id}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const startEditingTracking = (orderId: string, currentTracking?: string) => {
@@ -519,7 +499,7 @@ Address: ${order.customer.address}
               Complete information about the selected order
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedOrder && (
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
@@ -527,7 +507,7 @@ Address: ${order.customer.address}
                 <TabsTrigger value="customer">Customer</TabsTrigger>
                 <TabsTrigger value="products">Products</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="overview" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
@@ -572,7 +552,7 @@ Address: ${order.customer.address}
                       )}
                     </CardContent>
                   </Card>
-                  
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">Quick Actions</CardTitle>
@@ -606,7 +586,7 @@ Address: ${order.customer.address}
                   </Card>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="customer" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -646,7 +626,7 @@ Address: ${order.customer.address}
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="products" className="space-y-4">
                 <Card>
                   <CardHeader>

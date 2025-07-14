@@ -10,8 +10,9 @@ import Category from "@/pages/category";
 import ProductDetail from "@/pages/product-detail";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
-import Login from "@/pages/auth/login";
-import Signup from "@/pages/auth/signup";
+import Login from "./pages/auth/login";
+import Signup from "./pages/auth/signup";
+import OTPVerification from "./pages/auth/otp-verification";
 import Profile from "./pages/profile";
 import CartPage from './pages/cart';
 import Checkout from "./pages/checkout";
@@ -56,12 +57,13 @@ function Router() {
             <Route path="/contact" component={Contact} />
             <Route path="/auth/login" component={Login} />
             <Route path="/auth/signup" component={Signup} />
+            <Route path="/auth/otp-verification" component={OTPVerification} />
             <Route path="/profile" component={Profile} />
             <Route path="/cart" component={CartPage} />
             <Route path="/checkout" component={Checkout} />
             <Route path="/wishlist" component={Wishlist} />
             <Route path="/order-history" component={OrderHistory} />
-            <Route path="/track-order/:orderId" component={TrackOrder} />
+            <Route path="/track-order" component={TrackOrder} />
             <Route path="/change-password" component={ChangePassword} />
             <Route component={NotFound} />
           </Switch>

@@ -10,6 +10,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc } from "drizzle-orm";
 import { Pool } from "pg";
 import { ordersTable, orderItemsTable, users } from "../shared/schema";
+import { OTPService } from "./otp-service";
 
 // Database connection
 const pool = new Pool({
@@ -150,6 +151,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/logout", (req, res) => {
     res.json({ message: "Logged out successfully" });
+  });
+
+  // OTP routes
+  app.post("/api/auth/send-otp", async (req, res) => {
+    try {
+      console.log("Send OTP request received:", req.body);
+      
+      const { mobile } = req.body;
+
+      if (!mobile) {
+        return res.status(400).json({ error: "Mobile number is required" });
+      }
+
+      // Validate mobile number format (Indian format)
+      const mobileRegex = /^[6-9]\d{9}$/;
+      if (!mobileRegex.test(mobile)) {
+        return res.status(400).json({ error: "Invalid mobile number format" });
+      }
+
+      const result = await OTPService.sendOTP(mobile);
+      
+      console.log("OTP send result:", result);
+      
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(500).json({ error: result.message });
+      }
+    } catch (error) {
+      console.error("Send OTP error:", error);
+      res.status(500).json({ error: "Failed to send OTP" });
+    }
+  });
+
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      console.log("Verify OTP request received:", req.body);
+      
+      const { mobile, otp } = req.body;
+
+      if (!mobile || !otp) {
+        return res.status(400).json({ error: "Mobile number and OTP are required" });
+      }
+
+      const result = await OTPService.verifyOTP(mobile, otp);
+      
+      console.log("OTP verify result:", result);
+      
+      if (result.success) {
+        res.json({ message: result.message, verified: true });
+      } else {
+        res.status(400).json({ error: result.message, verified: false });
+      }
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      res.status(500).json({ error: "Failed to verify OTP" });
+    }
   });
 
   // Serve uploaded images
@@ -1133,6 +1191,345 @@ export async function registerRoutes(app: Express): Promise<Server> {
       case 'delivered': return 3;
       default: return 0;
     }
+  }
+
+  // Invoice download endpoint
+  app.get("/api/orders/:id/invoice", async (req, res) => {
+    try {
+      const orderId = req.params.id.replace('ORD-', '');
+
+      // Get order details
+      const order = await db
+        .select()
+        .from(ordersTable)
+        .where(eq(ordersTable.id, Number(orderId)))
+        .limit(1);
+
+      if (order.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Get order items
+      const items = await db
+        .select({
+          id: orderItemsTable.id,
+          name: orderItemsTable.productName,
+          quantity: orderItemsTable.quantity,
+          price: orderItemsTable.price,
+          image: orderItemsTable.productImage,
+        })
+        .from(orderItemsTable)
+        .where(eq(orderItemsTable.orderId, order[0].id));
+
+      // Get user info
+      const user = await db
+        .select({
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          phone: users.phone,
+        })
+        .from(users)
+        .where(eq(users.id, order[0].userId))
+        .limit(1);
+
+      const userData = user[0] || { firstName: 'Unknown', lastName: 'Customer', email: 'unknown@email.com', phone: 'N/A' };
+
+      // Generate HTML invoice
+      const invoiceHtml = generateInvoiceHTML({
+        order: order[0],
+        items,
+        customer: userData,
+        orderId: `ORD-${order[0].id.toString().padStart(3, '0')}`
+      });
+
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="Invoice-ORD-${order[0].id.toString().padStart(3, '0')}.html"`);
+      
+      res.send(invoiceHtml);
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      res.status(500).json({ error: "Failed to generate invoice" });
+    }
+  });
+
+  // Helper function to generate invoice HTML
+  function generateInvoiceHTML({ order, items, customer, orderId }: any) {
+    const subtotal = items.reduce((sum: number, item: any) => {
+      const price = parseInt(item.price.replace(/[₹,]/g, ""));
+      return sum + (price * item.quantity);
+    }, 0);
+    
+    const tax = Math.round(subtotal * 0.18); // 18% GST
+    const total = subtotal + tax;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - ${orderId}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+        
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 20px;
+        }
+        
+        .company-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        
+        .company-details {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .invoice-title {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin: 30px 0;
+            color: #333;
+        }
+        
+        .invoice-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .info-section h3 {
+            color: #e74c3c;
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .info-section p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .customer-info {
+            text-align: right;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 14px;
+        }
+        
+        .items-table th {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .items-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .items-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .items-table .text-right {
+            text-align: right;
+        }
+        
+        .totals {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .totals-table {
+            width: 300px;
+        }
+        
+        .totals-table tr {
+            border-bottom: 1px solid #eee;
+        }
+        
+        .totals-table td {
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        
+        .totals-table .text-right {
+            text-align: right;
+        }
+        
+        .grand-total {
+            font-weight: bold;
+            font-size: 18px;
+            color: #e74c3c;
+            border-top: 2px solid #e74c3c !important;
+            padding-top: 15px !important;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .footer p {
+            margin-bottom: 8px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .invoice-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <div class="company-name">Beauty Store</div>
+            <div class="company-details">
+                Premium Beauty & Skincare Products<br>
+                123 Beauty Street, Mumbai, Maharashtra 400001<br>
+                Email: info@beautystore.com | Phone: +91 98765 43210<br>
+                GST No: 27ABCDE1234F1Z5
+            </div>
+        </div>
+
+        <h1 class="invoice-title">INVOICE</h1>
+
+        <div class="invoice-info">
+            <div class="info-section">
+                <h3>Invoice Details</h3>
+                <p><strong>Invoice No:</strong> ${orderId}</p>
+                <p><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+                <p><strong>Status:</strong> <span class="status-badge">${order.status}</span></p>
+                <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+                ${order.trackingNumber ? `<p><strong>Tracking:</strong> ${order.trackingNumber}</p>` : ''}
+            </div>
+            
+            <div class="info-section customer-info">
+                <h3>Bill To</h3>
+                <p><strong>${customer.firstName} ${customer.lastName}</strong></p>
+                <p>${customer.email}</p>
+                ${customer.phone ? `<p>${customer.phone}</p>` : ''}
+                <br>
+                <p><strong>Shipping Address:</strong></p>
+                <p>${order.shippingAddress}</p>
+            </div>
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${items.map((item: any) => {
+                  const unitPrice = parseInt(item.price.replace(/[₹,]/g, ""));
+                  const itemTotal = unitPrice * item.quantity;
+                  return `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td class="text-right">${item.quantity}</td>
+                        <td class="text-right">₹${unitPrice.toLocaleString('en-IN')}</td>
+                        <td class="text-right">₹${itemTotal.toLocaleString('en-IN')}</td>
+                    </tr>
+                  `;
+                }).join('')}
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <table class="totals-table">
+                <tr>
+                    <td>Subtotal:</td>
+                    <td class="text-right">₹${subtotal.toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                    <td>GST (18%):</td>
+                    <td class="text-right">₹${tax.toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                    <td>Shipping:</td>
+                    <td class="text-right">Free</td>
+                </tr>
+                <tr class="grand-total">
+                    <td><strong>Grand Total:</strong></td>
+                    <td class="text-right"><strong>₹${total.toLocaleString('en-IN')}</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p><strong>Thank you for your business!</strong></p>
+            <p>This is a computer generated invoice. No signature required.</p>
+            <p>For any queries, please contact us at support@beautystore.com</p>
+            <p>Generated on ${new Date().toLocaleDateString('en-IN')} at ${new Date().toLocaleTimeString('en-IN')}</p>
+        </div>
+    </div>
+</body>
+</html>`;
   }
 
   const httpServer = createServer(app);

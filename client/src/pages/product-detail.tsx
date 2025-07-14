@@ -37,6 +37,14 @@ export default function ProductDetail() {
   const toggleWishlist = () => {
     if (!product) return;
 
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (!user) {
+      alert("Please log in to add items to your wishlist");
+      window.location.href = "/auth/login";
+      return;
+    }
+
     const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
     const existingIndex = wishlist.findIndex((item: any) => item.id === product.id);
 
@@ -219,7 +227,7 @@ export default function ProductDetail() {
 
             {/* Actions */}
             <div className="flex space-x-4">
-              <Button size="lg" className="flex-1 btn-primary">
+              <Button size="lg" className="flex-1 btn-primary" onClick={addToCart}>
                 <ShoppingCart className="w-5 h-5 mr-2" />
                 Add to Cart
               </Button>

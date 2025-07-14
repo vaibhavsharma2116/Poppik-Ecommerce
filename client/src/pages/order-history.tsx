@@ -479,7 +479,18 @@ export default function OrderHistory() {
                         </Link>
                       )}
                       {order.status === 'delivered' && (
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `/api/orders/${order.id}/invoice`;
+                            link.download = `Invoice-${order.id}.html`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
                           <Download className="h-4 w-4 mr-1" />
                           Invoice
                         </Button>
@@ -615,7 +626,17 @@ export default function OrderHistory() {
                     </Link>
                   )}
                   {selectedOrder.status === 'delivered' && (
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `/api/orders/${selectedOrder.id}/invoice`;
+                        link.download = `Invoice-${selectedOrder.id}.html`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Download Invoice
                     </Button>

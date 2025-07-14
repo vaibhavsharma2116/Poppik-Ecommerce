@@ -26,6 +26,19 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
     e.preventDefault();
     e.stopPropagation();
 
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your wishlist",
+        variant: "destructive",
+      });
+      // Redirect to login page
+      window.location.href = "/auth/login";
+      return;
+    }
+
     const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
     const existingIndex = wishlist.findIndex((item: any) => item.id === product.id);
 
@@ -65,6 +78,19 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
   const addToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your cart",
+        variant: "destructive",
+      });
+      // Redirect to login page
+      window.location.href = "/auth/login";
+      return;
+    }
 
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     const existingItem = cart.find((cartItem: any) => cartItem.id === product.id);

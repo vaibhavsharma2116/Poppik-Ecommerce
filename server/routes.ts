@@ -1561,6 +1561,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sliders API
+  app.get("/api/sliders", async (req, res) => {
+    try {
+      const sliders = await storage.getActiveSliders();
+      res.json(sliders);
+    } catch (error) {
+      console.error("Error fetching sliders:", error);
+      res.status(500).json({ error: "Failed to fetch sliders" });
+    }
+  });
+
+  app.get("/api/admin/sliders", adminAuthMiddleware, async (req, res) => {
+    try {
+      const sliders = await storage.getSliders();
+      res.json(sliders);
+    } catch (error) {
+      console.error("Error fetching all sliders:", error);
+      res.status(500).json({ error: "Failed to fetch sliders" });
+    }
+  });
+
+  app.get("/api/admin/sliders/:id", adminAuthMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const slider = await storage.getSlider(parseInt(id));
+      if (!slider) {
+        return res.status(404).json({ error: "Slider not found" });
+      }
+      res.json(slider);
+    } catch (error) {
+      console.error("Error fetching slider:", error);
+      res.status(500).json({ error: "Failed to fetch slider" });
+    }
+  });
+
+  app.post("/api/admin/sliders", adminAuthMiddleware, async (req, res) => {
+    try {
+      const { title, subtitle, description, imageUrl, badge, primaryActionText, primaryActionUrl, secondaryActionText, secondaryActionUrl, backgroundGradient, isActive, sortOrder } = req.body;
+
+      if (!title || !description || !imageUrl || !primaryActionText || !primaryActionUrl) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const sliderData = {
+        title,
+        subtitle,
+        description,
+        imageUrl,
+        badge,
+        primaryActionText,
+        primaryActionUrl,
+        secondaryActionText,
+        secondaryActionUrl,
+        backgroundGradient,
+        isActive: isActive ?? true,
+        sortOrder: sortOrder ?? 0
+      };
+
+      const slider = await storage.createSlider(sliderData);
+      res.status(201).json(slider);
+    } catch (error) {
+      console.error("Error creating slider:", error);
+      res.status(500).json({ error: "Failed to create slider" });
+    }
+  });
+
+  app.put("/api/admin/sliders/:id", adminAuthMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const slider = await storage.updateSlider(parseInt(id), req.body);
+      if (!slider) {
+        return res.status(404).json({ error: "Slider not found" });
+      }
+      res.json(slider);
+    } catch (error) {
+      console.error("Error updating slider:", error);
+      res.status(500).json({ error: "Failed to update slider" });
+    }
+  });
+
+  app.delete("/api/admin/sliders/:id", adminAuthMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteSlider(parseInt(id));
+      if (!success) {
+        return res.status(404).json({ error: "Slider not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting slider:", error);
+      res.status(500).json({ error: "Failed to delete slider" });
+    }
+  });
+
   // Contact form submission endpoint
   app.post("/api/contact", async (req, res) => {
     try {

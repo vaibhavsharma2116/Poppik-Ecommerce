@@ -121,6 +121,15 @@
   .gradient-green {
     background: linear-gradient(to bottom right, var(--brand-green), hsl(140, 30%, 90%));
   }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+  }
 }
 
 @layer utilities {

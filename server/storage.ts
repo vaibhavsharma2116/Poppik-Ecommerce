@@ -7,16 +7,19 @@ import {
   subcategories,
   users,
   contactSubmissions,
+  slidersTable,
   type Product, 
   type Category, 
   type Subcategory,
   type User,
   type ContactSubmission,
+  type Slider,
   type InsertProduct, 
   type InsertCategory, 
   type InsertSubcategory,
   type InsertUser,
-  type InsertContactSubmission
+  type InsertContactSubmission,
+  type InsertSlider
 } from "@shared/schema";
 import dotenv from "dotenv";
 
@@ -81,6 +84,14 @@ export interface IStorage {
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
   updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
   deleteSubcategory(id: number): Promise<boolean>;
+
+  // Sliders
+  getSliders(): Promise<Slider[]>;
+  getActiveSliders(): Promise<Slider[]>;
+  getSlider(id: number): Promise<Slider | undefined>;
+  createSlider(slider: InsertSlider): Promise<Slider>;
+  updateSlider(id: number, slider: Partial<InsertSlider>): Promise<Slider | undefined>;
+  deleteSlider(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -400,6 +411,43 @@ export class DatabaseStorage implements IStorage {
   async deleteContactSubmission(id: number): Promise<boolean> {
     const db = await getDb();
     const result = await db.delete(contactSubmissions).where(eq(contactSubmissions.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Sliders
+  async getSliders(): Promise<Slider[]> {
+    const db = await getDb();
+    return await db.select().from(slidersTable).orderBy(sql`${slidersTable.sortOrder} ASC`);
+  }
+
+  async getActiveSliders(): Promise<Slider[]> {
+    const db = await getDb();
+    return await db.select().from(slidersTable)
+      .where(eq(slidersTable.isActive, true))
+      .orderBy(sql`${slidersTable.sortOrder} ASC`);
+  }
+
+  async getSlider(id: number): Promise<Slider | undefined> {
+    const db = await getDb();
+    const result = await db.select().from(slidersTable).where(eq(slidersTable.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createSlider(sliderData: InsertSlider): Promise<Slider> {
+    const db = await getDb();
+    const result = await db.insert(slidersTable).values(sliderData).returning();
+    return result[0];
+  }
+
+  async updateSlider(id: number, sliderData: Partial<InsertSlider>): Promise<Slider | undefined> {
+    const db = await getDb();
+    const result = await db.update(slidersTable).set(sliderData).where(eq(slidersTable.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteSlider(id: number): Promise<boolean> {
+    const db = await getDb();
+    const result = await db.delete(slidersTable).where(eq(slidersTable.id, id)).returning();
     return result.length > 0;
   }
 }

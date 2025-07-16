@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import HeroBanner from "@/components/hero-banner";
 import ProductCard from "@/components/product-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,16 +19,6 @@ export default function Home() {
     queryKey: ["/api/products/featured"],
   });
 
-  const handlePrimaryAction = () => {
-    // Navigate to all products or open search
-    window.scrollTo({ top: 1000, behavior: 'smooth' });
-  };
-
-  const handleSecondaryAction = () => {
-    // Navigate to categories section
-    window.scrollTo({ top: 800, behavior: 'smooth' });
-  };
-
   const categoryImages = {
     skincare: "https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
     haircare: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
@@ -46,22 +35,6 @@ export default function Home() {
 
   return (
     <div>
-      {/* Hero Section */}
-      <HeroBanner
-        title="Discover Your"
-        subtitle="Natural Glow"
-        description="Premium beauty products crafted with natural ingredients for radiant skin and healthy hair."
-        imageUrl="https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"
-        primaryAction={{
-          text: "Shop All Products",
-          onClick: handlePrimaryAction,
-        }}
-        secondaryAction={{
-          text: "Explore Categories",
-          onClick: handleSecondaryAction,
-        }}
-      />
-
       {/* Categories Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -107,9 +80,16 @@ export default function Home() {
       {/* Featured Products Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Products</h2>
-            <p className="text-gray-600">Our newest and most innovative products</p>
+          <div className="flex justify-between items-center mb-12">
+            <div className="text-center flex-1">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Products</h2>
+              <p className="text-gray-600">Our newest and most innovative products</p>
+            </div>
+            <Link href="/category/featured">
+              <Button variant="outline" className="hidden md:flex">
+                View All Featured
+              </Button>
+            </Link>
           </div>
 
           {featuredLoading ? (
@@ -126,11 +106,27 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts?.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="overflow-hidden">
+                <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-4" 
+                     style={{scrollSnapType: 'x mandatory'}}>
+                  {featuredProducts?.map((product) => (
+                    <div key={product.id} className="flex-shrink-0 w-72" style={{scrollSnapAlign: 'start'}}>
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile View All Button */}
+              <div className="text-center mt-8 md:hidden">
+                <Link href="/category/featured">
+                  <Button className="btn-primary">
+                    View All Featured Products
+                  </Button>
+                </Link>
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -138,9 +134,16 @@ export default function Home() {
       {/* Bestsellers Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Bestsellers</h2>
-            <p className="text-gray-600">Our most loved products by customers</p>
+          <div className="flex justify-between items-center mb-12">
+            <div className="text-center flex-1">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Bestsellers</h2>
+              <p className="text-gray-600">Our most loved products by customers</p>
+            </div>
+            <Link href="/category/bestsellers">
+              <Button variant="outline" className="hidden md:flex">
+                View All Bestsellers
+              </Button>
+            </Link>
           </div>
 
           {bestsellersLoading ? (
@@ -157,14 +160,28 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {bestsellerProducts?.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+            <>
+              <div className="overflow-hidden">
+                <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-4" 
+                     style={{scrollSnapType: 'x mandatory'}}>
+                  {bestsellerProducts?.map((product) => (
+                    <div key={product.id} className="flex-shrink-0 w-72" style={{scrollSnapAlign: 'start'}}>
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          
+              {/* Mobile View All Button */}
+              <div className="text-center mt-8 md:hidden">
+                <Link href="/category/bestsellers">
+                  <Button className="btn-primary">
+                    View All Bestsellers
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </section>
     </div>

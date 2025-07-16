@@ -164,13 +164,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="text-center mt-12">
-            <Link href="/category/skincare">
-              <Button variant="outline" size="lg" className="btn-secondary">
-                View All Products →
-              </Button>
-            </Link>
-          </div>
+          
         </div>
       </section>
     </div>

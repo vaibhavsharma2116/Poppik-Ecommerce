@@ -18,8 +18,10 @@ import CartPage from './pages/cart';
 import Checkout from "./pages/checkout";
 import Wishlist from "./pages/wishlist";
 import OrderHistory from "./pages/order-history";
-import TrackOrder from "@/pages/track-order";
+import TrackOrder from "./pages/track-order";
 import ChangePassword from "./pages/change-password";
+import Terms from "./pages/terms";
+import Privacy from "./pages/privacy";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminProducts from "@/pages/admin/products";
 import AdminCategories from "@/pages/admin/category";
@@ -77,6 +79,8 @@ function Router() {
             <Route path="/order-history" component={OrderHistory} />
             <Route path="/track-order" component={TrackOrder} />
             <Route path="/change-password" component={ChangePassword} />
+             <Route path="/terms" component={Terms} />
+            <Route path="/privacy" component={Privacy} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

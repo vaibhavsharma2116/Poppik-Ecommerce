@@ -35,6 +35,8 @@ export default function Contact() {
     }
 
     try {
+      console.log("Submitting contact form with data:", formData);
+
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: {
@@ -43,7 +45,10 @@ export default function Contact() {
         body: JSON.stringify(formData),
       });
 
+      console.log("Response status:", response.status);
+
       const data = await response.json();
+      console.log("Response data:", data);
 
       if (response.ok) {
         toast({
@@ -60,6 +65,7 @@ export default function Contact() {
           message: "",
         });
       } else {
+        console.error("Error response:", data);
         toast({
           title: "Failed to send message",
           description: data.error || "Please try again later",
@@ -80,17 +86,17 @@ export default function Contact() {
     {
       icon: Mail,
       label: "Email",
-      value: "support@discoverpilgrim.com",
+      value: "operations@poppik.in",
     },
     {
       icon: Phone,
       label: "Phone",
-      value: "+91 9876543210",
+      value: "+91 9867577565",
     },
     {
       icon: MapPin,
       label: "Address",
-      value: "Mumbai, Maharashtra, India",
+      value: " 123, Kailash Business Park Belapur, Maharashtra",
     },
   ];
 
@@ -101,7 +107,7 @@ export default function Contact() {
   ];
 
   const socialLinks = [
-    { icon: Instagram, href: "#", color: "hover:text-pink-500" },
+    { icon: Instagram, href: "https://www.instagram.com/poppik_lifestyle/?utm_source=qr&igsh=M3BidG9jbmJtenZ4", color: "hover:text-pink-500" },
     { icon: Facebook, href: "#", color: "hover:text-blue-500" },
     { icon: Youtube, href: "#", color: "hover:text-red-500" },
     { icon: Twitter, href: "#", color: "hover:text-blue-400" },
@@ -261,19 +267,7 @@ export default function Contact() {
               </CardContent>
             </Card>
 
-            {/* FAQ Section */}
-            <Card className="shadow-sm bg-gradient-to-r from-pink-50 to-purple-50">
-              <CardContent className="pt-6">
-                <h3 className="font-semibold text-gray-900 mb-2">Frequently Asked Questions</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Looking for quick answers? Check out our FAQ section for common questions about 
-                  products, shipping, and returns.
-                </p>
-                <Button variant="outline" size="sm">
-                  View FAQ
-                </Button>
-              </CardContent>
-            </Card>
+          
           </div>
         </div>
       </div>

@@ -90,10 +90,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
 
-      // If no token or user data, redirect to login
+      // If no token or user data, redirect to admin login
       if (!token || !userStr) {
-        console.log('No authentication found, redirecting to login');
-        setLocation('/auth/login');
+        console.log('No authentication found, redirecting to admin login');
+        setLocation('/auth/admin-login');
         return;
       }
 
@@ -101,17 +101,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       try {
         user = JSON.parse(userStr);
       } catch (error) {
-        console.log('Invalid user data, redirecting to login');
+        console.log('Invalid user data, redirecting to admin login');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        setLocation('/auth/login');
+        setLocation('/auth/admin-login');
         return;
       }
 
       // Check if user is admin
       if (user.role !== 'admin') {
-        console.log('User is not admin, redirecting to profile');
-        setLocation('/profile');
+        console.log('User is not admin, redirecting to home page');
+        setLocation('/');
         return;
       }
 
@@ -124,10 +124,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         });
 
         if (!response.ok) {
-          console.log('Token validation failed, redirecting to login');
+          console.log('Token validation failed, redirecting to admin login');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          setLocation('/auth/login');
+          setLocation('/auth/admin-login');
+          return;
+        }
+
+        const validationResult = await response.json();
+        
+        // Double check role from server response
+        if (validationResult.user.role !== 'admin') {
+          console.log('User role is not admin, redirecting to home page');
+          setLocation('/');
           return;
         }
 
@@ -135,10 +144,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setIsAuthenticating(false);
       } catch (error) {
         console.error('Auth validation error:', error);
-        // On error, remove token and redirect to login
+        // On error, remove token and redirect to admin login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        setLocation('/auth/login');
+        setLocation('/auth/admin-login');
       }
     };
 
@@ -148,7 +157,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    setLocation('/auth/login');
+    setLocation('/auth/admin-login');
   };
 
   // Global keyboard shortcut for search

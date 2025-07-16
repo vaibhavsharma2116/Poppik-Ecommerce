@@ -42,7 +42,7 @@ CREATE TABLE "orders" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
+
 CREATE TABLE "order_items" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"order_id" integer NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE "order_items" (
 	"price" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
--
+
 
 CREATE TABLE "categories" (
 	"id" serial PRIMARY KEY NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE "categories" (
 	"product_count" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "categories_slug_unique" UNIQUE("slug")
 );
---> statement-breakpoint
+
 CREATE TABLE "products" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE "products" (
 	"tags" text,
 	CONSTRAINT "products_slug_unique" UNIQUE("slug")
 );
---> statement-breakpoint
+
 CREATE TABLE "subcategories" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
@@ -103,17 +103,17 @@ CREATE TABLE "subcategories" (
 	"product_count" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "subcategories_slug_unique" UNIQUE("slug")
 );
---> statement-breakpoint
+
 ALTER TABLE "subcategories" ADD CONSTRAINT "subcategories_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;
 
 ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
---> statement-breakpoint
+
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE no action ON UPDATE no action;
---> statement-breakpoint
+
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE no action ON UPDATE no action;
---> statement-breakpoint
+
 ALTER TABLE "order_notifications" ADD CONSTRAINT "order_notifications_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE no action ON UPDATE no action;
---> statement-breakpoint
+
 ALTER TABLE "order_notifications" ADD CONSTRAINT "order_notifications_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
 
 ALTER TABLE "users" ADD COLUMN "role" varchar(20) NOT NULL DEFAULT 'user';

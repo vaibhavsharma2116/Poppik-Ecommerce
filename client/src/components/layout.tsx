@@ -564,7 +564,7 @@ export default function Layout({ children }: LayoutProps) {
                     Contact
                   </Link>
                 </li>
-                <li>
+                {/* <li>
                   <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     Blog
                   </a>
@@ -573,7 +573,7 @@ export default function Layout({ children }: LayoutProps) {
                   <a href="#" className="text-gray-400 hover:text-white transition-colors">
                     FAQ
                   </a>
-                </li>
+                </li> */}
               </ul>
             </div>
 
@@ -581,31 +581,26 @@ export default function Layout({ children }: LayoutProps) {
             <div>
               <h4 className="font-semibold mb-4">Categories</h4>
               <ul className="space-y-2">
-                <li>
-                  <Link href="/category/skincare" className="text-gray-400 hover:text-white transition-colors">
-                    Skincare
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/category/haircare" className="text-gray-400 hover:text-white transition-colors">
-                    Haircare
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/category/makeup" className="text-gray-400 hover:text-white transition-colors">
-                    Makeup
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/category/bodycare" className="text-gray-400 hover:text-white transition-colors">
-                    Body Care
-                  </Link>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                    Fragrances
-                  </a>
-                </li>
+                {categories.slice(0, 6).map((category) => (
+                  <li key={category.id}>
+                    <Link 
+                      href={`/category/${category.slug}`} 
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  </li>
+                ))}
+                {categories.length > 6 && (
+                  <li>
+                    <Link 
+                      href="/categories" 
+                      className="text-gray-400 hover:text-white transition-colors font-medium"
+                    >
+                      View All Categories →
+                    </Link>
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -613,61 +608,48 @@ export default function Layout({ children }: LayoutProps) {
             <div>
               <h4 className="font-semibold mb-4">Customer Support</h4>
               <ul className="space-y-2">
+                {user && (
+                  <li>
+                    <Link href="/order-history" className="text-gray-400 hover:text-white transition-colors">
+                      Order History
+                    </Link>
+                  </li>
+                )}
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                    Shipping Info
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                    Returns & Exchanges
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                    Size Guide
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <Link href="/track-order" className="text-gray-400 hover:text-white transition-colors">
                     Track Your Order
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">
+                    Contact Support
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/about" className="text-gray-400 hover:text-white transition-colors">
+                    About Us
+                  </Link>
+                </li>
+                
+                <li>
+                  <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
+                    Terms & Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
                     Privacy Policy
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
           </div>
 
           {/* Newsletter */}
-          <div className="border-t border-gray-800 mt-12 pt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h4 className="font-semibold mb-2">Subscribe to our Newsletter</h4>
-                <p className="text-gray-400 text-sm">
-                  Get the latest updates on new products and exclusive offers
-                </p>
-              </div>
-              <div className="flex">
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 bg-gray-800 border-gray-700 text-white rounded-r-none"
-                />
-                <Button className="bg-red-500 hover:bg-red-600 rounded-l-none">
-                  Subscribe
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Copyright */}
+          
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Poppik. All rights reserved.
+              © 2025 Poppik. All rights reserved.
             </p>
           </div>
         </div>

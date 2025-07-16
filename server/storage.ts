@@ -6,14 +6,17 @@ import {
   categories, 
   subcategories,
   users,
+  contactSubmissions,
   type Product, 
   type Category, 
   type Subcategory,
   type User,
+  type ContactSubmission,
   type InsertProduct, 
   type InsertCategory, 
   type InsertSubcategory,
-  type InsertUser
+  type InsertUser,
+  type InsertContactSubmission
 } from "@shared/schema";
 import dotenv from "dotenv";
 
@@ -367,29 +370,37 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  async createContactSubmission(submissionData: any): Promise<any> {
-    // Placeholder for contact submission - would need a table for this
-    return { id: 1, ...submissionData, createdAt: new Date() };
+  async createContactSubmission(submissionData: InsertContactSubmission): Promise<ContactSubmission> {
+    const db = await getDb();
+    const result = await db.insert(contactSubmissions).values(submissionData).returning();
+    return result[0];
   }
 
-  async getContactSubmissions(): Promise<any[]> {
-    // Placeholder for contact submissions
-    return [];
+  async getContactSubmissions(): Promise<ContactSubmission[]> {
+    const db = await getDb();
+    return await db.select().from(contactSubmissions);
   }
 
-  async getContactSubmission(id: number): Promise<any> {
-    // Placeholder for single contact submission
-    return null;
+  async getContactSubmission(id: number): Promise<ContactSubmission | undefined> {
+    const db = await getDb();
+    const result = await db.select().from(contactSubmissions).where(eq(contactSubmissions.id, id)).limit(1);
+    return result[0];
   }
 
-  async updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<any> {
-    // Placeholder for updating contact submission status
-    return null;
+  async updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<ContactSubmission | undefined> {
+    const db = await getDb();
+    const updateData: any = { status };
+    if (respondedAt) {
+      updateData.respondedAt = respondedAt;
+    }
+    const result = await db.update(contactSubmissions).set(updateData).where(eq(contactSubmissions.id, id)).returning();
+    return result[0];
   }
 
   async deleteContactSubmission(id: number): Promise<boolean> {
-    // Placeholder for deleting contact submission
-    return false;
+    const db = await getDb();
+    const result = await db.delete(contactSubmissions).where(eq(contactSubmissions.id, id)).returning();
+    return result.length > 0;
   }
 }
 

@@ -31,6 +31,7 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminProfile from "@/pages/admin/profile";
 import AdminChangePassword from "@/pages/admin/change-password";
 import AdminSliders from "@/pages/admin/sliders";
+import AdminContactSubmissions from "@/pages/admin/contact-submissions";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from 'react';
 
@@ -52,6 +53,7 @@ function Router() {
             <Route path="/settings" component={AdminSettings} />
             <Route path="/profile" component={AdminProfile} />
             <Route path="/change-password" component={AdminChangePassword} />
+             <Route path="/contact-submissions" component={AdminContactSubmissions} />
             <Route path="/reports">
               <Suspense fallback={<div className="flex items-center justify-center h-64">Loading reports...</div>}>
                 <AdminReports />

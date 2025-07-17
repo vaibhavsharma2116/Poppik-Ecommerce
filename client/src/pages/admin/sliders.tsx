@@ -115,33 +115,36 @@ export default function AdminSliders() {
 
   const handleSubmit = async () => {
     try {
-      let imageUrl = formData.imageUrl;
-
-      // Upload image if a new one is selected
-      if (selectedImage) {
-        const uploadedImageUrl = await uploadImage();
-        if (uploadedImageUrl) {
-          imageUrl = uploadedImageUrl;
-        } else {
-          return; // Stop if image upload failed
-        }
-      }
-
-      const submissionData = {
-        ...formData,
-        imageUrl
-      };
-
       const url = selectedSlider ? `/api/admin/sliders/${selectedSlider.id}` : '/api/admin/sliders';
       const method = selectedSlider ? 'PUT' : 'POST';
+
+      // Create FormData for multipart/form-data submission
+      const formDataObj = new FormData();
+      formDataObj.append('title', formData.title);
+      formDataObj.append('subtitle', formData.subtitle);
+      formDataObj.append('description', formData.description);
+      formDataObj.append('badge', formData.badge);
+      formDataObj.append('primaryActionText', formData.primaryActionText);
+      formDataObj.append('primaryActionUrl', formData.primaryActionUrl);
+      formDataObj.append('secondaryActionText', formData.secondaryActionText);
+      formDataObj.append('secondaryActionUrl', formData.secondaryActionUrl);
+      formDataObj.append('backgroundGradient', formData.backgroundGradient);
+      formDataObj.append('isActive', formData.isActive.toString());
+      formDataObj.append('sortOrder', formData.sortOrder.toString());
+      
+      // Add image if selected
+      if (selectedImage) {
+        formDataObj.append('image', selectedImage);
+      } else if (formData.imageUrl) {
+        formDataObj.append('imageUrl', formData.imageUrl);
+      }
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
-        body: JSON.stringify(submissionData),
+        body: formDataObj,
       });
 
       if (!response.ok) {

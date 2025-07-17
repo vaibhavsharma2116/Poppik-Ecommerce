@@ -9,7 +9,7 @@ import jwt from "jsonwebtoken";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc, and, gte, lte, like, isNull, asc, or, sql } from "drizzle-orm";
 import { Pool } from "pg";
-import { ordersTable, orderItemsTable, users } from "../shared/schema";
+import { ordersTable, orderItemsTable, users, sliders } from "../shared/schema";
 
 // Database connection
 const pool = new Pool({
@@ -58,6 +58,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: "API server is running",
       timestamp: new Date().toISOString()
     });
+  });
+
+  // Public sliders endpoint for frontend
+  app.get('/api/sliders', async (req, res) => {
+    try {
+      const activeSliders = await db
+        .select()
+        .from(sliders)
+        .where(eq(sliders.isActive, true))
+        .orderBy(asc(sliders.sortOrder));
+      
+      res.json(activeSliders);
+    } catch (error) {
+      console.error('Error fetching public sliders:', error);
+      console.log("Database unavailable, using sample slider data");
+      
+      // Return sample slider data when database is unavailable
+      const sampleSliders = [
+        {
+          id: 1,
+          title: "Discover Your Beauty",
+          subtitle: "Naturally",
+          description: "Explore our premium collection of natural skincare and beauty products crafted with the finest ingredients for radiant, healthy skin.",
+          imageUrl: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400",
+          badge: "NEW ARRIVAL",
+          primaryActionText: "Shop Now",
+          primaryActionUrl: "/products",
+          secondaryActionText: "Learn More",
+          secondaryActionUrl: "/about",
+          backgroundGradient: "bg-gradient-to-r from-pink-50 to-purple-50",
+          isActive: true,
+          sortOrder: 1
+        },
+        {
+          id: 2,
+          title: "Premium Skincare",
+          subtitle: "Solutions",
+          description: "Transform your skincare routine with our scientifically-formulated products designed to nourish and protect your skin.",
+          imageUrl: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400",
+          badge: "BESTSELLER",
+          primaryActionText: "Explore Collection",
+          primaryActionUrl: "/category/skincare",
+          secondaryActionText: "View All",
+          secondaryActionUrl: "/products",
+          backgroundGradient: "bg-gradient-to-r from-blue-50 to-indigo-50",
+          isActive: true,
+          sortOrder: 2
+        },
+        {
+          id: 3,
+          title: "Hair Care",
+          subtitle: "Essentials",
+          description: "Revitalize your hair with our nourishing shampoos, conditioners, and treatments for all hair types.",
+          imageUrl: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400",
+          badge: "SALE",
+          primaryActionText: "Shop Hair Care",
+          primaryActionUrl: "/category/haircare",
+          secondaryActionText: "View Offers",
+          secondaryActionUrl: "/products",
+          backgroundGradient: "bg-gradient-to-r from-green-50 to-teal-50",
+          isActive: true,
+          sortOrder: 3
+        }
+      ];
+      
+      res.json(sampleSliders);
+    }
   });
 
   // Authentication routes
@@ -2159,6 +2226,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin search error:", error);
       res.status(500).json({ error: "Failed to perform admin search" });
+    }
+  });
+
+  // Slider management routes
+  app.get('/api/admin/sliders', async (req, res) => {
+    try {
+      const allSliders = await db.select().from(sliders).orderBy(desc(sliders.sortOrder));
+      res.json(allSliders);
+    } catch (error) {
+      console.error('Error fetching sliders:', error);
+      res.status(500).json({ error: 'Failed to fetch sliders' });
+    }
+  });
+
+  app.post('/api/admin/sliders', upload.single("image"), async (req, res) => {
+    try {
+      const body = req.body;
+      // Return the file URL
+      const imageUrl = `/api/images/${req.file?.filename}`;
+
+      const [newSlider] = await db.insert(sliders).values({
+        title: body.title,
+        subtitle: body.subtitle,
+        description: body.description,
+        imageUrl: imageUrl,
+        badge: body.badge,
+        primaryActionText: body.primaryActionText,
+        primaryActionUrl: body.primaryActionUrl,
+        secondaryActionText: body.secondaryActionText,
+        secondaryActionUrl: body.secondaryActionUrl,
+        backgroundGradient: body.backgroundGradient,
+        isActive: body.isActive === 'true', // Ensure boolean value
+        sortOrder: parseInt(body.sortOrder, 10)
+      }).returning();
+
+      res.json(newSlider);
+    } catch (error) {
+      console.error('Error creating slider:', error);
+      res.status(500).json({ error: 'Failed to create slider' });
+    }
+  });
+
+  app.put('/api/admin/sliders/:id', upload.single("image"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const body = req.body;
+
+       // Return the file URL
+       let imageUrl = body.imageUrl;
+       if(req.file) {
+        imageUrl = `/api/images/${req.file?.filename}`;
+       }
+
+      const [updatedSlider] = await db.update(sliders)
+        .set({
+          title: body.title,
+          subtitle: body.subtitle,
+          description: body.description,
+          imageUrl: imageUrl,
+          badge: body.badge,
+          primaryActionText: body.primaryActionText,
+          primaryActionUrl: body.primaryActionUrl,
+          secondaryActionText: body.secondaryActionText,
+          secondaryActionUrl: body.secondaryActionUrl,
+          backgroundGradient: body.backgroundGradient,
+          isActive: body.isActive === 'true',
+          sortOrder: parseInt(body.sortOrder, 10),
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(sliders.id, id))
+        .returning();
+
+      if (!updatedSlider) {
+        return res.status(404).json({ error: 'Slider not found' });
+      }
+
+      res.json(updatedSlider);
+    } catch (error) {
+      console.error('Error updating slider:', error);
+      res.status(500).json({ error: 'Failed to update slider' });
+    }
+  });
+
+  app.delete('/api/admin/sliders/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const [deletedSlider] = await db.delete(sliders)
+        .where(eq(sliders.id, id))
+        .returning();
+
+      if (!deletedSlider) {
+        return res.status(404).json({ error: 'Slider not found' });
+      }
+
+      res.json({ message: 'Slider deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting slider:', error);
+      res.status(500).json({ error: 'Failed to delete slider' });
     }
   });
 

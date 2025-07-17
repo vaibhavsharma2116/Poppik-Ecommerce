@@ -36,6 +36,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import AdminSearchCommand from "./admin-search-command";
 import { cn } from "@/lib/utils";
 import { Images } from 'lucide-react';
+import { Mail } from "lucide-react";
 
 const sidebarItems = [
   {
@@ -74,6 +75,12 @@ const sidebarItems = [
     title: "Sliders",
     href: "/sliders",
     icon: Images,
+    badge: null,
+  },
+  {
+    title: "Contact Submissions",
+    href: "/contact-submissions",
+    icon: Mail,
     badge: null,
   },
   {

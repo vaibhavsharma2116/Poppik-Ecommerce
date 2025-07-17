@@ -133,3 +133,21 @@ export const orderNotificationsTable = pgTable("order_notifications", {
 
 export const insertOrderNotificationSchema = createInsertSchema(orderNotificationsTable);
 export const selectOrderNotificationSchema = createSelectSchema(orderNotificationsTable);
+
+export const sliders = pgTable("sliders", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  description: text("description").notNull(),
+  imageUrl: text("image_url").notNull(),
+  badge: text("badge"),
+  primaryActionText: text("primary_action_text").notNull(),
+  primaryActionUrl: text("primary_action_url").notNull(),
+  secondaryActionText: text("secondary_action_text"),
+  secondaryActionUrl: text("secondary_action_url"),
+  backgroundGradient: text("background_gradient"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import ProductCard from "@/components/product-card";
+import HeroBanner from "@/components/hero-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +36,9 @@ export default function Home() {
 
   return (
     <div>
+      {/* Hero Banner Section */}
+      <HeroBanner />
+
       {/* Categories Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -369,28 +369,101 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createContactSubmission(submissionData: any): Promise<any> {
-    // Placeholder for contact submission - would need a table for this
-    return { id: 1, ...submissionData, createdAt: new Date() };
+    // For now, we'll store contact submissions in memory or return sample data
+    // In a real application, you would have a proper database table
+    const submission = {
+      id: Date.now(),
+      ...submissionData,
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+    };
+    return submission;
   }
 
   async getContactSubmissions(): Promise<any[]> {
-    // Placeholder for contact submissions
-    return [];
+    // Return sample contact submissions for demonstration
+    const sampleSubmissions = [
+      {
+        id: 1,
+        firstName: 'Priya',
+        lastName: 'Sharma',
+        email: 'priya.sharma@example.com',
+        phone: '+91 98765 43210',
+        subject: 'Product Inquiry',
+        message: 'Hi, I would like to know more about your skincare products. Do you have any recommendations for sensitive skin?',
+        status: 'unread',
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 2,
+        firstName: 'Arjun',
+        lastName: 'Patel',
+        email: 'arjun.patel@example.com',
+        phone: '+91 87654 32109',
+        subject: 'Order Issue',
+        message: 'I placed an order last week but haven\'t received any tracking information. Can you please help me with the status?',
+        status: 'read',
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 3,
+        firstName: 'Meera',
+        lastName: 'Reddy',
+        email: 'meera.reddy@example.com',
+        subject: 'Return Request',
+        message: 'I received a damaged product in my last order. I would like to return it and get a refund. Please let me know the process.',
+        status: 'responded',
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        respondedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 4,
+        firstName: 'Rahul',
+        lastName: 'Kumar',
+        email: 'rahul.kumar@example.com',
+        phone: '+91 65432 10987',
+        subject: 'Partnership Opportunity',
+        message: 'I represent a beauty salon chain and am interested in partnering with your brand. Could we schedule a call to discuss this further?',
+        status: 'read',
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 5,
+        firstName: 'Ananya',
+        lastName: 'Singh',
+        email: 'ananya.singh@example.com',
+        subject: 'Bulk Order Inquiry',
+        message: 'Hello, I\'m planning a wedding and need to place a bulk order for skincare products as wedding gifts. Do you offer any discounts for bulk purchases?',
+        status: 'unread',
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+
+    return sampleSubmissions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   async getContactSubmission(id: number): Promise<any> {
-    // Placeholder for single contact submission
-    return null;
+    const submissions = await this.getContactSubmissions();
+    return submissions.find(submission => submission.id === id) || null;
   }
 
   async updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<any> {
-    // Placeholder for updating contact submission status
+    // In a real application, you would update the database
+    const submission = await this.getContactSubmission(id);
+    if (submission) {
+      submission.status = status;
+      if (respondedAt) {
+        submission.respondedAt = respondedAt.toISOString();
+      }
+      return submission;
+    }
     return null;
   }
 
   async deleteContactSubmission(id: number): Promise<boolean> {
-    // Placeholder for deleting contact submission
-    return false;
+    // In a real application, you would delete from the database
+    const submission = await this.getContactSubmission(id);
+    return submission !== null;
   }
 }
 

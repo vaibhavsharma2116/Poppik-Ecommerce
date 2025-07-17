@@ -151,3 +151,16 @@ export const sliders = pgTable("sliders", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const contactSubmissions = pgTable("contact_submissions", {
+  id: serial("id").primaryKey(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  subject: text("subject"),
+  message: text("message").notNull(),
+  status: varchar("status", { length: 20 }).default("unread").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
+});

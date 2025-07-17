@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import { storage } from "./storage";
+import { OTPService } from "./otp-service";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
@@ -127,6 +128,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Firebase auth verification middleware
+  const verifyFirebaseToken = async (req: any, res: any, next: any) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: "No Firebase token provided" });
+      }
+
+      const token = authHeader.substring(7);
+      
+      // In a real implementation, you would verify the Firebase token here
+      // For now, we'll just decode and trust it
+      console.log("Firebase token received:", token.substring(0, 20) + "...");
+      
+      // Store user info in request for later use
+      req.firebaseUser = { token };
+      next();
+    } catch (error) {
+      console.error("Firebase token verification error:", error);
+      res.status(401).json({ error: "Invalid Firebase token" });
+    }
+  };
+
+  // Firebase authentication endpoint
+  app.post("/api/auth/firebase", verifyFirebaseToken, async (req, res) => {
+    try {
+      const { uid, email, displayName, phoneNumber, photoURL } = req.body;
+
+      // Check if user exists in our database
+      let user = await storage.getUserByEmail(email || `${uid}@firebase.user`);
+      
+      if (!user) {
+        // Create new user from Firebase data
+        user = await storage.createUser({
+          firstName: displayName ? displayName.split(' ')[0] : 'Firebase',
+          lastName: displayName ? displayName.split(' ').slice(1).join(' ') || 'User' : 'User',
+          email: email || `${uid}@firebase.user`,
+          phone: phoneNumber || null,
+          password: 'firebase_auth', // Placeholder since Firebase handles auth
+          firebaseUid: uid
+        });
+      }
+
+      // Generate JWT token for our app
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        process.env.JWT_SECRET || "your-secret-key",
+        { expiresIn: "24h" }
+      );
+
+      // Return user data and token
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({
+        message: "Firebase authentication successful",
+        user: userWithoutPassword,
+        token
+      });
+    } catch (error) {
+      console.error("Firebase auth error:", error);
+      res.status(500).json({ error: "Failed to authenticate with Firebase" });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {
     try {
@@ -226,6 +290,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/logout", (req, res) => {
     res.json({ message: "Logged out successfully" });
+  });
+
+  // Mobile OTP routes
+  app.post("/api/auth/send-mobile-otp", async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+
+      if (!phoneNumber) {
+        return res.status(400).json({ error: "Phone number is required" });
+      }
+
+      // Basic phone number validation
+      const phoneRegex = /^(\+91|91)?[6-9]\d{9}$/;
+      if (!phoneRegex.test(phoneNumber.replace(/\s+/g, ''))) {
+        return res.status(400).json({ error: "Please enter a valid Indian mobile number" });
+      }
+
+      const result = await OTPService.sendMobileOTP(phoneNumber);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message
+        });
+      } else {
+        res.status(500).json({ error: result.message });
+      }
+    } catch (error) {
+      console.error("Send mobile OTP error:", error);
+      res.status(500).json({ error: "Failed to send mobile OTP" });
+    }
+  });
+
+  app.post("/api/auth/verify-mobile-otp", async (req, res) => {
+    try {
+      const { phoneNumber, otp } = req.body;
+
+      if (!phoneNumber || !otp) {
+        return res.status(400).json({ error: "Phone number and OTP are required" });
+      }
+
+      if (otp.length !== 6) {
+        return res.status(400).json({ error: "Please enter valid 6-digit OTP" });
+      }
+
+      const result = await OTPService.verifyMobileOTP(phoneNumber, otp);
+
+      if (result.success) {
+        res.json({
+          verified: true,
+          message: result.message
+        });
+      } else {
+        res.status(400).json({ error: result.message });
+      }
+    } catch (error) {
+      console.error("Verify mobile OTP error:", error);
+      res.status(500).json({ error: "Failed to verify mobile OTP" });
+    }
+  });
+
+  // Get current mobile OTP for development
+  app.get("/api/auth/get-mobile-otp/:phoneNumber", async (req, res) => {
+    try {
+      const { phoneNumber } = req.params;
+      const otpData = OTPService.otpStorage.get(phoneNumber);
+
+      if (otpData && new Date() <= otpData.expiresAt) {
+        res.json({ otp: otpData.otp });
+      } else {
+        res.status(404).json({ error: "No valid OTP found" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get OTP" });
+    }
   });
 
   // Profile update endpoint

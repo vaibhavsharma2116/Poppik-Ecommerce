@@ -9,7 +9,7 @@ import Home from "@/pages/home";
 import Category from "@/pages/category";
 import ProductDetail from "@/pages/product-detail";
 import About from "@/pages/about";
-import Contact from "@/pages/contact";
+// import Contact from "@/pages/contact";
 import Login from "./pages/auth/login";
 import Signup from "./pages/auth/signup";
 import OTPVerification from "./pages/auth/otp-verification";
@@ -32,6 +32,7 @@ import AdminProfile from "@/pages/admin/profile";
 import AdminChangePassword from "@/pages/admin/change-password";
 import AdminSliders from "@/pages/admin/sliders";
 import AdminContactSubmissions from "@/pages/admin/contact-submissions";
+import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from 'react';
 

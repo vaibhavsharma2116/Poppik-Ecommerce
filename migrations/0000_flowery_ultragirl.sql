@@ -103,6 +103,19 @@ CREATE TABLE "subcategories" (
 	"product_count" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "subcategories_slug_unique" UNIQUE("slug")
 );
+CREATE TABLE contact_submissions (
+	id SERIAL PRIMARY KEY,
+	first_name TEXT NOT NULL,
+	last_name TEXT NOT NULL,
+	email TEXT NOT NULL,
+	phone TEXT,
+	subject TEXT,
+	message TEXT NOT NULL,
+	status TEXT NOT NULL DEFAULT 'unread',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	responded_at TIMESTAMP
+);
+
 
 ALTER TABLE "subcategories" ADD CONSTRAINT "subcategories_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;
 

@@ -30,6 +30,7 @@ import AdminCustomers from "@/pages/admin/customers";
 import AdminSettings from "@/pages/admin/settings";
 import AdminProfile from "@/pages/admin/profile";
 import AdminChangePassword from "@/pages/admin/change-password";
+import AdminSliders from "@/pages/admin/sliders";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from 'react';
 
@@ -47,6 +48,7 @@ function Router() {
             <Route path="/categories" component={AdminCategories} />
             <Route path="/orders" component={AdminOrders} />
             <Route path="/customers" component={AdminCustomers} />
+            <Route path="/sliders" component={AdminSliders} />
             <Route path="/settings" component={AdminSettings} />
             <Route path="/profile" component={AdminProfile} />
             <Route path="/change-password" component={AdminChangePassword} />

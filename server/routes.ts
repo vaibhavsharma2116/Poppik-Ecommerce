@@ -10,7 +10,6 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc, and, gte, lte, like, isNull, asc, or, sql } from "drizzle-orm";
 import { Pool } from "pg";
 import { ordersTable, orderItemsTable, users } from "../shared/schema";
-import { adminAuthMiddleware } from "./admin-middleware";
 
 // Database connection
 const pool = new Pool({
@@ -378,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products", adminAuthMiddleware, async (req, res) => {
+  app.post("/api/products", async (req, res) => {
     try {
       console.log("Received product data:", req.body);
 
@@ -405,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/products/:id", adminAuthMiddleware, async (req, res) => {
+  app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
       console.log(`Updating product ${id} with data:`, req.body);
@@ -424,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/products/:id", adminAuthMiddleware, async (req, res) => {
+  app.delete("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteProduct(parseInt(id));
@@ -437,7 +436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/categories", adminAuthMiddleware, async (req, res) => {
+  app.post("/api/categories", async (req, res) => {
     try {
       console.log("Received category data:", req.body);
 
@@ -467,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/categories/:id", adminAuthMiddleware, async (req, res) => {
+  app.put("/api/categories/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const category = await storage.updateCategory(parseInt(id), req.body);
@@ -480,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/categories/:id", adminAuthMiddleware, async (req, res) => {
+  app.delete("/api/categories/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteCategory(parseInt(id));
@@ -526,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subcategories", adminAuthMiddleware, async (req, res) => {
+  app.post("/api/subcategories", async (req, res) => {
     try {
       const subcategory = await storage.createSubcategory(req.body);
       res.status(201).json(subcategory);
@@ -535,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/subcategories/:id", adminAuthMiddleware, async (req, res) => {
+  app.put("/api/subcategories/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const subcategory = await storage.updateSubcategory(parseInt(id), req.body);
@@ -548,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/subcategories/:id", adminAuthMiddleware, async (req, res) => {
+  app.delete("/api/subcategories/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteSubcategory(parseInt(id));
@@ -562,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Orders endpoints
-  app.get("/api/admin/orders", adminAuthMiddleware, async (req, res) => {
+  app.get("/api/admin/orders", async (req, res) => {
     try {
       // Get all orders from database
       let orders;
@@ -637,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send order notification
-  app.post("/api/orders/:id/notify", adminAuthMiddleware, async (req, res) => {
+  app.post("/api/orders/:id/notify", async (req, res) => {
     try {
       const orderId = req.params.id.replace('ORD-', '');
       const { status } = req.body;
@@ -1104,7 +1103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update order status (for admin)
-  app.put("/api/orders/:id/status", adminAuthMiddleware, async (req, res) => {
+  app.put("/api/orders/:id/status", async (req, res) => {
     try {
       const orderId = req.params.id.replace('ORD-', '');
       const { status, trackingNumber } = req.body;
@@ -1424,7 +1423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Admin Customers endpoints
-  app.get("/api/admin/customers", adminAuthMiddleware, async (req, res) => {
+  app.get("/api/admin/customers", async (req, res) => {
     try {
       // Get all users from database
       let allUsers;
@@ -1491,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get individual customer details
-  app.get("/api/admin/customers/:id", adminAuthMiddleware, async (req, res) => {
+  app.get("/api/admin/customers/:id", async (req, res) => {
     try {
       const customerId = parseInt(req.params.id);
 
@@ -1561,100 +1560,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sliders API
-  app.get("/api/sliders", async (req, res) => {
-    try {
-      const sliders = await storage.getActiveSliders();
-      res.json(sliders);
-    } catch (error) {
-      console.error("Error fetching sliders:", error);
-      res.status(500).json({ error: "Failed to fetch sliders" });
-    }
-  });
-
-  app.get("/api/admin/sliders", adminAuthMiddleware, async (req, res) => {
-    try {
-      const sliders = await storage.getSliders();
-      res.json(sliders);
-    } catch (error) {
-      console.error("Error fetching all sliders:", error);
-      res.status(500).json({ error: "Failed to fetch sliders" });
-    }
-  });
-
-  app.get("/api/admin/sliders/:id", adminAuthMiddleware, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const slider = await storage.getSlider(parseInt(id));
-      if (!slider) {
-        return res.status(404).json({ error: "Slider not found" });
-      }
-      res.json(slider);
-    } catch (error) {
-      console.error("Error fetching slider:", error);
-      res.status(500).json({ error: "Failed to fetch slider" });
-    }
-  });
-
-  app.post("/api/admin/sliders", adminAuthMiddleware, async (req, res) => {
-    try {
-      const { title, subtitle, description, imageUrl, badge, primaryActionText, primaryActionUrl, secondaryActionText, secondaryActionUrl, backgroundGradient, isActive, sortOrder } = req.body;
-
-      if (!title || !description || !imageUrl || !primaryActionText || !primaryActionUrl) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      const sliderData = {
-        title,
-        subtitle,
-        description,
-        imageUrl,
-        badge,
-        primaryActionText,
-        primaryActionUrl,
-        secondaryActionText,
-        secondaryActionUrl,
-        backgroundGradient,
-        isActive: isActive ?? true,
-        sortOrder: sortOrder ?? 0
-      };
-
-      const slider = await storage.createSlider(sliderData);
-      res.status(201).json(slider);
-    } catch (error) {
-      console.error("Error creating slider:", error);
-      res.status(500).json({ error: "Failed to create slider" });
-    }
-  });
-
-  app.put("/api/admin/sliders/:id", adminAuthMiddleware, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const slider = await storage.updateSlider(parseInt(id), req.body);
-      if (!slider) {
-        return res.status(404).json({ error: "Slider not found" });
-      }
-      res.json(slider);
-    } catch (error) {
-      console.error("Error updating slider:", error);
-      res.status(500).json({ error: "Failed to update slider" });
-    }
-  });
-
-  app.delete("/api/admin/sliders/:id", adminAuthMiddleware, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const success = await storage.deleteSlider(parseInt(id));
-      if (!success) {
-        return res.status(404).json({ error: "Slider not found" });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting slider:", error);
-      res.status(500).json({ error: "Failed to delete slider" });
-    }
-  });
-
   // Contact form submission endpoint
   app.post("/api/contact", async (req, res) => {
     try {
@@ -1708,7 +1613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contact submissions management endpoints (Admin)
-  app.get("/api/admin/contact-submissions", adminAuthMiddleware, async (req, res) => {
+  app.get("/api/admin/contact-submissions", async (req, res) => {
     try {
       const submissions = await storage.getContactSubmissions();
       res.json(submissions);
@@ -1718,7 +1623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/contact-submissions/:id", adminAuthMiddleware, async (req, res) => {
+  app.get("/api/admin/contact-submissions/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const submission = await storage.getContactSubmission(parseInt(id));
@@ -1732,7 +1637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/contact-submissions/:id/status", adminAuthMiddleware, async (req, res) => {
+  app.put("/api/admin/contact-submissions/:id/status", async (req, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -1758,7 +1663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/contact-submissions/:id", adminAuthMiddleware, async (req, res) => {
+  app.delete("/api/admin/contact-submissions/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteContactSubmission(parseInt(id));
@@ -2162,7 +2067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/search", adminAuthMiddleware, async (req, res) => {
+  app.get("/api/admin/search", async (req, res) => {
     try {
       const query = req.query.q;
 

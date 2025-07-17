@@ -35,6 +35,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import AdminSearchCommand from "./admin-search-command";
 import { cn } from "@/lib/utils";
+import { Images } from 'lucide-react';
 
 const sidebarItems = [
   {
@@ -68,6 +69,12 @@ const sidebarItems = [
     href: "/customers",
     icon: Users,
     badge: "1.2k",
+  },
+  {
+    title: "Sliders",
+    href: "/sliders",
+    icon: Images,
+    badge: null,
   },
   {
     title: "Settings",
@@ -132,7 +139,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
 
         const validationResult = await response.json();
-        
+
         // Double check role from server response
         if (validationResult.user.role !== 'admin') {
           console.log('User role is not admin, redirecting to home page');
@@ -473,7 +480,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                
+
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

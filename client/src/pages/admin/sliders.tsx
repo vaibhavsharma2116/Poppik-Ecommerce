@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +18,11 @@ import {
   Image as ImageIcon,
   Loader2,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Upload,
+  X
 } from "lucide-react";
+import { ChromePicker } from 'react-color'; // Import ChromePicker
 
 interface Slider {
   id: number;
@@ -49,7 +51,12 @@ export default function AdminSliders() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedSlider, setSelectedSlider] = useState<Slider | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
 
   const [formData, setFormData] = useState({
     title: '',
@@ -92,6 +99,23 @@ export default function AdminSliders() {
 
   const handleSubmit = async () => {
     try {
+      let imageUrl = formData.imageUrl;
+
+      // Upload image if a new one is selected
+      if (selectedImage) {
+        const uploadedImageUrl = await uploadImage();
+        if (uploadedImageUrl) {
+          imageUrl = uploadedImageUrl;
+        } else {
+          return; // Stop if image upload failed
+        }
+      }
+
+      const submissionData = {
+        ...formData,
+        imageUrl
+      };
+
       const url = selectedSlider ? `/api/admin/sliders/${selectedSlider.id}` : '/api/admin/sliders';
       const method = selectedSlider ? 'PUT' : 'POST';
 
@@ -101,7 +125,7 @@ export default function AdminSliders() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
       if (!response.ok) {
@@ -109,7 +133,7 @@ export default function AdminSliders() {
       }
 
       const savedSlider = await response.json();
-      
+
       if (selectedSlider) {
         setSliders(prev => prev.map(s => s.id === selectedSlider.id ? savedSlider : s));
         toast({ title: "Slider updated successfully" });
@@ -146,6 +170,8 @@ export default function AdminSliders() {
       isActive: slider.isActive,
       sortOrder: slider.sortOrder
     });
+    setImagePreview(slider.imageUrl);
+    setSelectedImage(null);
     setIsEditModalOpen(true);
   };
 
@@ -177,6 +203,56 @@ export default function AdminSliders() {
     }
   };
 
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!selectedImage) return null;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('image', selectedImage);
+
+    try {
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -193,12 +269,18 @@ export default function AdminSliders() {
       sortOrder: 0
     });
     setSelectedSlider(null);
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const filteredSliders = sliders.filter(slider =>
     slider.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     slider.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleColorChange = (color: any) => {
+        setFormData(prev => ({ ...prev, backgroundGradient: color.hex }));
+  };
 
   if (loading) {
     return (
@@ -345,7 +427,7 @@ export default function AdminSliders() {
               {selectedSlider ? 'Edit Slide' : 'Add New Slide'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -381,16 +463,51 @@ export default function AdminSliders() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL *</Label>
-              <Input
-                id="imageUrl"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-                placeholder="https://example.com/image.jpg"
-                required
-              />
-            </div>
+            
+<div className="space-y-2">
+                <Label>Banner Image *</Label>
+                {imagePreview && (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">
+                  <CardContent className="flex flex-col items-center justify-center py-8">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      id="slider-image-upload"
+                    />
+                    <Label
+                      htmlFor="slider-image-upload"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                    </Label>
+                    {selectedImage && (
+                      <p className="text-sm text-green-600 mt-2">Selected: {selectedImage.name}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -402,15 +519,28 @@ export default function AdminSliders() {
                   placeholder="New Collection"
                 />
               </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="backgroundGradient">Background Gradient</Label>
-                <Input
-                  id="backgroundGradient"
-                  value={formData.backgroundGradient}
-                  onChange={(e) => setFormData(prev => ({ ...prev, backgroundGradient: e.target.value }))}
-                  placeholder="bg-gradient-to-r from-pink-50 to-purple-50"
-                />
-              </div>
+                    <Label htmlFor="backgroundGradient">Background Gradient</Label>
+                    <Button variant="outline" onClick={() => setShowColorPicker(show => !show)}>
+                        {showColorPicker ? "Close Color Picker" : "Pick a Color"}
+                    </Button>
+                    {showColorPicker && (
+                        <ChromePicker color={formData.backgroundGradient} onChange={handleColorChange} />
+                    )}
+                    {formData.backgroundGradient && (
+                        <div className="mt-2">
+                            Selected Color: {formData.backgroundGradient}
+                            <div
+                                style={{
+                                    width: '50px',
+                                    height: '20px',
+                                    backgroundColor: formData.backgroundGradient,
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -487,8 +617,15 @@ export default function AdminSliders() {
             }}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
-              {selectedSlider ? 'Update Slide' : 'Create Slide'}
+            <Button onClick={handleSubmit} disabled={uploading}>
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                selectedSlider ? 'Update Slide' : 'Create Slide'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

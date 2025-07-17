@@ -17,6 +17,106 @@ export class OTPService {
     return otpStorage;
   }
 
+  // Mobile OTP methods
+  static async sendMobileOTP(phoneNumber: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Clean and format phone number
+      const cleanedPhone = phoneNumber.replace(/\D/g, '');
+      const formattedPhone = cleanedPhone.startsWith('91') && cleanedPhone.length === 12 
+        ? cleanedPhone.substring(2) 
+        : cleanedPhone;
+
+      if (formattedPhone.length !== 10) {
+        return {
+          success: false,
+          message: 'Please enter a valid 10-digit mobile number'
+        };
+      }
+
+      // Generate 6-digit OTP
+      const otp = this.generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      // Store OTP with phone number as key
+      otpStorage.set(formattedPhone, {
+        otp,
+        email: formattedPhone, // Using email field for phone number
+        expiresAt,
+        verified: false
+      });
+
+      // Log OTP to console (since SMS gateway isn't configured)
+      console.log('\n' + '='.repeat(50));
+      console.log('📱 MOBILE OTP SENT');
+      console.log('='.repeat(50));
+      console.log(`📱 Phone: +91 ${formattedPhone}`);
+      console.log(`🔐 OTP Code: ${otp}`);
+      console.log(`⏰ Valid for: 5 minutes`);
+      console.log(`📅 Generated at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+      console.log('='.repeat(50) + '\n');
+
+      return {
+        success: true,
+        message: 'OTP sent to your mobile number successfully'
+      };
+    } catch (error) {
+      console.error('Error sending mobile OTP:', error);
+      return {
+        success: false,
+        message: 'Failed to send mobile OTP'
+      };
+    }
+  }
+
+  static async verifyMobileOTP(phoneNumber: string, otp: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Clean and format phone number
+      const cleanedPhone = phoneNumber.replace(/\D/g, '');
+      const formattedPhone = cleanedPhone.startsWith('91') && cleanedPhone.length === 12 
+        ? cleanedPhone.substring(2) 
+        : cleanedPhone;
+
+      const otpData = otpStorage.get(formattedPhone);
+
+      if (!otpData) {
+        return {
+          success: false,
+          message: 'OTP not found or expired'
+        };
+      }
+
+      if (new Date() > otpData.expiresAt) {
+        otpStorage.delete(formattedPhone);
+        return {
+          success: false,
+          message: 'OTP has expired'
+        };
+      }
+
+      if (otpData.otp !== otp) {
+        return {
+          success: false,
+          message: 'Invalid OTP'
+        };
+      }
+
+      // Mark as verified
+      otpData.verified = true;
+      otpStorage.set(formattedPhone, otpData);
+
+      return {
+        success: true,
+        message: 'Mobile OTP verified successfully'
+      };
+    } catch (error) {
+      console.error('Error verifying mobile OTP:', error);
+      return {
+        success: false,
+        message: 'Failed to verify mobile OTP'
+      };
+    }
+  }
+
   // Create email transporter
   private static createTransporter() {
     const config = {

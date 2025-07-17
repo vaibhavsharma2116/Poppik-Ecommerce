@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "wouter";
 import { Eye, EyeOff, Mail, Lock, Phone } from "lucide-react";
@@ -23,7 +22,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -32,14 +31,14 @@ export default function Login() {
         },
         body: JSON.stringify(formData),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         // Store token in localStorage
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        
+
         alert("Login successful!");
         // Redirect based on user role
         if (data.user.role === "admin") {
@@ -66,24 +65,11 @@ export default function Login() {
 
   const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithGoogle();
-      const user = result.user;
-      
-      // Get user token for backend authentication
-      const token = await user.getIdToken();
-      
-      // Store token and user info
-      localStorage.setItem("firebase_token", token);
-      localStorage.setItem("user", JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-      }));
+      const { user } = await signInWithGoogle();
 
       toast({
         title: "Success",
-        description: "Successfully signed in with Google!",
+        description: `Welcome back ${user.firstName}!`,
       });
 
       // Redirect to profile
@@ -198,10 +184,20 @@ export default function Login() {
                 Continue with Google
               </Button>
 
-              <Button variant="outline" className="w-full" onClick={() => setShowPhoneLogin(true)}>
-                <Phone className="w-4 h-4 mr-2" />
-                Continue with Phone Number
-              </Button>
+              {/* Phone Login - Temporarily disabled */}
+            <Button 
+              onClick={() => toast({
+                title: "Coming Soon",
+                description: "Phone authentication will be available soon. Please use Google sign-in for now.",
+                variant: "default",
+              })}
+              variant="outline" 
+              className="w-full border-gray-200 text-gray-400 cursor-not-allowed"
+              disabled
+            >
+              <Phone className="h-4 w-4 mr-2" />
+              Continue with Phone (Coming Soon)
+            </Button>
             </div>
 
             <div className="text-center">

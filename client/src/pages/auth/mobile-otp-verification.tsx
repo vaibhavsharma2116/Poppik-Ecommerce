@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
 import { FirebaseSMSService } from "@/lib/firebase";
-
 interface MobileOTPVerificationProps {
   phoneNumber?: string;
   onVerified?: (phoneNumber: string) => void;
@@ -31,13 +30,6 @@ export default function MobileOTPVerification({ phoneNumber: propPhoneNumber, on
       return () => clearTimeout(timer);
     }
   }, [countdown]);
-
-  // Cleanup Firebase on unmount
-  useEffect(() => {
-    return () => {
-      FirebaseSMSService.cleanup();
-    };
-  }, []);
 
   const formatPhoneNumber = (phone: string) => {
     // Remove all non-digits
@@ -77,7 +69,7 @@ export default function MobileOTPVerification({ phoneNumber: propPhoneNumber, on
       } else {
         toast({
           title: "Error",
-          description: result.message,
+          description: result.message || "Failed to send OTP",
           variant: "destructive",
         });
       }
@@ -117,12 +109,12 @@ export default function MobileOTPVerification({ phoneNumber: propPhoneNumber, on
           onVerified(phoneNumber);
         } else {
           // Redirect or handle success
-          window.location.href = "/auth/login";
+          window.location.href = "/profile";
         }
       } else {
         toast({
           title: "Error",
-          description: result.message,
+          description: result.message || "Invalid OTP",
           variant: "destructive",
         });
       }
@@ -138,12 +130,18 @@ export default function MobileOTPVerification({ phoneNumber: propPhoneNumber, on
     }
   };
 
+  // Cleanup Firebase service when component unmounts
+  useEffect(() => {
+    return () => {
+      FirebaseSMSService.cleanup();
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center p-4">
-      {/* Hidden reCAPTCHA container */}
-      <div id="recaptcha-container"></div>
-      
       <div className="w-full max-w-md">
+        {/* reCAPTCHA container - hidden */}
+        <div id="recaptcha-container" style={{ display: 'none' }}></div>
         <div className="text-center mb-8">
           <Link href="/">
             <h1 className="text-3xl font-bold text-red-600 mb-2">Poppik</h1>

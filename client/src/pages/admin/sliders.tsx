@@ -82,13 +82,29 @@ export default function AdminSliders() {
       setLoading(true);
       const response = await fetch('/api/admin/sliders', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Content-Type': 'application/json'
         }
       });
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch sliders');
+        if (response.status === 401) {
+          throw new Error('Unauthorized - please login again');
+        }
+        throw new Error(`Failed to fetch sliders: ${response.status}`);
       }
-      const data = await response.json();
+      
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Handle non-JSON response
+        const textResponse = await response.text();
+        console.error('Non-JSON response:', textResponse);
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
       setSliders(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load sliders');
@@ -129,10 +145,23 @@ export default function AdminSliders() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save slider');
+        if (response.status === 401) {
+          throw new Error('Unauthorized - please login again');
+        }
+        throw new Error(`Failed to save slider: ${response.status}`);
       }
 
-      const savedSlider = await response.json();
+      const contentType = response.headers.get('content-type');
+      let savedSlider;
+      
+      if (contentType && contentType.includes('application/json')) {
+        savedSlider = await response.json();
+      } else {
+        // Handle non-JSON response
+        const textResponse = await response.text();
+        console.error('Non-JSON response:', textResponse);
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
 
       if (selectedSlider) {
         setSliders(prev => prev.map(s => s.id === selectedSlider.id ? savedSlider : s));
@@ -182,12 +211,16 @@ export default function AdminSliders() {
       const response = await fetch(`/api/admin/sliders/${selectedSlider.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete slider');
+        if (response.status === 401) {
+          throw new Error('Unauthorized - please login again');
+        }
+        throw new Error(`Failed to delete slider: ${response.status}`);
       }
 
       setSliders(prev => prev.filter(s => s.id !== selectedSlider.id));

@@ -7,7 +7,7 @@ import Layout from "@/components/layout";
 import AdminLayout from "@/components/admin/admin-layout";
 import Home from "@/pages/home";
 import Category from "@/pages/category";
-import ProductsPage from "@/pages/products";
+import ProductsPage from "@/pages/product";
 import ProductDetail from "@/pages/product-detail";
 import About from "@/pages/about";
 // import Contact from "@/pages/contact";

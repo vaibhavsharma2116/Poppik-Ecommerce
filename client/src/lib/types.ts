@@ -4,12 +4,12 @@ export interface Product {
   slug: string;
   description: string;
   shortDescription: string;
-  price: string;
-  originalPrice?: string;
+  price: number;
+  originalPrice?: number;
   category: string;
   subcategory?: string;
   imageUrl: string;
-  rating: string;
+  rating: number;
   reviewCount: number;
   inStock: boolean;
   featured: boolean;
@@ -26,6 +26,7 @@ export interface Product {
   howToUse?: string;
   size?: string;
   tags?: string[];
+  createdAt?: string;
 }
 
 export interface Category {

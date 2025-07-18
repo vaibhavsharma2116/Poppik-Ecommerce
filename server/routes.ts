@@ -2382,28 +2382,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/sliders', upload.single("image"), async (req, res) => {
     try {
       const body = req.body;
-      // Return the file URL
-      const imageUrl = `/api/images/${req.file?.filename}`;
+      
+      // Handle image URL - use uploaded file or provided URL
+      let imageUrl = '';
+      if (req.file) {
+        imageUrl = `/api/images/${req.file.filename}`;
+      } else if (body.imageUrl) {
+        imageUrl = body.imageUrl;
+      }
+
+      // Validate required fields
+      if (!body.title || !body.description || !body.primaryActionText || !body.primaryActionUrl) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: title, description, primaryActionText, and primaryActionUrl are required' 
+        });
+      }
+
+      if (!imageUrl) {
+        return res.status(400).json({ 
+          error: 'Image is required. Please upload an image or provide an image URL.' 
+        });
+      }
 
       const [newSlider] = await db.insert(sliders).values({
         title: body.title,
-        subtitle: body.subtitle,
+        subtitle: body.subtitle || '',
         description: body.description,
         imageUrl: imageUrl,
-        badge: body.badge,
+        badge: body.badge || '',
         primaryActionText: body.primaryActionText,
         primaryActionUrl: body.primaryActionUrl,
-        secondaryActionText: body.secondaryActionText,
-        secondaryActionUrl: body.secondaryActionUrl,
-        backgroundGradient: body.backgroundGradient,
-        isActive: body.isActive === 'true', // Ensure boolean value
-        sortOrder: parseInt(body.sortOrder, 10)
+        secondaryActionText: body.secondaryActionText || '',
+        secondaryActionUrl: body.secondaryActionUrl || '',
+        backgroundGradient: body.backgroundGradient || '',
+        isActive: body.isActive === 'true' || body.isActive === true, // Handle boolean from FormData
+        sortOrder: parseInt(body.sortOrder, 10) || 0
       }).returning();
 
       res.json(newSlider);
     } catch (error) {
       console.error('Error creating slider:', error);
-      res.status(500).json({ error: 'Failed to create slider' });
+      res.status(500).json({ 
+        error: 'Failed to create slider',
+        details: error.message 
+      });
     }
   });
 

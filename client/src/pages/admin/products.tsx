@@ -149,22 +149,18 @@ export default function AdminProducts() {
 
   const handleAddProduct = async (newProduct: any) => {
     try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newProduct),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create product');
-      }
-
-      const createdProduct = await response.json();
-      setProducts(prev => [...prev, createdProduct]);
+      // The product is already created in the modal, so we just need to add it to our state
+      setProducts(prev => [...prev, newProduct]);
+      
+      // Clear any previous errors
+      setError(null);
+      
+      // Optionally refetch data to ensure consistency
+      setTimeout(() => {
+        fetchData();
+      }, 500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create product');
+      setError(err instanceof Error ? err.message : 'Failed to add product to list');
     }
   };
 

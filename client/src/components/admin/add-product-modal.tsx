@@ -76,6 +76,9 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent multiple submissions
+    if (loading) return;
+    
     // Client-side validation
     if (!formData.name.trim()) {
       alert('Product name is required');
@@ -158,7 +161,11 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
       }
 
       const createdProduct = await response.json();
-      onAddProduct(createdProduct);
+      
+      // Call onAddProduct to update the parent component's state
+      await onAddProduct(createdProduct);
+      
+      // Close modal and reset form
       setOpen(false);
       resetForm();
       alert('Product created successfully!');
@@ -559,7 +566,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
             <Button 
               type="submit" 
               disabled={isUploadingImage || loading}
-              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUploadingImage ? 'Uploading Image...' : loading ? 'Creating Product...' : 'Add Product'}
             </Button>

@@ -33,7 +33,7 @@ export default function ProductsPage() {
   // Dynamic price ranges from actual products
   const priceRanges = useMemo(() => {
     if (!allProducts) return [];
-    const prices = allProducts.map(p => p.price);
+    const prices = allProducts.map(p => typeof p.price === 'string' ? parseFloat(p.price) : p.price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
 
@@ -61,16 +61,28 @@ export default function ProductsPage() {
     if (priceRange !== "all-price") {
       switch (priceRange) {
         case "0-500":
-          filtered = filtered.filter(product => product.price <= 500);
+          filtered = filtered.filter(product => {
+            const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+            return price <= 500;
+          });
           break;
         case "500-1000":
-          filtered = filtered.filter(product => product.price > 500 && product.price <= 1000);
+          filtered = filtered.filter(product => {
+            const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+            return price > 500 && price <= 1000;
+          });
           break;
         case "1000-2000":
-          filtered = filtered.filter(product => product.price > 1000 && product.price <= 2000);
+          filtered = filtered.filter(product => {
+            const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+            return price > 1000 && price <= 2000;
+          });
           break;
         case "2000+":
-          filtered = filtered.filter(product => product.price > 2000);
+          filtered = filtered.filter(product => {
+            const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+            return price > 2000;
+          });
           break;
       }
     }
@@ -78,10 +90,18 @@ export default function ProductsPage() {
     // Sort products
     switch (sortBy) {
       case "price-low":
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => {
+          const priceA = typeof a.price === 'string' ? parseFloat(a.price) : a.price;
+          const priceB = typeof b.price === 'string' ? parseFloat(b.price) : b.price;
+          return priceA - priceB;
+        });
         break;
       case "price-high":
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => {
+          const priceA = typeof a.price === 'string' ? parseFloat(a.price) : a.price;
+          const priceB = typeof b.price === 'string' ? parseFloat(b.price) : b.price;
+          return priceB - priceA;
+        });
         break;
       case "newest":
         filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());

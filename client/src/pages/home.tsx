@@ -32,10 +32,10 @@ export default function Home() {
   };
 
   const categoryGradients = {
-    skincare: "gradient-pink",
-    haircare: "gradient-blue", 
-    makeup: "gradient-purple",
-    bodycare: "gradient-green"
+    skincare: "from-pink-100 via-rose-50 to-pink-200",
+    haircare: "from-blue-100 via-sky-50 to-blue-200", 
+    makeup: "from-purple-100 via-violet-50 to-purple-200",
+    bodycare: "from-green-100 via-emerald-50 to-green-200"
   };
 
   return (
@@ -44,18 +44,30 @@ export default function Home() {
       <HeroBanner />
 
       {/* Enhanced Categories Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-black/5 rounded-full mb-6">
-              <span className="text-sm font-medium text-gray-600">✨ Premium Beauty Collection</span>
+      <section className="py-24 bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.02]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_var(--tw-gradient-stops))] from-pink-500 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_var(--tw-gradient-stops))] from-purple-500 via-transparent to-transparent"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-100 rounded-full mb-8 shadow-sm">
+              <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text">
+                ✨ Premium Beauty Collection
+              </span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
-              Shop by Category
+            <h2 className="text-5xl md:text-6xl font-bold mb-8 tracking-tight">
+              <span className="text-transparent bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">
+                Shop by Category
+              </span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Discover our complete range of beauty and wellness products crafted with premium ingredients
+            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light">
+              Discover our complete range of beauty and wellness products crafted with premium ingredients 
+              and designed for your unique beauty journey
             </p>
+            <div className="mt-8 w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Dynamic Categories Grid */}
@@ -70,28 +82,48 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
-              {categories?.map((category) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
+              {categories?.map((category, index) => (
                 <Link key={category.id} href={`/category/${category.slug}`}>
-                  <div className="group relative overflow-hidden rounded-3xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
-                    <div className="aspect-square overflow-hidden">
-                      <div className={`relative h-full p-8 ${categoryGradients[category.slug as keyof typeof categoryGradients] || 'bg-gradient-to-br from-gray-100 to-gray-200'}`}>
+                  <div 
+                    className="group relative overflow-hidden rounded-3xl bg-white shadow-lg hover:shadow-2xl transition-all duration-700 transform hover:-translate-y-3 hover:rotate-1"
+                    style={{
+                      animationDelay: `${index * 150}ms`,
+                      animation: 'fadeInUp 0.8s ease-out forwards'
+                    }}
+                  >
+                    <div className="aspect-square overflow-hidden relative">
+                      <div className={`relative h-full p-8 bg-gradient-to-br ${categoryGradients[category.slug as keyof typeof categoryGradients] || 'from-gray-100 to-gray-200'}`}>
+                        {/* Decorative Elements */}
+                        <div className="absolute top-4 right-4 w-8 h-8 bg-white/20 rounded-full blur-sm"></div>
+                        <div className="absolute bottom-4 left-4 w-6 h-6 bg-white/30 rounded-full blur-sm"></div>
+                        
                         <img
                           src={categoryImages[category.slug as keyof typeof categoryImages] || category.imageUrl}
                           alt={category.name}
-                          className="w-full h-full object-cover rounded-2xl group-hover:scale-110 transition-transform duration-700 shadow-lg"
+                          className="w-full h-full object-cover rounded-2xl group-hover:scale-110 transition-transform duration-700 shadow-xl"
                         />
-                        <div className="absolute inset-0 bg-black/10 rounded-2xl group-hover:bg-black/0 transition-colors duration-300"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent rounded-2xl group-hover:from-black/5 transition-all duration-500"></div>
+                        
+                        {/* Floating Badge */}
+                        <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg">
+                          <span className="text-xs font-semibold text-gray-700">{category.productCount} items</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-6 text-center">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-black transition-colors">
+                    <div className="p-8 text-center relative">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">
                         {category.name}
                       </h3>
-                      <p className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors">
-                        {category.productCount} products
+                      <p className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors mb-4">
+                        Explore {category.productCount} premium products
                       </p>
-                      <div className="mt-4 w-12 h-1 bg-gradient-to-r from-black to-gray-400 mx-auto opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                        <span className="text-sm font-medium text-gray-700">Shop Now</span>
+                        <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -100,17 +132,26 @@ export default function Home() {
           )}
 
           {/* Enhanced Products Section */}
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Our Products</h3>
-                <p className="text-gray-600">Handpicked beauty essentials for your daily routine</p>
+          <div className="space-y-12">
+            <div className="text-center">
+              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-full mb-6">
+                <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
+                  🌟 Curated Collection
+                </span>
               </div>
+              <h3 className="text-4xl md:text-5xl font-bold mb-4">
+                <span className="text-transparent bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">
+                  Our Products
+                </span>
+              </h3>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed font-light mb-8">
+                Handpicked beauty essentials crafted with love and designed for your daily routine
+              </p>
               {!allProductsLoading && allProducts && allProducts.length > 12 && (
                 <Link href="/category/all">
-                  <Button className="btn-primary inline-flex items-center gap-2 px-6 py-3">
-                    <span>View All ({allProducts.length})</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-3">
+                    <span>Explore All {allProducts.length} Products</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
                   </Button>
@@ -165,16 +206,33 @@ export default function Home() {
       </section>
 
       {/* Featured Products Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-12">
-            <div className="text-center flex-1">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Products</h2>
-              <p className="text-gray-600">Our newest and most innovative products</p>
+      <section className="py-20 bg-gradient-to-br from-purple-50 via-white to-pink-50 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,_var(--tw-gradient-stops))] from-purple-500 via-transparent to-transparent"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-full mb-8 shadow-sm">
+              <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
+                ⭐ Trending Now
+              </span>
             </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <span className="text-transparent bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text">
+                Featured Products
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-light mb-8">
+              Our newest and most innovative products, carefully selected for their exceptional quality
+            </p>
             <Link href="/category/featured">
-              <Button variant="outline" className="hidden md:flex">
-                View All Featured
+              <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
+                <span>View All Featured</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </Button>
             </Link>
           </div>
@@ -221,16 +279,33 @@ export default function Home() {
       </section>
 
       {/* Bestsellers Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-12">
-            <div className="text-center flex-1">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Bestsellers</h2>
-              <p className="text-gray-600">Our most loved products by customers</p>
+      <section className="py-20 bg-gradient-to-br from-amber-50 via-white to-yellow-50 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_var(--tw-gradient-stops))] from-amber-500 via-transparent to-transparent"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-100 rounded-full mb-8 shadow-sm">
+              <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text">
+                🏆 Customer Favorites
+              </span>
             </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <span className="text-transparent bg-gradient-to-r from-amber-700 via-yellow-600 to-amber-700 bg-clip-text">
+                Bestsellers
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-light mb-8">
+              Our most loved products by customers - tried, tested, and trusted by thousands
+            </p>
             <Link href="/category/bestsellers">
-              <Button variant="outline" className="hidden md:flex">
-                View All Bestsellers
+              <Button className="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
+                <span>View All Bestsellers</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </Button>
             </Link>
           </div>

@@ -77,30 +77,35 @@ export default function CategoryPage() {
 
     // Filter by subcategory
     if (selectedSubcategory !== "all") {
-      filtered = filtered.filter(product => product.subcategory === selectedSubcategory);
+      filtered = filtered.filter(product => 
+        product.subcategory && product.subcategory.toLowerCase() === selectedSubcategory.toLowerCase()
+      );
     }
 
     // Filter by skin type (if applicable)
     if (skinType !== "all-skin") {
       filtered = filtered.filter(product => 
-        product.skinType?.includes(skinType) || 
-        product.description?.toLowerCase().includes(skinType)
+        product.description?.toLowerCase().includes(skinType.toLowerCase())
       );
     }
 
     // Filter by price range
     if (priceRange !== "all-price") {
       const [min, max] = priceRange.split('-').map(Number);
-      const minPrice = Math.min(...allProducts.map(p => p.price));
-      const maxPrice = Math.max(...allProducts.map(p => p.price));
-      const range = maxPrice - minPrice;
-      
-      const actualMin = minPrice + (range * min / 100);
-      const actualMax = minPrice + (range * max / 100);
-      
-      filtered = filtered.filter(product => 
-        product.price >= actualMin && product.price <= actualMax
-      );
+      if (allProducts.length > 0) {
+        const prices = allProducts.map(p => parseFloat(p.price.toString()));
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const range = maxPrice - minPrice;
+        
+        const actualMin = minPrice + (range * min / 100);
+        const actualMax = minPrice + (range * max / 100);
+        
+        filtered = filtered.filter(product => {
+          const productPrice = parseFloat(product.price.toString());
+          return productPrice >= actualMin && productPrice <= actualMax;
+        });
+      }
     }
 
     // Sort products

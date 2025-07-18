@@ -10,6 +10,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 import type { Product, Category } from "@/lib/types";
 
 export default function CategoryPage() {
@@ -20,6 +29,8 @@ export default function CategoryPage() {
   const [skinType, setSkinType] = useState("all-skin");
   const [priceRange, setPriceRange] = useState("all-price");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(12);
 
   const { data: category, isLoading: categoryLoading } = useQuery<Category>({
     queryKey: [`/api/categories/${categorySlug}`],
@@ -113,6 +124,18 @@ export default function CategoryPage() {
     return filtered;
   }, [allProducts, selectedSubcategory, sortBy, skinType, priceRange]);
 
+  // Pagination logic
+  const totalProducts = filteredAndSortedProducts.length;
+  const totalPages = Math.ceil(totalProducts / productsPerPage);
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const endIndex = startIndex + productsPerPage;
+  const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  const resetPagination = () => {
+    setCurrentPage(1);
+  };
+
   // Active filters count
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -127,6 +150,7 @@ export default function CategoryPage() {
     setSelectedSubcategory("all");
     setSkinType("all-skin");
     setPriceRange("all-price");
+    setCurrentPage(1);
   };
 
   if (categoryLoading) {
@@ -253,7 +277,10 @@ export default function CategoryPage() {
         {/* Expandable Filters */}
         {showFilters && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
-            <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
+            <Select value={selectedSubcategory} onValueChange={(value) => {
+              setSelectedSubcategory(value);
+              setCurrentPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="All Products" />
               </SelectTrigger>
@@ -267,7 +294,10 @@ export default function CategoryPage() {
               </SelectContent>
             </Select>
 
-            <Select value={skinType} onValueChange={setSkinType}>
+            <Select value={skinType} onValueChange={(value) => {
+              setSkinType(value);
+              setCurrentPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Skin Type" />
               </SelectTrigger>
@@ -280,7 +310,10 @@ export default function CategoryPage() {
               </SelectContent>
             </Select>
 
-            <Select value={priceRange} onValueChange={setPriceRange}>
+            <Select value={priceRange} onValueChange={(value) => {
+              setPriceRange(value);
+              setCurrentPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Price Range" />
               </SelectTrigger>
@@ -312,15 +345,15 @@ export default function CategoryPage() {
         ) : filteredAndSortedProducts && filteredAndSortedProducts.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredAndSortedProducts.map((product) => (
+              {currentProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
             
             {/* Product count */}
-            <div className="text-center mt-12">
+            <div className="text-center mt-8">
               <p className="text-gray-600">
-                Showing {filteredAndSortedProducts.length} of {allProducts?.length || 0} product{filteredAndSortedProducts.length !== 1 ? 's' : ''} in {category.name}
+                Showing {startIndex + 1}-{Math.min(endIndex, totalProducts)} of {totalProducts} product{totalProducts !== 1 ? 's' : ''} in {category.name}
                 {activeFiltersCount > 0 && (
                   <span className="ml-2 text-sm">
                     ({activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} applied)
@@ -328,6 +361,91 @@ export default function CategoryPage() {
                 )}
               </p>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    {currentPage > 1 && (
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(currentPage - 1);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        />
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink
+                            href="#"
+                            isActive={pageNumber === currentPage}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(pageNumber);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(totalPages);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                          >
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    
+                    {currentPage < totalPages && (
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(currentPage + 1);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        />
+                      </PaginationItem>
+                    )}
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </>
         ) : (
           <div className="text-center py-16">

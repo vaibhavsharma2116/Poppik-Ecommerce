@@ -7,6 +7,7 @@ import Layout from "@/components/layout";
 import AdminLayout from "@/components/admin/admin-layout";
 import Home from "@/pages/home";
 import Category from "@/pages/category";
+import ProductsPage from "@/pages/products";
 import ProductDetail from "@/pages/product-detail";
 import About from "@/pages/about";
 // import Contact from "@/pages/contact";
@@ -71,6 +72,7 @@ function Router() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/category/:slug" component={Category} />
+            <Route path="/products" component={ProductsPage} />
             <Route path="/product/:slug" component={ProductDetail} />
             <Route path="/about" component={About} />
             <Route path="/contact" component={Contact} />

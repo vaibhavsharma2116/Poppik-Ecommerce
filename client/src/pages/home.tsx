@@ -118,13 +118,13 @@ export default function Home() {
               )}
             </div>
 
-            {/* Scrollable Products Grid */}
+            {/* Products Grid - Maximum 5 per row */}
             {allProductsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {Array.from({ length: 15 }).map((_, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                {Array.from({ length: 10 }).map((_, i) => (
                   <Card key={i} className="overflow-hidden bg-white shadow-sm">
                     <Skeleton className="h-72 w-full" />
-                    <CardContent className="p-4 space-y-3">
+                    <CardContent className="p-5 space-y-3">
                       <Skeleton className="h-4 w-full" />
                       <Skeleton className="h-4 w-3/4" />
                       <Skeleton className="h-6 w-1/2" />
@@ -134,34 +134,26 @@ export default function Home() {
               </div>
             ) : (
               <>
-                {/* Desktop: Scrollable horizontal layout */}
-                <div className="hidden lg:block">
-                  <div className="overflow-x-auto scrollbar-hide pb-6">
-                    <div className="flex gap-6 w-max">
-                      {allProducts?.slice(0, 15).map((product) => (
-                        <div key={product.id} className="w-72 flex-shrink-0">
-                          <ProductCard product={product} className="h-full shadow-sm hover:shadow-xl transition-shadow duration-300" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {/* Optimized Grid Layout - Maximum 5 products per row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                  {allProducts?.slice(0, 10).map((product) => (
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1" 
+                    />
+                  ))}
                 </div>
 
-                {/* Mobile & Tablet: Grid layout */}
-                <div className="lg:hidden">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {allProducts?.slice(0, 12).map((product) => (
-                      <ProductCard key={product.id} product={product} className="shadow-sm hover:shadow-xl transition-shadow duration-300" />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Mobile View More Button */}
-                {!allProductsLoading && allProducts && allProducts.length > 12 && (
-                  <div className="text-center mt-8 lg:hidden">
-                    <Link href="/category/all">
-                      <Button className="btn-primary w-full sm:w-auto">
+                {/* View More Button */}
+                {!allProductsLoading && allProducts && allProducts.length > 10 && (
+                  <div className="text-center mt-12">
+                    <Link href="/products">
+                      <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap bg-black text-white hover:bg-gray-800 px-10 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
                         View All Products ({allProducts.length})
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
                       </Button>
                     </Link>
                   </div>
@@ -188,10 +180,10 @@ export default function Home() {
           </div>
 
           {featuredLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i} className="overflow-hidden">
-                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-72 w-full" />
                   <CardContent className="p-6 space-y-3">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-3/4" />
@@ -202,25 +194,27 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="overflow-hidden">
-                <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-4" 
-                     style={{scrollSnapType: 'x mandatory'}}>
-                  {featuredProducts?.map((product) => (
-                    <div key={product.id} className="flex-shrink-0 w-72" style={{scrollSnapAlign: 'start'}}>
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-                </div>
+              {/* Grid Layout for Featured Products - Max 4 per row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                {featuredProducts?.slice(0, 4).map((product) => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                  />
+                ))}
               </div>
 
-              {/* Mobile View All Button */}
-              <div className="text-center mt-8 md:hidden">
-                <Link href="/category/featured">
-                  <Button className="btn-primary">
-                    View All Featured Products
-                  </Button>
-                </Link>
-              </div>
+              {/* View All Button */}
+              {featuredProducts && featuredProducts.length > 4 && (
+                <div className="text-center mt-10">
+                  <Link href="/category/featured">
+                    <Button className="btn-primary px-8 py-3 rounded-full">
+                      View All Featured Products
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -242,10 +236,10 @@ export default function Home() {
           </div>
 
           {bestsellersLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i} className="overflow-hidden">
-                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-72 w-full" />
                   <CardContent className="p-6 space-y-3">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-3/4" />
@@ -256,25 +250,27 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="overflow-hidden">
-                <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-4" 
-                     style={{scrollSnapType: 'x mandatory'}}>
-                  {bestsellerProducts?.map((product) => (
-                    <div key={product.id} className="flex-shrink-0 w-72" style={{scrollSnapAlign: 'start'}}>
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-                </div>
+              {/* Grid Layout for Bestsellers - Max 4 per row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                {bestsellerProducts?.slice(0, 4).map((product) => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                  />
+                ))}
               </div>
 
-              {/* Mobile View All Button */}
-              <div className="text-center mt-8 md:hidden">
-                <Link href="/category/bestsellers">
-                  <Button className="btn-primary">
-                    View All Bestsellers
-                  </Button>
-                </Link>
-              </div>
+              {/* View All Button */}
+              {bestsellerProducts && bestsellerProducts.length > 4 && (
+                <div className="text-center mt-10">
+                  <Link href="/category/bestsellers">
+                    <Button className="btn-primary px-8 py-3 rounded-full">
+                      View All Bestsellers
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </>
           )}
         </div>

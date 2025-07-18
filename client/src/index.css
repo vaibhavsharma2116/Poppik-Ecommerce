@@ -127,6 +127,93 @@
     scrollbar-width: none;  /* Firefox */
   }
   
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+  
+  /* Enhanced scrollable container */
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Smooth scroll behavior */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  
+  /* Category hover effects */
+  .category-hover-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .category-hover-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .category-hover-effect:hover::before {
+    left: 100%;
+  }
+  
+  /* Product grid enhancements */
+  .product-grid-container {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .product-grid-item {
+    scroll-snap-align: start;
+  }
+  
+  /* Gradient overlays */
+  .gradient-overlay-left {
+    background: linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0));
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  .gradient-overlay-right {
+    background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 10;
+    scrollbar-width: none;  /* Firefox */
+  }
+  
   .scrollbar-hide::-webkit-scrollbar { 
     display: none;  /* Safari and Chrome */
   }

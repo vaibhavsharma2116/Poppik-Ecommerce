@@ -1,4 +1,3 @@
-
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber, signInWithPopup } from 'firebase/auth';
 
@@ -47,7 +46,7 @@ export const setupRecaptcha = (containerId: string) => {
       console.log('Recaptcha expired');
     }
   });
-  
+
   return globalRecaptchaVerifier;
 };
 
@@ -78,10 +77,10 @@ export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
-    
+
     // Get user token
     const token = await user.getIdToken();
-    
+
     // Save user to database first
     try {
       const response = await fetch("/api/auth/firebase", {
@@ -102,11 +101,11 @@ export const signInWithGoogle = async () => {
       if (response.ok) {
         const data = await response.json();
         console.log("Google user saved to database:", data);
-        
+
         // Store our app's token and user data
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        
+
         return { user: data.user, result };
       } else {
         const errorData = await response.json();
@@ -122,30 +121,58 @@ export const signInWithGoogle = async () => {
   }
 };
 
-// Firebase SMS Service for mobile OTP
-export class FirebaseSMSService {
-  private static recaptchaVerifier: RecaptchaVerifier | null = null;
-  private static confirmationResult: any = null;
+// Firebase SMS Service Implementation
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 
-  static async sendSMSOTP(phoneNumber: string): Promise<{ success: boolean; message: string }> {
+const firebaseConfig2 = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
+
+const app2 = initializeApp(firebaseConfig2);
+const auth2 = getAuth(app2);
+
+class FirebaseSMSServiceClass {
+  private recaptchaVerifier: RecaptchaVerifier | null = null;
+  private confirmationResult: ConfirmationResult | null = null;
+
+  private initRecaptcha() {
+    if (!this.recaptchaVerifier) {
+      this.recaptchaVerifier = new RecaptchaVerifier(auth2, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          console.log('reCAPTCHA solved');
+        },
+        'expired-callback': () => {
+          console.log('reCAPTCHA expired');
+        }
+      });
+    }
+  }
+
+  async sendSMSOTP(phoneNumber: string): Promise<{ success: boolean; message: string }> {
     try {
-      // Setup reCAPTCHA
+      this.initRecaptcha();
+
+      // Format phone number with country code
+      const formattedPhone = `+91${phoneNumber}`;
+
       if (!this.recaptchaVerifier) {
-        this.recaptchaVerifier = setupRecaptcha('recaptcha-container');
+        throw new Error('reCAPTCHA not initialized');
       }
 
-      // Add +91 prefix for Indian numbers
-      const formattedPhone = `+91${phoneNumber}`;
-      
-      // Send OTP
-      this.confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, this.recaptchaVerifier);
-      
+      this.confirmationResult = await signInWithPhoneNumber(auth2, formattedPhone, this.recaptchaVerifier);
+
       return {
         success: true,
         message: 'OTP sent successfully'
       };
-    } catch (error) {
-      console.error('Firebase SMS error:', error);
+    } catch (error: any) {
+      console.error('Firebase SMS Error:', error);
       return {
         success: false,
         message: error.message || 'Failed to send OTP'
@@ -153,58 +180,23 @@ export class FirebaseSMSService {
     }
   }
 
-  static async verifySMSOTP(otp: string): Promise<{ success: boolean; message: string }> {
+  async verifySMSOTP(otp: string): Promise<{ success: boolean; message: string }> {
     try {
       if (!this.confirmationResult) {
         return {
           success: false,
-          message: 'Please request a new OTP'
+          message: 'No OTP request found. Please request OTP first.'
         };
       }
 
-      const result = await this.confirmationResult.confirm(otp);
-      const user = result.user;
-      
-      // Get user token
-      const token = await user.getIdToken();
-      
-      // Store token in localStorage
-      localStorage.setItem("firebase_token", token);
-      localStorage.setItem("user", JSON.stringify({
-        uid: user.uid,
-        phoneNumber: user.phoneNumber,
-        displayName: user.displayName,
-      }));
-
-      // Save user to database
-      try {
-        const response = await fetch("/api/auth/firebase/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            uid: user.uid,
-            phoneNumber: user.phoneNumber,
-            displayName: user.displayName,
-            provider: "phone"
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("SMS user saved to database:", data);
-        }
-      } catch (error) {
-        console.error("Error saving SMS user to database:", error);
-      }
+      await this.confirmationResult.confirm(otp);
 
       return {
         success: true,
-        message: 'Phone number verified successfully'
+        message: 'Mobile number verified successfully'
       };
-    } catch (error) {
-      console.error('Firebase SMS verification error:', error);
+    } catch (error: any) {
+      console.error('Firebase OTP Verification Error:', error);
       return {
         success: false,
         message: error.message || 'Invalid OTP'
@@ -212,7 +204,7 @@ export class FirebaseSMSService {
     }
   }
 
-  static cleanup() {
+  cleanup() {
     if (this.recaptchaVerifier) {
       this.recaptchaVerifier.clear();
       this.recaptchaVerifier = null;
@@ -220,5 +212,7 @@ export class FirebaseSMSService {
     this.confirmationResult = null;
   }
 }
+
+export const FirebaseSMSService = new FirebaseSMSServiceClass();
 
 export default app;

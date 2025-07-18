@@ -804,7 +804,7 @@ export default function AdminProducts() {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
+                      <SelectItem key={category.id} value={category.id.toString() || `category-${category.id}`}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -820,7 +820,7 @@ export default function AdminProducts() {
                   </SelectTrigger>
                   <SelectContent>
                     {getSubcategoriesForCategory(editFormData.category).map((sub) => (
-                      <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
+                      <SelectItem key={sub.id} value={sub.name || `subcategory-${sub.id}`}>{sub.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

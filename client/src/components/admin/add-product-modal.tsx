@@ -361,7 +361,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 </SelectTrigger>
                 <SelectContent>
                   {getSubcategoriesForCategory(formData.category).map((sub) => (
-                    <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
+                    <SelectItem key={sub.id} value={sub.name || `subcategory-${sub.id}`}>{sub.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

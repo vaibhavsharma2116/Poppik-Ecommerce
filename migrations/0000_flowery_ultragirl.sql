@@ -90,7 +90,7 @@ CREATE TABLE "products" (
 	"how_to_use" text,
 	"size" text,
 	"tags" text,
-	CONSTRAINT "products_slug_unique" UNIQUE("slug")
+	
 );
 
 CREATE TABLE "subcategories" (

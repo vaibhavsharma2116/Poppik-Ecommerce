@@ -137,52 +137,55 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
   };
 
   return (
-    <Card className={`product-card ${className}`}>
-      <div className="relative">
+    <Card className={`product-card group ${className}`}>
+      <div className="relative overflow-hidden">
         {product.saleOffer && (
-          <Badge className="sale-badge">
+          <Badge className="sale-badge animate-pulse">
             {product.saleOffer}
           </Badge>
         )}
         <button
           onClick={toggleWishlist}
-          className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors z-10"
+          className="absolute top-3 right-3 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-50 hover:scale-110 transition-all duration-200 z-10"
         >
-          <Heart className={`h-4 w-4 ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
+          <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
         </button>
         <Link href={`/product/${product.slug}`}>
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="product-image w-full h-64 object-cover cursor-pointer"
-          />
+          <div className="relative overflow-hidden bg-gray-50">
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="product-image w-full h-72 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </div>
         </Link>
       </div>
 
-      <CardContent className="p-6">
-        <div className="flex items-center mb-2">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
           <div className="star-rating">
             {renderStars(parseFloat(product.rating))}
           </div>
-          <span className="text-gray-600 text-sm ml-2">{product.rating}</span>
+          <span className="text-gray-600 text-sm font-medium">{product.rating}</span>
         </div>
 
         <Link href={`/product/${product.slug}`}>
-          <h3 className="font-semibold text-gray-900 mb-2 hover:text-red-500 transition-colors cursor-pointer">
+          <h3 className="font-semibold text-gray-900 hover:text-black transition-colors cursor-pointer line-clamp-2 min-h-[2.5rem]">
             {product.name}
           </h3>
         </Link>
 
-        <p className="text-gray-600 text-sm mb-3">
+        <p className="text-gray-600 text-sm line-clamp-2 min-h-[2.5rem]">
           {product.shortDescription}
         </p>
 
         {product.size && (
-          <p className="text-gray-500 text-xs mb-3">{product.size}</p>
+          <p className="text-gray-500 text-xs bg-gray-50 px-2 py-1 rounded-md inline-block">{product.size}</p>
         )}
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+        <div className="space-y-3">
+          <div className="flex items-baseline space-x-2">
             <span className="text-lg font-bold text-gray-900">
               ₹{product.price}
             </span>
@@ -191,18 +194,23 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
                 ₹{product.originalPrice}
               </span>
             )}
+            {product.originalPrice && (
+              <span className="text-xs text-green-600 font-medium">
+                {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off
+              </span>
+            )}
           </div>
 
           {product.variants?.colors || product.variants?.shades ? (
             <Link href={`/product/${product.slug}`}>
-              <Button size="sm" className="btn-primary text-xs px-3 py-2">
+              <Button size="sm" className="btn-primary w-full text-xs py-2.5 hover:bg-gray-800 transition-colors">
                 Select Shade
               </Button>
             </Link>
           ) : (
             <Button 
               size="sm" 
-              className="btn-primary text-xs px-3 py-2 flex items-center gap-1"
+              className="btn-primary w-full text-xs py-2.5 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
               onClick={addToCart}
             >
               <ShoppingCart className="h-3 w-3" />
@@ -212,19 +220,19 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
         </div>
 
         {/* Product badges */}
-        <div className="flex gap-2 mt-3">
+        <div className="flex flex-wrap gap-1.5">
           {product.bestseller && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
               Bestseller
             </Badge>
           )}
           {product.newLaunch && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 hover:bg-green-200">
               New Launch
             </Badge>
           )}
           {product.featured && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200">
               Featured
             </Badge>
           )}

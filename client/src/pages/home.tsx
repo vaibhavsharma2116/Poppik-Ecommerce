@@ -159,10 +159,10 @@ export default function Home() {
               )}
             </div>
 
-            {/* Products Grid - Maximum 5 per row */}
+            {/* Products Grid - 4 products per row */}
             {allProductsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-                {Array.from({ length: 10 }).map((_, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                {Array.from({ length: 8 }).map((_, i) => (
                   <Card key={i} className="overflow-hidden bg-white shadow-sm">
                     <Skeleton className="h-72 w-full" />
                     <CardContent className="p-5 space-y-3">
@@ -175,9 +175,9 @@ export default function Home() {
               </div>
             ) : (
               <>
-                {/* Optimized Grid Layout - Maximum 5 products per row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-                  {allProducts?.slice(0, 10).map((product) => (
+                {/* Optimized Grid Layout - 4 products per row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                  {allProducts?.slice(0, 8).map((product) => (
                     <ProductCard 
                       key={product.id} 
                       product={product} 

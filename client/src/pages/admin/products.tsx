@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,10 +150,10 @@ export default function AdminProducts() {
     try {
       // The product is already created in the modal, so we just need to add it to our state
       setProducts(prev => [...prev, newProduct]);
-      
+
       // Clear any previous errors
       setError(null);
-      
+
       // Optionally refetch data to ensure consistency
       setTimeout(() => {
         fetchData();
@@ -170,7 +169,7 @@ export default function AdminProducts() {
       // Find the category ID for the product's category name
       const category = categories.find(c => c.name === product.category);
       const categoryValue = category ? category.id.toString() : product.category;
-      
+
       setSelectedProduct(product);
       setEditFormData({
         name: product.name,
@@ -298,7 +297,7 @@ export default function AdminProducts() {
 
     // Check if categoryValue is an ID (number) or name (string)
     let categoryId: number;
-    
+
     if (!isNaN(parseInt(categoryValue))) {
       // It's an ID
       categoryId = parseInt(categoryValue);
@@ -430,7 +429,7 @@ export default function AdminProducts() {
                 <SelectContent>
                   <SelectItem value="all">All Subcategories</SelectItem>
                   {categoryFilter !== 'all' && getSubcategoriesForCategory(categoryFilter).map((sub) => (
-                    <SelectItem key={sub.id} value={sub.name.toLowerCase()}>{sub.name}</SelectItem>
+                    <SelectItem key={sub.id} value={sub.name?.toLowerCase() || `sub-${sub.id}`}>{sub.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -479,7 +478,7 @@ export default function AdminProducts() {
           </CardContent>
         </Card>
       ) : viewMode === 'grid' ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="border-0 shadow-lg bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300 group">
               <div className="relative">
@@ -775,7 +774,7 @@ export default function AdminProducts() {
               Update product information and save changes
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -800,10 +799,10 @@ export default function AdminProducts() {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString() || `category-${category.id}`}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -816,7 +815,7 @@ export default function AdminProducts() {
                   </SelectTrigger>
                   <SelectContent>
                     {getSubcategoriesForCategory(editFormData.category).map((sub) => (
-                      <SelectItem key={sub.id} value={sub.name || `subcategory-${sub.id}`}>{sub.name}</SelectItem>
+                      <SelectItem key={sub.id} value={sub.name || `subcategory-${sub.id}`}>{sub.name || `Subcategory ${sub.id}`}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

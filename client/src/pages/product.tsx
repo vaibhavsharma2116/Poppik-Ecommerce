@@ -248,10 +248,10 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {/* Products Grid */}
+        {/* Products Grid - 4 products per row */}
         {productsLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {Array.from({ length: 15 }).map((_, i) => (
+            {Array.from({ length: 16 }).map((_, i) => (
               <Card key={i} className="overflow-hidden">
                 <Skeleton className="h-64 w-full" />
                 <CardContent className="p-6 space-y-3">

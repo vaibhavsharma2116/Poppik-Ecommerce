@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,40 +74,40 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Prevent multiple submissions
     if (loading) return;
-    
+
     // Client-side validation
     if (!formData.name.trim()) {
       alert('Product name is required');
       return;
     }
-    
+
     if (!formData.price || parseFloat(formData.price) <= 0) {
       alert('Valid price is required');
       return;
     }
-    
+
     if (!formData.category) {
       alert('Category is required');
       return;
     }
-    
+
     if (!formData.description.trim()) {
       alert('Description is required');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
       // Upload image first
       const imageUrl = await uploadImage();
-      
+
       // Generate slug from product name
       const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      
+
       const selectedCategory = categories.find(cat => cat.id === parseInt(formData.category));
       const newProduct = {
         name: formData.name,
@@ -146,7 +145,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
         try {
           const responseText = await response.text();
           console.log('Raw response:', responseText);
-          
+
           // Try to parse as JSON
           const errorData = JSON.parse(responseText);
           errorMessage = errorData?.error || errorData?.details || errorMessage;
@@ -154,17 +153,17 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
           console.error('Failed to parse error response:', parseError);
           errorMessage = `Server returned non-JSON response (${response.status})`;
         }
-        
+
         console.error('Product creation failed:', errorMessage);
         alert(`Failed to create product: ${errorMessage}`);
         return;
       }
 
       const createdProduct = await response.json();
-      
+
       // Call onAddProduct to update the parent component's state
       await onAddProduct(createdProduct);
-      
+
       // Close modal and reset form
       setOpen(false);
       resetForm();
@@ -252,7 +251,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
   // Get subcategories for selected category
   const getSubcategoriesForCategory = (categoryId: string) => {
     if (!categoryId) return [];
-    
+
     return subcategories.filter(sub => sub.categoryId === parseInt(categoryId));
   };
 
@@ -276,7 +275,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
             Create a new product for your beauty store inventory.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Product Image Upload */}
           <div className="space-y-2">
@@ -340,7 +339,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
               <Select value={formData.category} onValueChange={(value) => {
@@ -359,7 +358,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="subcategory">Subcategory</Label>
               <Select value={formData.subcategory} onValueChange={(value) => handleInputChange('subcategory', value)}>
@@ -389,7 +388,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="rating">Rating</Label>
               <Input
@@ -454,7 +453,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 />
                 <Label htmlFor="inStock" className="text-sm">In Stock</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -465,7 +464,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 />
                 <Label htmlFor="featured" className="text-sm">Featured</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -476,7 +475,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 />
                 <Label htmlFor="bestseller" className="text-sm">Bestseller</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -502,7 +501,7 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
                 maxLength={100}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="description">Full Description *</Label>
               <Textarea

@@ -333,9 +333,9 @@ export default function CategoryPage() {
           </div>
         )}
 
-        {/* Products Grid */}
+        {/* Products Grid - 4 products per row */}
         {productsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="overflow-hidden">
                 <Skeleton className="h-64 w-full" />
@@ -349,7 +349,7 @@ export default function CategoryPage() {
           </div>
         ) : filteredAndSortedProducts && filteredAndSortedProducts.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {currentProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

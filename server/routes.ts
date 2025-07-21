@@ -672,7 +672,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subcategories = await storage.getSubcategories();
       res.json(subcategories);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch subcategories" });
+      console.log("Database unavailable, using sample subcategory data");
+      res.json(generateSampleSubcategories());
     }
   });
 
@@ -1491,6 +1492,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
+  // Generate sample subcategories for development
+  function generateSampleSubcategories() {
+    return [
+      {
+        id: 1,
+        name: "Face Serums",
+        slug: "face-serums",
+        description: "Concentrated treatments for specific skin concerns",
+        categoryId: 1,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 2,
+        name: "Moisturizers",
+        slug: "moisturizers",
+        description: "Hydrating creams and lotions for daily skincare",
+        categoryId: 1,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 3,
+        name: "Cleansers",
+        slug: "cleansers",
+        description: "Gentle cleansing products for daily use",
+        categoryId: 1,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 4,
+        name: "Hair Serums",
+        slug: "hair-serums",
+        description: "Treatments for hair growth and strength",
+        categoryId: 2,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 5,
+        name: "Hair Oils",
+        slug: "hair-oils",
+        description: "Nourishing oils for hair care",
+        categoryId: 2,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 6,
+        name: "Shampoos",
+        slug: "shampoos",
+        description: "Cleansing shampoos for all hair types",
+        categoryId: 2,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 7,
+        name: "Lipsticks",
+        slug: "lipsticks",
+        description: "Color and care for your lips",
+        categoryId: 3,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 8,
+        name: "Foundations",
+        slug: "foundations",
+        description: "Base makeup for flawless coverage",
+        categoryId: 3,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 9,
+        name: "Eye Makeup",
+        slug: "eye-makeup",
+        description: "Enhance your eyes with our makeup range",
+        categoryId: 3,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 10,
+        name: "Body Lotions",
+        slug: "body-lotions",
+        description: "Moisturizing lotions for soft skin",
+        categoryId: 4,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 11,
+        name: "Body Scrubs",
+        slug: "body-scrubs",
+        description: "Exfoliating scrubs for smooth skin",
+        categoryId: 4,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+  }
+
   // Generate sample categories for development with dynamic product count
   function generateSampleCategories() {
     const sampleProducts = generateSampleProducts();
@@ -1587,7 +1704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: 699,
         originalPrice: 899,
         category: 'Skincare',
-        subcategory: 'Serums',
+        subcategory: 'face-serums',
         imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
         rating: 4.5,
         reviewCount: 128,
@@ -1612,7 +1729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: 549,
         originalPrice: 699,
         category: 'Skincare',
-        subcategory: 'Serums',
+        subcategory: 'face-serums',
         imageUrl: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
         rating: 4.4,
         reviewCount: 95,
@@ -1637,7 +1754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: 899,
         originalPrice: 1199,
         category: 'Skincare',
-        subcategory: 'Moisturizers',
+        subcategory: 'moisturizers',
         imageUrl: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
         rating: 4.7,
         reviewCount: 156,
@@ -2599,7 +2716,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: 'Uploaded image',
         imageUrl: imageUrl,
         badge: '',
-       
+        primaryActionText: '',
+        primaryActionUrl: '',
         isActive: true,
         sortOrder: 0
       }).returning();

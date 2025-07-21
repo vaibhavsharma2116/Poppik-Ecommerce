@@ -7,16 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface Slider {
   id: number;
-  title: string;
-  subtitle?: string;
-  description: string;
   imageUrl: string;
-  badge?: string;
-  primaryActionText: string;
-  primaryActionUrl: string;
-  secondaryActionText?: string;
-  secondaryActionUrl?: string;
-  backgroundGradient?: string;
   isActive: boolean;
   sortOrder: number;
 }
@@ -138,7 +129,7 @@ export default function HeroBanner({
   }
 
   return (
-    <section className="relative" aria-label="Hero banner carousel">
+    <section className="relative w-full" aria-label="Hero banner carousel">
       <Carousel
         setApi={setApi}
         className="w-full"
@@ -150,11 +141,7 @@ export default function HeroBanner({
         <CarouselContent>
           {slides.map((slide) => (
             <CarouselItem key={slide.id}>
-              <div 
-                className={`${slide.backgroundGradient || 'bg-gradient-to-r from-pink-50 to-purple-50'} py-20 relative overflow-hidden`}
-                aria-roledescription="slide"
-                aria-label={`Slide ${slide.id + 1} of ${slides.length}`}
-              >
+              <div className="relative w-full h-[500px] overflow-hidden">
                 {showProgress && (
                   <div className="absolute top-0 left-0 w-full h-1 bg-gray-200 z-10">
                     <div 
@@ -165,58 +152,11 @@ export default function HeroBanner({
                   </div>
                 )}
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-6 animate-fadeInLeft will-change-transform">
-                      {slide.badge && (
-                        <div className="inline-block bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium animate-pulse">
-                          {slide.badge}
-                        </div>
-                      )}
-
-                      <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                        {slide.title}{" "}
-                        {slide.subtitle && <span className="text-red-500">{slide.subtitle}</span>}
-                      </h1>
-
-                      <p className="text-lg lg:text-xl text-gray-600 leading-relaxed">
-                        {slide.description}
-                      </p>
-
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <Button 
-                          size="lg" 
-                          className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 transform hover:scale-105"
-                          onClick={() => window.location.href = slide.primaryActionUrl}
-                          aria-label={slide.primaryActionText}
-                        >
-                          {slide.primaryActionText}
-                        </Button>
-
-                        {slide.secondaryActionText && slide.secondaryActionUrl && (
-                          <Button 
-                            variant="outline" 
-                            size="lg"
-                            className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white px-8 py-3 rounded-full font-medium transition-all duration-300"
-                            onClick={() => window.location.href = slide.secondaryActionUrl}
-                            aria-label={slide.secondaryActionText}
-                          >
-                            {slide.secondaryActionText}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="relative animate-fadeInRight will-change-transform">
-                      <img
-                        src={slide.imageUrl}
-                        alt={`Hero banner ${slide.title}`}
-                        className="rounded-2xl shadow-2xl w-full h-[500px] object-cover transform hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <img 
+                  src={slide.imageUrl} 
+                  alt={`Slide ${slide.id}`}
+                  className="w-full h-full object-cover"
+                />
               </div>
             </CarouselItem>
           ))}
@@ -226,31 +166,31 @@ export default function HeroBanner({
           <>
             <button
               onClick={prevSlide}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
               aria-label="Previous slide"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-800" />
+              <ChevronLeft className="w-5 h-5 text-gray-800" />
             </button>
 
             <button
               onClick={nextSlide}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
               aria-label="Next slide"
             >
-              <ChevronRight className="w-6 h-6 text-gray-800" />
+              <ChevronRight className="w-5 h-5 text-gray-800" />
             </button>
           </>
         )}
 
         <button
           onClick={togglePlayPause}
-          className="absolute bottom-6 right-6 z-20 bg-white/80 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110"
+          className="absolute bottom-4 right-4 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
           aria-label={isPlaying ? "Pause autoplay" : "Play autoplay"}
         >
           {isPlaying ? (
-            <Pause className="w-5 h-5 text-gray-800" />
+            <Pause className="w-4 h-4 text-gray-800" />
           ) : (
-            <Play className="w-5 h-5 text-gray-800 ml-0.5" />
+            <Play className="w-4 h-4 text-gray-800" />
           )}
         </button>
 

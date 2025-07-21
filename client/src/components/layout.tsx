@@ -391,8 +391,14 @@ export default function Layout({ children }: LayoutProps) {
                                 {categorySubcategories.slice(0, 4).map((subcategory) => (
                                   <NavigationMenuLink key={subcategory.id} asChild>
                                     <Link 
-                                      href={`/category/${category.slug}?subcategory=${subcategory.slug}`} 
+                                      href={`/category/${category.slug}?subcategory=${subcategory.slug}`}
                                       className="group block select-none rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-red-50 hover:shadow-sm border border-transparent hover:border-red-100"
+                                      onClick={() => {
+                                        // Force page refresh to ensure proper filtering
+                                        setTimeout(() => {
+                                          window.location.href = `/category/${category.slug}?subcategory=${subcategory.slug}`;
+                                        }, 100);
+                                      }}
                                     >
                                       <div className="text-sm font-medium text-gray-900 group-hover:text-red-600">
                                         {subcategory.name}
@@ -416,8 +422,14 @@ export default function Layout({ children }: LayoutProps) {
                                   {categorySubcategories.slice(4, 8).map((subcategory) => (
                                     <NavigationMenuLink key={subcategory.id} asChild>
                                       <Link 
-                                        href={`/category/${category.slug}?subcategory=${subcategory.slug}`} 
+                                        href={`/category/${category.slug}?subcategory=${subcategory.slug}`}
                                         className="group block select-none rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-red-50 hover:shadow-sm border border-transparent hover:border-red-100"
+                                        onClick={() => {
+                                          // Force page refresh to ensure proper filtering
+                                          setTimeout(() => {
+                                            window.location.href = `/category/${category.slug}?subcategory=${subcategory.slug}`;
+                                          }, 100);
+                                        }}
                                       >
                                         <div className="text-sm font-medium text-gray-900 group-hover:text-red-600">
                                           {subcategory.name}
@@ -630,7 +642,7 @@ export default function Layout({ children }: LayoutProps) {
                     About Us
                   </Link>
                 </li>
-                
+
                 <li>
                   <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
                     Terms & Conditions
@@ -646,7 +658,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Newsletter */}
-          
+
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-gray-400 text-sm">
               © 2025 Poppik. All rights reserved.

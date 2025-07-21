@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -16,16 +16,7 @@ import {
 
 interface Slider {
   id: number;
-  title: string;
-  subtitle?: string;
-  description: string;
   imageUrl: string;
-  badge?: string;
-  primaryActionText: string;
-  primaryActionUrl: string;
-  secondaryActionText?: string;
-  secondaryActionUrl?: string;
-  backgroundGradient?: string;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -64,22 +55,13 @@ export default function AdminSliders() {
         throw new Error(`Failed to fetch sliders: ${response.status}`);
       }
 
-      const contentType = response.headers.get('content-type');
-      let data;
-
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const textResponse = await response.text();
-        console.error('Non-JSON response:', textResponse);
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-      }
+      const data = await response.json();
       setSliders(data);
     } catch (err) {
       console.error('Error fetching sliders:', err);
       toast({
         title: "Error",
-        description: "Failed to load sliders",
+        description: "Failed to load images",
         variant: "destructive"
       });
     } finally {
@@ -100,7 +82,6 @@ export default function AdminSliders() {
     try {
       setUploading(true);
 
-      // Create FormData for image upload
       const formData = new FormData();
       formData.append('image', selectedImage);
 
@@ -123,7 +104,6 @@ export default function AdminSliders() {
       setSliders(prev => [...prev, savedSlider]);
       toast({ title: "Image uploaded successfully" });
 
-      // Reset form
       setSelectedImage(null);
       setImagePreview(null);
       setIsAddModalOpen(false);
@@ -154,7 +134,7 @@ export default function AdminSliders() {
         if (response.status === 401) {
           throw new Error('Unauthorized - please login again');
         }
-        throw new Error(`Failed to delete slider: ${response.status}`);
+        throw new Error(`Failed to delete image: ${response.status}`);
       }
 
       setSliders(prev => prev.filter(s => s.id !== selectedSlider.id));
@@ -201,12 +181,10 @@ export default function AdminSliders() {
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-            Image Gallery
-          </h2>
-          <p className="text-slate-600 mt-1">Upload and manage your images</p>
+          <h2 className="text-3xl font-bold text-gray-900">Image Gallery</h2>
+          <p className="text-gray-600 mt-1">Upload and manage your slider images</p>
         </div>
         <Button 
           onClick={() => {
@@ -214,7 +192,7 @@ export default function AdminSliders() {
             setImagePreview(null);
             setIsAddModalOpen(true);
           }}
-          className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700"
+          className="bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="mr-2 h-4 w-4" />
           Upload Image
@@ -222,33 +200,33 @@ export default function AdminSliders() {
       </div>
 
       {/* Images Grid */}
-      <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+      <Card>
         <CardHeader>
           <CardTitle>Uploaded Images</CardTitle>
-          <CardDescription>Your image gallery</CardDescription>
+          <CardDescription>Manage your slider images</CardDescription>
         </CardHeader>
         <CardContent>
           {sliders.length === 0 ? (
-            <div className="text-center py-8">
-              <ImageIcon className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600">No images uploaded yet</p>
+            <div className="text-center py-12">
+              <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No images uploaded yet</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {sliders.map((slider) => (
-                <div key={slider.id} className="relative group">
-                  <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden">
+                <div key={slider.id} className="group relative bg-gray-50 rounded-lg overflow-hidden">
+                  <div className="aspect-video w-full">
                     <img 
                       src={slider.imageUrl} 
-                      alt={`Image ${slider.id}`}
+                      alt={`Slider ${slider.id}`}
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
                     <Button 
                       variant="destructive" 
                       size="sm"
-                      className="h-8 w-8 p-0"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => {
                         setSelectedSlider(slider);
                         setIsDeleteModalOpen(true);
@@ -257,8 +235,10 @@ export default function AdminSliders() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="mt-2 text-sm text-slate-600">
-                    Uploaded: {new Date(slider.createdAt).toLocaleDateString()}
+                  <div className="p-3">
+                    <p className="text-sm text-gray-600">
+                      {new Date(slider.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -268,18 +248,12 @@ export default function AdminSliders() {
       </Card>
 
       {/* Upload Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsAddModalOpen(false);
-          setSelectedImage(null);
-          setImagePreview(null);
-        }
-      }}>
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Upload Image</DialogTitle>
             <DialogDescription>
-              Select an image file to upload
+              Select an image file to upload to the slider
             </DialogDescription>
           </DialogHeader>
 
@@ -298,41 +272,32 @@ export default function AdminSliders() {
                   className="absolute top-2 right-2"
                   onClick={removeImage}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             )}
 
-            <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <Label
-                  htmlFor="image-upload"
-                  className="cursor-pointer flex flex-col items-center"
-                >
-                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                  <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
-                </Label>
-                {selectedImage && (
-                  <p className="text-sm text-green-600 mt-2">Selected: {selectedImage.name}</p>
-                )}
-              </CardContent>
-            </Card>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+                id="image-upload"
+              />
+              <Label htmlFor="image-upload" className="cursor-pointer">
+                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">Click to upload an image</p>
+                <p className="text-sm text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+              </Label>
+              {selectedImage && (
+                <p className="text-sm text-green-600 mt-2">Selected: {selectedImage.name}</p>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsAddModalOpen(false);
-              setSelectedImage(null);
-              setImagePreview(null);
-            }}>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleImageUpload} disabled={uploading || !selectedImage}>
@@ -362,8 +327,8 @@ export default function AdminSliders() {
             </DialogDescription>
           </DialogHeader>
           {selectedSlider && (
-            <div className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg border border-red-200">
-              <div className="w-16 h-12 bg-white rounded flex items-center justify-center overflow-hidden">
+            <div className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg">
+              <div className="w-16 h-12 rounded overflow-hidden">
                 <img 
                   src={selectedSlider.imageUrl} 
                   alt="Image to delete"
@@ -371,9 +336,9 @@ export default function AdminSliders() {
                 />
               </div>
               <div>
-                <p className="font-medium text-slate-900">Image {selectedSlider.id}</p>
-                <p className="text-sm text-slate-600">
-                  Uploaded: {new Date(selectedSlider.createdAt).toLocaleDateString()}
+                <p className="font-medium">Image {selectedSlider.id}</p>
+                <p className="text-sm text-gray-600">
+                  {new Date(selectedSlider.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -391,3 +356,4 @@ export default function AdminSliders() {
     </div>
   );
 }
+  

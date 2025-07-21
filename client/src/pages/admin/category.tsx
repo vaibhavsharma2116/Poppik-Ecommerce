@@ -176,6 +176,10 @@ export default function AdminCategories() {
     status: 'Active' as const
   });
 
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+
   // Filter categories
   const filteredCategories = categories.filter((category: Category) => {
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -192,12 +196,66 @@ export default function AdminCategories() {
     return matchesSearch && matchesStatus;
   });
 
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!selectedImage) return null;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('image', selectedImage);
+
+    try {
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleAddCategory = async () => {
-    const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
-    createCategoryMutation.mutate({
-      ...categoryFormData,
-      slug
-    });
+    try {
+      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+      
+      // Upload image if selected
+      let imageUrl = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400';
+      if (selectedImage) {
+        const uploadedImageUrl = await uploadImage();
+        if (uploadedImageUrl) {
+          imageUrl = uploadedImageUrl;
+        }
+      }
+
+      createCategoryMutation.mutate({
+        ...categoryFormData,
+        slug,
+        imageUrl
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
   };
 
   const handleAddSubcategory = () => {
@@ -217,6 +275,9 @@ export default function AdminCategories() {
       description: category.description,
       status: category.status as 'Active' | 'Inactive'
     });
+    // Set the existing image as preview
+    setImagePreview(category.imageUrl || '');
+    setSelectedImage(null);
     setIsEditModalOpen(true);
   };
 
@@ -234,12 +295,28 @@ export default function AdminCategories() {
 
   const handleUpdateCategory = async () => {
     if (!editingCategory) return;
-    const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
-    updateCategoryMutation.mutate({
-      id: editingCategory.id,
-      ...categoryFormData,
-      slug
-    });
+    
+    try {
+      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
+      
+      // Upload new image if selected, otherwise keep existing
+      let imageUrl = editingCategory.imageUrl;
+      if (selectedImage) {
+        const uploadedImageUrl = await uploadImage();
+        if (uploadedImageUrl) {
+          imageUrl = uploadedImageUrl;
+        }
+      }
+
+      updateCategoryMutation.mutate({
+        id: editingCategory.id,
+        ...categoryFormData,
+        slug,
+        imageUrl
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+    }
   };
 
   const handleUpdateSubcategory = () => {
@@ -367,6 +444,7 @@ export default function AdminCategories() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Slug</TableHead>
                     <TableHead>Description</TableHead>
@@ -379,6 +457,21 @@ export default function AdminCategories() {
                 <TableBody>
                   {filteredCategories.map((category: Category) => (
                     <TableRow key={category.id}>
+                      <TableCell>
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border bg-gray-50">
+                          {category.imageUrl ? (
+                            <img 
+                              src={category.imageUrl} 
+                              alt={category.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                              No Image
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell className="text-sm text-slate-500">{category.slug}</TableCell>
                       <TableCell className="max-w-xs">
@@ -526,6 +619,8 @@ export default function AdminCategories() {
           setIsEditModalOpen(false);
           setEditingCategory(null);
           setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
+          setSelectedImage(null);
+          setImagePreview('');
         }
       }}>
         <DialogContent className="max-w-lg">
@@ -570,6 +665,60 @@ export default function AdminCategories() {
               />
             </div>
             <div>
+              <Label htmlFor="category-image">Category Image</Label>
+              {imagePreview ? (
+                <div className="relative mt-2">
+                  <img 
+                    src={imagePreview} 
+                    alt="Category Preview" 
+                    className="w-full h-40 object-cover rounded-lg border shadow-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2 h-8 w-8 p-0 rounded-full"
+                    onClick={() => {
+                      setImagePreview('');
+                      setSelectedImage(null);
+                    }}
+                  >
+                    ×
+                  </Button>
+                  <div className="absolute bottom-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs">
+                    {selectedImage ? 'New Image Selected' : 'Current Image'}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2 w-full h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  <div className="text-center text-gray-500">
+                    <div className="text-2xl mb-2">🖼️</div>
+                    <span className="text-sm">No image available</span>
+                  </div>
+                </div>
+              )}
+              <div className="mt-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  id="category-image-upload"
+                />
+                <Label
+                  htmlFor="category-image-upload"
+                  className="cursor-pointer flex items-center justify-center w-full h-12 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-2 text-blue-600">
+                    <span className="text-lg">📷</span>
+                    <span className="text-sm font-medium">
+                      {imagePreview ? 'Change Image' : 'Upload Image'}
+                    </span>
+                  </div>
+                </Label>
+              </div>
+            </div>
+            <div>
               <Label htmlFor="category-status">Status</Label>
               <Select value={categoryFormData.status} onValueChange={(value) => setCategoryFormData(prev => ({ ...prev, status: value as 'Active' | 'Inactive' }))}>
                 <SelectTrigger className="mt-1">
@@ -588,15 +737,18 @@ export default function AdminCategories() {
               setIsEditModalOpen(false);
               setEditingCategory(null);
               setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
+              setSelectedImage(null);
+              setImagePreview('');
             }}>
               Cancel
             </Button>
             <Button 
               onClick={editingCategory ? handleUpdateCategory : handleAddCategory}
-              disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}
+              disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending || uploading}
               className={editingCategory ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"}
             >
-              {createCategoryMutation.isPending || updateCategoryMutation.isPending ? 'Saving...' :
+              {uploading ? 'Uploading Image...' :
+               (createCategoryMutation.isPending || updateCategoryMutation.isPending) ? 'Saving...' :
                editingCategory ? 'Update Category' : 'Add Category'}
             </Button>
           </DialogFooter>
@@ -712,8 +864,18 @@ export default function AdminCategories() {
           {selectedCategory && (
             <div className="space-y-6">
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center">
-                  <Layers className="h-8 w-8 text-slate-400" />
+                <div className="w-20 h-20 bg-slate-100 rounded-xl overflow-hidden border">
+                  {selectedCategory.imageUrl ? (
+                    <img 
+                      src={selectedCategory.imageUrl} 
+                      alt={selectedCategory.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Layers className="h-8 w-8 text-slate-400" />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-slate-900">{selectedCategory.name}</h3>

@@ -75,56 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching public sliders:', error);
       console.log("Database unavailable, using sample slider data");
       
-      // Return sample slider data when database is unavailable
-      const sampleSliders = [
-        {
-          id: 1,
-          title: "Discover Your Beauty",
-          subtitle: "Naturally",
-          description: "Explore our premium collection of natural skincare and beauty products crafted with the finest ingredients for radiant, healthy skin.",
-          imageUrl: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400",
-          badge: "NEW ARRIVAL",
-          primaryActionText: "Shop Now",
-          primaryActionUrl: "/products",
-          secondaryActionText: "Learn More",
-          secondaryActionUrl: "/about",
-          backgroundGradient: "bg-gradient-to-r from-pink-50 to-purple-50",
-          isActive: true,
-          sortOrder: 1
-        },
-        {
-          id: 2,
-          title: "Premium Skincare",
-          subtitle: "Solutions",
-          description: "Transform your skincare routine with our scientifically-formulated products designed to nourish and protect your skin.",
-          imageUrl: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400",
-          badge: "BESTSELLER",
-          primaryActionText: "Explore Collection",
-          primaryActionUrl: "/category/skincare",
-          secondaryActionText: "View All",
-          secondaryActionUrl: "/products",
-          backgroundGradient: "bg-gradient-to-r from-blue-50 to-indigo-50",
-          isActive: true,
-          sortOrder: 2
-        },
-        {
-          id: 3,
-          title: "Hair Care",
-          subtitle: "Essentials",
-          description: "Revitalize your hair with our nourishing shampoos, conditioners, and treatments for all hair types.",
-          imageUrl: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400",
-          badge: "SALE",
-          primaryActionText: "Shop Hair Care",
-          primaryActionUrl: "/category/haircare",
-          secondaryActionText: "View Offers",
-          secondaryActionUrl: "/products",
-          backgroundGradient: "bg-gradient-to-r from-green-50 to-teal-50",
-          isActive: true,
-          sortOrder: 3
-        }
-      ];
-      
-      res.json(sampleSliders);
+   
     }
   });
 
@@ -515,7 +466,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getFeaturedProducts();
       res.json(products);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch featured products" });
+      console.log("Database unavailable, using sample featured products");
+      const sampleProducts = generateSampleProducts();
+      res.json(sampleProducts.filter(p => p.featured));
     }
   });
 
@@ -524,7 +477,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getBestsellerProducts();
       res.json(products);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch bestseller products" });
+      console.log("Database unavailable, using sample bestseller products");
+      const sampleProducts = generateSampleProducts();
+      res.json(sampleProducts.filter(p => p.bestseller));
     }
   });
 
@@ -564,9 +519,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();
-      res.json(categories);
+      
+      // Update product count for each category dynamically
+      const categoriesWithCount = await Promise.all(
+        categories.map(async (category) => {
+          const products = await storage.getProductsByCategory(category.name);
+          return {
+            ...category,
+            productCount: products.length
+          };
+        })
+      );
+      
+      res.json(categoriesWithCount);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch categories" });
+      console.log("Database unavailable, using sample category data");
+      res.json(generateSampleCategories());
     }
   });
 
@@ -1523,6 +1491,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
+  // Generate sample categories for development with dynamic product count
+  function generateSampleCategories() {
+    const sampleProducts = generateSampleProducts();
+    
+    const baseCategories = [
+      {
+        id: 1,
+        name: "Skincare",
+        slug: "skincare",
+        description: "Premium skincare products for healthy, glowing skin",
+        imageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 2,
+        name: "Haircare",
+        slug: "haircare",
+        description: "Nourishing hair care products for all hair types",
+        imageUrl: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 3,
+        name: "Makeup",
+        slug: "makeup",
+        description: "High-quality makeup products for every occasion",
+        imageUrl: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 4,
+        name: "Body Care",
+        slug: "bodycare",
+        description: "Luxurious body care essentials for daily pampering",
+        imageUrl: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+
+    // Calculate dynamic product count for each category
+    return baseCategories.map(category => {
+      const productCount = sampleProducts.filter(product => 
+        product.category.toLowerCase() === category.slug.toLowerCase()
+      ).length;
+      
+      return {
+        ...category,
+        productCount
+      };
+    });
+  }
+
   // Generate sample customers for development
   function generateSampleCustomers() {
     const sampleCustomers = [
@@ -1577,28 +1605,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
       {
         id: 2,
-        name: 'Hair Growth Serum',
-        slug: 'hair-growth-serum',
-        description: 'Stimulate hair growth and strengthen hair follicles with our advanced formula.',
-        shortDescription: 'Stimulate hair growth and strengthen',
-        price: 599,
-        originalPrice: 799,
-        category: 'Haircare',
+        name: 'Hyaluronic Acid Serum',
+        slug: 'hyaluronic-acid-serum',
+        description: 'Deep hydration serum for plump, moisturized skin.',
+        shortDescription: 'Intense hydration for all skin types',
+        price: 549,
+        originalPrice: 699,
+        category: 'Skincare',
         subcategory: 'Serums',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
-        rating: 4.2,
-        reviewCount: 89,
+        imageUrl: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.4,
+        reviewCount: 95,
         inStock: true,
         featured: false,
         bestseller: true,
         newLaunch: false,
-        saleOffer: '25% OFF',
-        variants: '50ml, 100ml',
-        ingredients: 'Minoxidil, Caffeine, Biotin',
-        benefits: 'Promotes hair growth, strengthens hair, reduces hair fall',
-        howToUse: 'Apply to scalp, massage gently, leave overnight',
-        size: '50ml',
-        tags: 'hair-growth,serum,biotin,minoxidil'
+        saleOffer: '21% OFF',
+        variants: '30ml, 60ml',
+        ingredients: 'Hyaluronic Acid, Vitamin B5, Aloe Vera',
+        benefits: 'Deep hydration, plumps skin, reduces fine lines',
+        howToUse: 'Apply to damp skin, follow with moisturizer',
+        size: '30ml',
+        tags: 'hydration,hyaluronic-acid,serum,moisturizing'
       },
       {
         id: 3,
@@ -1624,6 +1652,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
         howToUse: 'Apply on clean face before bed, avoid eye area',
         size: '50ml',
         tags: 'anti-aging,retinol,night-cream,moisturizer'
+      },
+      {
+        id: 4,
+        name: 'Niacinamide Serum',
+        slug: 'niacinamide-serum',
+        description: 'Minimize pores and control oil with this powerful niacinamide serum.',
+        shortDescription: 'Pore minimizing and oil control',
+        price: 449,
+        originalPrice: 599,
+        category: 'Skincare',
+        subcategory: 'Serums',
+        imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.3,
+        reviewCount: 78,
+        inStock: true,
+        featured: false,
+        bestseller: false,
+        newLaunch: true,
+        saleOffer: '25% OFF',
+        variants: '30ml',
+        ingredients: 'Niacinamide, Zinc, Hyaluronic Acid',
+        benefits: 'Minimizes pores, controls oil, evens skin tone',
+        howToUse: 'Apply twice daily to clean skin',
+        size: '30ml',
+        tags: 'niacinamide,pore-minimizing,oil-control,serum'
+      },
+      {
+        id: 5,
+        name: 'Hair Growth Serum',
+        slug: 'hair-growth-serum',
+        description: 'Stimulate hair growth and strengthen hair follicles with our advanced formula.',
+        shortDescription: 'Stimulate hair growth and strengthen',
+        price: 599,
+        originalPrice: 799,
+        category: 'Haircare',
+        subcategory: 'Serums',
+        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.2,
+        reviewCount: 89,
+        inStock: true,
+        featured: false,
+        bestseller: true,
+        newLaunch: false,
+        saleOffer: '25% OFF',
+        variants: '50ml, 100ml',
+        ingredients: 'Minoxidil, Caffeine, Biotin',
+        benefits: 'Promotes hair growth, strengthens hair, reduces hair fall',
+        howToUse: 'Apply to scalp, massage gently, leave overnight',
+        size: '50ml',
+        tags: 'hair-growth,serum,biotin,minoxidil'
+      },
+      {
+        id: 6,
+        name: 'Nourishing Hair Oil',
+        slug: 'nourishing-hair-oil',
+        description: 'Deep conditioning hair oil with natural ingredients for healthy, shiny hair.',
+        shortDescription: 'Deep conditioning for healthy hair',
+        price: 399,
+        originalPrice: 499,
+        category: 'Haircare',
+        subcategory: 'Oils',
+        imageUrl: 'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.5,
+        reviewCount: 112,
+        inStock: true,
+        featured: true,
+        bestseller: false,
+        newLaunch: false,
+        saleOffer: '20% OFF',
+        variants: '100ml, 200ml',
+        ingredients: 'Argan Oil, Coconut Oil, Vitamin E',
+        benefits: 'Nourishes hair, adds shine, reduces frizz',
+        howToUse: 'Apply to damp hair, leave for 30 minutes, then wash',
+        size: '100ml',
+        tags: 'hair-oil,nourishing,argan,coconut'
+      },
+      {
+        id: 7,
+        name: 'Matte Liquid Lipstick',
+        slug: 'matte-liquid-lipstick',
+        description: 'Long-lasting matte liquid lipstick with intense color payoff.',
+        shortDescription: 'Long-lasting matte finish',
+        price: 299,
+        originalPrice: 399,
+        category: 'Makeup',
+        subcategory: 'Lips',
+        imageUrl: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.3,
+        reviewCount: 67,
+        inStock: true,
+        featured: false,
+        bestseller: true,
+        newLaunch: false,
+        saleOffer: '25% OFF',
+        variants: 'Red, Pink, Berry, Nude',
+        ingredients: 'Vitamin E, Jojoba Oil, Natural Waxes',
+        benefits: 'Long-lasting, transfer-proof, comfortable wear',
+        howToUse: 'Apply evenly to lips, allow to dry',
+        size: '6ml',
+        tags: 'lipstick,matte,liquid,long-lasting'
+      },
+      {
+        id: 8,
+        name: 'HD Foundation',
+        slug: 'hd-foundation',
+        description: 'High-definition foundation for flawless, natural-looking coverage.',
+        shortDescription: 'Flawless natural coverage',
+        price: 799,
+        originalPrice: 999,
+        category: 'Makeup',
+        subcategory: 'Face',
+        imageUrl: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.4,
+        reviewCount: 89,
+        inStock: true,
+        featured: true,
+        bestseller: false,
+        newLaunch: false,
+        saleOffer: '20% OFF',
+        variants: 'Fair, Light, Medium, Deep',
+        ingredients: 'Hyaluronic Acid, SPF 15, Vitamin C',
+        benefits: 'Full coverage, long-lasting, buildable',
+        howToUse: 'Apply with brush or sponge, blend well',
+        size: '30ml',
+        tags: 'foundation,hd,coverage,makeup'
+      },
+      {
+        id: 9,
+        name: 'Body Butter',
+        slug: 'body-butter',
+        description: 'Rich, nourishing body butter for deep moisturization.',
+        shortDescription: 'Deep moisturization for soft skin',
+        price: 349,
+        originalPrice: 449,
+        category: 'Body Care',
+        subcategory: 'Moisturizers',
+        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.6,
+        reviewCount: 134,
+        inStock: true,
+        featured: false,
+        bestseller: true,
+        newLaunch: false,
+        saleOffer: '22% OFF',
+        variants: 'Vanilla, Coconut, Lavender',
+        ingredients: 'Shea Butter, Cocoa Butter, Vitamin E',
+        benefits: 'Deep moisturization, long-lasting softness',
+        howToUse: 'Apply to clean, dry skin, massage gently',
+        size: '200ml',
+        tags: 'body-butter,moisturizer,shea,cocoa'
+      },
+      {
+        id: 10,
+        name: 'Exfoliating Body Scrub',
+        slug: 'exfoliating-body-scrub',
+        description: 'Gentle exfoliating scrub to reveal smooth, glowing skin.',
+        shortDescription: 'Gentle exfoliation for smooth skin',
+        price: 249,
+        originalPrice: 329,
+        category: 'Body Care',
+        subcategory: 'Exfoliants',
+        imageUrl: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.2,
+        reviewCount: 76,
+        inStock: true,
+        featured: false,
+        bestseller: false,
+        newLaunch: true,
+        saleOffer: '24% OFF',
+        variants: 'Coffee, Sugar, Sea Salt',
+        ingredients: 'Natural Exfoliants, Coconut Oil, Vitamin E',
+        benefits: 'Removes dead skin, improves texture, moisturizes',
+        howToUse: 'Apply to wet skin, massage in circular motions, rinse',
+        size: '300ml',
+        tags: 'body-scrub,exfoliant,coffee,sugar'
       }
     ];
   }
@@ -2381,49 +2584,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/sliders', upload.single("image"), async (req, res) => {
     try {
-      const body = req.body;
-      
-      // Handle image URL - use uploaded file or provided URL
-      let imageUrl = '';
-      if (req.file) {
-        imageUrl = `/api/images/${req.file.filename}`;
-      } else if (body.imageUrl) {
-        imageUrl = body.imageUrl;
-      }
-
-      // Validate required fields
-      if (!body.title || !body.description || !body.primaryActionText || !body.primaryActionUrl) {
+      // Handle image URL - require uploaded file
+      if (!req.file) {
         return res.status(400).json({ 
-          error: 'Missing required fields: title, description, primaryActionText, and primaryActionUrl are required' 
+          error: 'Image file is required' 
         });
       }
 
-      if (!imageUrl) {
-        return res.status(400).json({ 
-          error: 'Image is required. Please upload an image or provide an image URL.' 
-        });
-      }
+      const imageUrl = `/api/images/${req.file.filename}`;
 
       const [newSlider] = await db.insert(sliders).values({
-        title: body.title,
-        subtitle: body.subtitle || '',
-        description: body.description,
+        title: `Image ${Date.now()}`,
+        subtitle: '',
+        description: 'Uploaded image',
         imageUrl: imageUrl,
-        badge: body.badge || '',
-        primaryActionText: body.primaryActionText,
-        primaryActionUrl: body.primaryActionUrl,
-        secondaryActionText: body.secondaryActionText || '',
-        secondaryActionUrl: body.secondaryActionUrl || '',
-        backgroundGradient: body.backgroundGradient || '',
-        isActive: body.isActive === 'true' || body.isActive === true, // Handle boolean from FormData
-        sortOrder: parseInt(body.sortOrder, 10) || 0
+        badge: '',
+       
+        isActive: true,
+        sortOrder: 0
       }).returning();
 
       res.json(newSlider);
     } catch (error) {
-      console.error('Error creating slider:', error);
+      console.error('Error uploading image:', error);
       res.status(500).json({ 
-        error: 'Failed to create slider',
+        error: 'Failed to upload image',
         details: error.message 
       });
     }
@@ -2442,16 +2627,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const [updatedSlider] = await db.update(sliders)
         .set({
-          title: body.title,
-          subtitle: body.subtitle,
-          description: body.description,
+  
           imageUrl: imageUrl,
-          badge: body.badge,
-          primaryActionText: body.primaryActionText,
-          primaryActionUrl: body.primaryActionUrl,
-          secondaryActionText: body.secondaryActionText,
-          secondaryActionUrl: body.secondaryActionUrl,
-          backgroundGradient: body.backgroundGradient,
           isActive: body.isActive === 'true',
           sortOrder: parseInt(body.sortOrder, 10),
           updatedAt: new Date().toISOString()

@@ -50,8 +50,8 @@ export default function Home() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_var(--tw-gradient-stops))] from-pink-500 via-transparent to-transparent"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_var(--tw-gradient-stops))] from-purple-500 via-transparent to-transparent"></div>
         </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-20">
             <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-100 rounded-full mb-8 shadow-sm">
               <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text">
@@ -97,18 +97,18 @@ export default function Home() {
                         {/* Decorative Elements */}
                         <div className="absolute top-4 right-4 w-8 h-8 bg-white/20 rounded-full blur-sm"></div>
                         <div className="absolute bottom-4 left-4 w-6 h-6 bg-white/30 rounded-full blur-sm"></div>
-                        
+
                         <img
                           src={categoryImages[category.slug as keyof typeof categoryImages] || category.imageUrl}
                           alt={category.name}
                           className="w-full h-full object-cover rounded-2xl group-hover:scale-110 transition-transform duration-700 shadow-xl"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent rounded-2xl group-hover:from-black/5 transition-all duration-500"></div>
-                        
+
                         {/* Floating Badge */}
-                        <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg">
+                        {/* <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg">
                           <span className="text-xs font-semibold text-gray-700">{category.productCount} items</span>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                     <div className="p-8 text-center relative">
@@ -211,8 +211,8 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.03]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,_var(--tw-gradient-stops))] from-purple-500 via-transparent to-transparent"></div>
         </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-full mb-8 shadow-sm">
               <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
@@ -284,8 +284,8 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.03]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_var(--tw-gradient-stops))] from-amber-500 via-transparent to-transparent"></div>
         </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-100 rounded-full mb-8 shadow-sm">
               <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text">

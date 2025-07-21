@@ -129,4 +129,22 @@ ALTER TABLE "order_notifications" ADD CONSTRAINT "order_notifications_order_id_o
 
 ALTER TABLE "order_notifications" ADD CONSTRAINT "order_notifications_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
 
+CREATE TABLE "sliders" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"title" text NOT NULL,
+	"subtitle" text,
+	"description" text NOT NULL,
+	"image_url" text NOT NULL,
+	"badge" text,
+	"primary_action_text" text NOT NULL,
+	"primary_action_url" text NOT NULL,
+	"secondary_action_text" text,
+	"secondary_action_url" text,
+	"background_gradient" text,
+	"is_active" boolean NOT NULL DEFAULT true,
+	"sort_order" integer NOT NULL DEFAULT 0,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+
 ALTER TABLE "users" ADD COLUMN "role" varchar(20) NOT NULL DEFAULT 'user';

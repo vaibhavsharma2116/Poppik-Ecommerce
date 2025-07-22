@@ -69,13 +69,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(sliders)
         .where(eq(sliders.isActive, true))
         .orderBy(asc(sliders.sortOrder));
-      
+
       res.json(activeSliders);
     } catch (error) {
       console.error('Error fetching public sliders:', error);
       console.log("Database unavailable, using sample slider data");
-      
-   
+
+
     }
   });
 
@@ -88,11 +88,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = authHeader.substring(7);
-      
+
       // In a real implementation, you would verify the Firebase token here
       // For now, we'll just decode and trust it
       console.log("Firebase token received:", token.substring(0, 20) + "...");
-      
+
       // Store user info in request for later use
       req.firebaseUser = { token };
       next();
@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if user exists in our database
       let user = await storage.getUserByEmail(email || `${uid}@firebase.user`);
-      
+
       if (!user) {
         // Create new user from Firebase data
         user = await storage.createUser({
@@ -519,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();
-      
+
       // Update product count for each category dynamically
       const categoriesWithCount = await Promise.all(
         categories.map(async (category) => {
@@ -530,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
       );
-      
+
       res.json(categoriesWithCount);
     } catch (error) {
       console.log("Database unavailable, using sample category data");
@@ -1611,7 +1611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate sample categories for development with dynamic product count
   function generateSampleCategories() {
     const sampleProducts = generateSampleProducts();
-    
+
     const baseCategories = [
       {
         id: 1,
@@ -1660,7 +1660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const productCount = sampleProducts.filter(product => 
         product.category.toLowerCase() === category.slug.toLowerCase()
       ).length;
-      
+
       return {
         ...category,
         productCount
@@ -2626,6 +2626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: users.lastName,
           email: users.email,
           phone: users.phone,
+          createdAt: users.createdAt,
         }).from(users);
 
         customers = allUsers.filter(user => 
@@ -2745,7 +2746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const [updatedSlider] = await db.update(sliders)
         .set({
-  
+
           imageUrl: imageUrl,
           isActive: body.isActive === 'true',
           sortOrder: parseInt(body.sortOrder, 10),

@@ -227,8 +227,8 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
             </Badge>
           )}
           {product.newLaunch && (
-            <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 hover:bg-green-200">
-              New Launch
+            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-200 font-semibold animate-pulse shadow-sm">
+              🚀 New Launch
             </Badge>
           )}
           {product.featured && (

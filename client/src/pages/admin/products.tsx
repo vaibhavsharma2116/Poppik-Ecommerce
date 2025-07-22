@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +52,7 @@ interface Product {
   howToUse?: string;
   size?: string;
   tags?: string;
+  skinType?: string;
 }
 
 interface Category {
@@ -80,6 +81,7 @@ export default function AdminProducts() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [subcategoryFilter, setSubcategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+    const [skinTypeFilter, setSkinTypeFilter] = useState('all');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -109,7 +111,8 @@ export default function AdminProducts() {
     ingredients: '',
     benefits: '',
     howToUse: '',
-    tags: ''
+    tags: '',
+    skinType: ''
   });
 
   // Fetch data from API
@@ -190,7 +193,8 @@ export default function AdminProducts() {
         ingredients: product.ingredients || '',
         benefits: product.benefits || '',
         howToUse: product.howToUse || '',
-        tags: product.tags || ''
+        tags: product.tags || '',
+        skinType: product.skinType || ''
       });
       setIsEditModalOpen(true);
     }
@@ -216,7 +220,8 @@ export default function AdminProducts() {
           ingredients: editFormData.ingredients || null,
           benefits: editFormData.benefits || null,
           howToUse: editFormData.howToUse || null,
-          tags: editFormData.tags || null
+          tags: editFormData.tags || null,
+          skinType: editFormData.skinType || null
         };
 
         console.log('Updating product with data:', updateData);
@@ -248,6 +253,11 @@ export default function AdminProducts() {
         setIsEditModalOpen(false);
         setSelectedProduct(null);
         setError(null); // Clear any previous errors
+
+        // Refresh data to ensure sync with database
+        setTimeout(() => {
+          fetchData();
+        }, 500);
       } catch (err) {
         console.error('Edit product error:', err);
         setError(err instanceof Error ? err.message : 'Failed to update product');
@@ -311,6 +321,14 @@ export default function AdminProducts() {
     return subcategories.filter(sub => sub.categoryId === categoryId);
   };
 
+    // Clear all filters
+    const clearAllFilters = () => {
+      setCategoryFilter("all");
+      setSubcategoryFilter("all");
+      setSkinTypeFilter("all");
+      setStatusFilter("all");
+    };
+
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -322,12 +340,25 @@ export default function AdminProducts() {
     const matchesSubcategory = subcategoryFilter === 'all' || 
                               product.subcategory?.toLowerCase() === subcategoryFilter.toLowerCase();
 
+        const matchesSkinType = skinTypeFilter === 'all' ||
+            product.skinType?.toLowerCase() === skinTypeFilter.toLowerCase();
+
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'active' && product.inStock) ||
                          (statusFilter === 'out-of-stock' && !product.inStock);
 
-    return matchesSearch && matchesCategory && matchesSubcategory && matchesStatus;
+    return matchesSearch && matchesCategory && matchesSubcategory && matchesStatus && matchesSkinType;
   });
+
+  // Active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (categoryFilter !== "all") count++;
+    if (subcategoryFilter !== "all") count++;
+        if (skinTypeFilter !== "all") count++;
+    if (statusFilter !== "all") count++;
+    return count;
+  }, [categoryFilter, subcategoryFilter, skinTypeFilter, statusFilter]);
 
   const lowStockCount = products.filter(p => !p.inStock).length;
   const bestSeller = products.find(p => p.bestseller);
@@ -443,6 +474,19 @@ export default function AdminProducts() {
                   <SelectItem value="out-of-stock">Out of Stock</SelectItem>
                 </SelectContent>
               </Select>
+               {/* Skin Type Filter */}
+               <Select value={skinTypeFilter} onValueChange={setSkinTypeFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Skin Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Skin Types</SelectItem>
+                    <SelectItem value="oily">Oily</SelectItem>
+                    <SelectItem value="dry">Dry</SelectItem>
+                    <SelectItem value="sensitive">Sensitive</SelectItem>
+                    <SelectItem value="combination">Combination</SelectItem>
+                  </SelectContent>
+                </Select>
             </div>
             <div className="flex items-center space-x-2">
               <div className="flex items-center rounded-lg border p-1">
@@ -512,7 +556,7 @@ export default function AdminProducts() {
                   {product.category} {product.subcategory && `• ${product.subcategory}`}
                 </p>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-bold text-slate-900">${product.price}</span>
+                  <span className="text-lg font-bold text-slate-900">₹{product.price}</span>
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="text-sm text-slate-600">{product.rating}</span>
@@ -565,6 +609,7 @@ export default function AdminProducts() {
                   <TableHead>Product</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Subcategory</TableHead>
+                                  <TableHead>Skin Type</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Rating</TableHead>
                   <TableHead>Reviews</TableHead>
@@ -595,7 +640,8 @@ export default function AdminProducts() {
                     </TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell>{product.subcategory || 'N/A'}</TableCell>
-                    <TableCell className="font-medium">${product.price}</TableCell>
+                                        <TableCell>{product.skinType || 'N/A'}</TableCell>
+                    <TableCell className="font-medium">₹{product.price}</TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
@@ -699,12 +745,17 @@ export default function AdminProducts() {
                       >
                         {selectedProduct.inStock ? 'In Stock' : 'Out of Stock'}
                       </Badge>
+                                            {selectedProduct.skinType && (
+                        <Badge variant="outline" className="text-sm px-3 py-1">
+                          {selectedProduct.skinType}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-semibold text-slate-600">Price</Label>
-                      <p className="text-2xl font-bold text-green-600">${selectedProduct.price}</p>
+                      <p className="text-2xl font-bold text-green-600">₹{selectedProduct.price}</p>
                     </div>
                     <div>
                       <Label className="text-sm font-semibold text-slate-600">Rating</Label>
@@ -820,19 +871,34 @@ export default function AdminProducts() {
                   </SelectContent>
                 </Select>
               </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="edit-skinType">Skin Type</Label>
+                    <Select value={editFormData.skinType} onValueChange={(value) => setEditFormData(prev => ({ ...prev, skinType: value }))}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Skin Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="oily">Oily</SelectItem>
+                            <SelectItem value="dry">Dry</SelectItem>
+                            <SelectItem value="sensitive">Sensitive</SelectItem>
+                            <SelectItem value="combination">Combination</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* Price and Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-price">Price ($) *</Label>
+                <Label htmlFor="edit-price">Price (₹) *</Label>
                 <Input
                   id="edit-price"
                   type="number"
                   step="0.01"
                   value={editFormData.price}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
-                  placeholder="29.99"
+                  placeholder="299"
                   required
                 />
               </div>
@@ -1055,7 +1121,7 @@ export default function AdminProducts() {
               </div>
               <div>
                 <p className="font-medium text-slate-900">{selectedProduct.name}</p>
-                <p className="text-sm text-slate-600">{selectedProduct.category} • ${selectedProduct.price}</p>
+                <p className="text-sm text-slate-600">{selectedProduct.category} • ₹{selectedProduct.price}</p>
               </div>
             </div>
           )}

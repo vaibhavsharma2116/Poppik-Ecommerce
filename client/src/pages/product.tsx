@@ -14,6 +14,7 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("popular");
   const [priceRange, setPriceRange] = useState("all-price");
+  const [skinType, setSkinType] = useState("all-skin");
   const [showFilters, setShowFilters] = useState(false);
 
   const { data: allProducts, isLoading: productsLoading } = useQuery<Product[]>({
@@ -87,6 +88,20 @@ export default function ProductsPage() {
       }
     }
 
+    // Filter by skin type
+    if (skinType !== "all-skin") {
+      filtered = filtered.filter(product => {
+        const productSkinType = product.skinType?.toLowerCase();
+        const productDescription = product.description?.toLowerCase();
+        const selectedSkinType = skinType.toLowerCase();
+        
+        return productSkinType === selectedSkinType || 
+               productDescription?.includes(selectedSkinType) ||
+               productDescription?.includes(`${selectedSkinType} skin`) ||
+               product.name?.toLowerCase().includes(selectedSkinType);
+      });
+    }
+
     // Sort products
     switch (sortBy) {
       case "price-low":
@@ -114,20 +129,22 @@ export default function ProductsPage() {
     }
 
     return filtered;
-  }, [allProducts, selectedCategory, sortBy, priceRange]);
+  }, [allProducts, selectedCategory, sortBy, priceRange, skinType]);
 
   // Active filters count
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (selectedCategory !== "all") count++;
     if (priceRange !== "all-price") count++;
+    if (skinType !== "all-skin") count++;
     return count;
-  }, [selectedCategory, priceRange]);
+  }, [selectedCategory, priceRange, skinType]);
 
   // Clear all filters
   const clearAllFilters = () => {
     setSelectedCategory("all");
     setPriceRange("all-price");
+    setSkinType("all-skin");
   };
 
   return (
@@ -204,6 +221,15 @@ export default function ProductsPage() {
                 />
               </Badge>
             )}
+            {skinType !== "all-skin" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {skinType.charAt(0).toUpperCase() + skinType.slice(1)} Skin
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setSkinType("all-skin")}
+                />
+              </Badge>
+            )}
             {priceRange !== "all-price" && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 {priceRanges.find(p => p.value === priceRange)?.label}
@@ -218,7 +244,7 @@ export default function ProductsPage() {
 
         {/* Expandable Filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="All Categories" />
@@ -230,6 +256,19 @@ export default function ProductsPage() {
                     {category.label}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={skinType} onValueChange={setSkinType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Skin Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-skin">All Skin Types</SelectItem>
+                <SelectItem value="oily">Oily Skin</SelectItem>
+                <SelectItem value="dry">Dry Skin</SelectItem>
+                <SelectItem value="sensitive">Sensitive Skin</SelectItem>
+                <SelectItem value="combination">Combination Skin</SelectItem>
               </SelectContent>
             </Select>
 

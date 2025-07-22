@@ -84,9 +84,16 @@ export default function CategoryPage() {
 
     // Filter by skin type (if applicable)
     if (skinType !== "all-skin") {
-      filtered = filtered.filter(product => 
-        product.description?.toLowerCase().includes(skinType.toLowerCase())
-      );
+      filtered = filtered.filter(product => {
+        const productSkinType = product.skinType?.toLowerCase();
+        const productDescription = product.description?.toLowerCase();
+        const selectedSkinType = skinType.toLowerCase();
+        
+        return productSkinType === selectedSkinType || 
+               productDescription?.includes(selectedSkinType) ||
+               productDescription?.includes(`${selectedSkinType} skin`) ||
+               product.name?.toLowerCase().includes(selectedSkinType);
+      });
     }
 
     // Filter by price range
@@ -161,7 +168,7 @@ export default function CategoryPage() {
   if (categoryLoading) {
     return (
       <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-6 w-48 mb-8" />
           <div className="text-center mb-12">
             <Skeleton className="h-12 w-64 mx-auto mb-4" />
@@ -175,7 +182,7 @@ export default function CategoryPage() {
   if (!category) {
     return (
       <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Category Not Found</h1>
           <p className="text-gray-600 mb-8">The category you're looking for doesn't exist.</p>
           <Link href="/">
@@ -188,7 +195,7 @@ export default function CategoryPage() {
 
   return (
     <div className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className=" mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm mb-8">
           <Link href="/" className="text-gray-500 hover:text-gray-700">

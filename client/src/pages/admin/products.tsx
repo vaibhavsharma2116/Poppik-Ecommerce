@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AddProductModal from "@/components/admin/add-product-modal";
+import DynamicFilter from "@/components/dynamic-filter";
 import { 
   Plus, 
   Search, 
@@ -78,13 +79,10 @@ interface Subcategory {
 export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [subcategoryFilter, setSubcategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-    const [skinTypeFilter, setSkinTypeFilter] = useState('all');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -321,44 +319,33 @@ export default function AdminProducts() {
     return subcategories.filter(sub => sub.categoryId === categoryId);
   };
 
-    // Clear all filters
-    const clearAllFilters = () => {
-      setCategoryFilter("all");
-      setSubcategoryFilter("all");
-      setSkinTypeFilter("all");
-      setStatusFilter("all");
-    };
+    // Handle dynamic filter changes
+  const handleFilterChange = (filteredProducts: Product[], activeFilters: any) => {
+    // Apply search term filter on top of dynamic filters
+    let finalFiltered = filteredProducts;
+    
+    if (searchTerm) {
+      finalFiltered = filteredProducts.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    setFilteredProducts(finalFiltered);
+  };
 
-  // Filter products based on search and filters
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.category.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory = categoryFilter === 'all' || 
-                           product.category.toLowerCase() === categoryFilter.toLowerCase();
-
-    const matchesSubcategory = subcategoryFilter === 'all' || 
-                              product.subcategory?.toLowerCase() === subcategoryFilter.toLowerCase();
-
-        const matchesSkinType = skinTypeFilter === 'all' ||
-            product.skinType?.toLowerCase() === skinTypeFilter.toLowerCase();
-
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && product.inStock) ||
-                         (statusFilter === 'out-of-stock' && !product.inStock);
-
-    return matchesSearch && matchesCategory && matchesSubcategory && matchesStatus && matchesSkinType;
-  });
-
-  // Active filters count
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (categoryFilter !== "all") count++;
-    if (subcategoryFilter !== "all") count++;
-        if (skinTypeFilter !== "all") count++;
-    if (statusFilter !== "all") count++;
-    return count;
-  }, [categoryFilter, subcategoryFilter, skinTypeFilter, statusFilter]);
+  // Update filtered products when search term changes
+  useEffect(() => {
+    if (searchTerm && filteredProducts.length > 0) {
+      const searchFiltered = filteredProducts.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredProducts(searchFiltered);
+    }
+  }, [searchTerm]);
 
   const lowStockCount = products.filter(p => !p.inStock).length;
   const bestSeller = products.find(p => p.bestseller);
@@ -423,70 +410,18 @@ export default function AdminProducts() {
         })}
       </div>
 
-      {/* Filters and Controls */}
+      {/* Search and View Controls */}
       <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-              <Select value={categoryFilter} onValueChange={(value) => {
-                setCategoryFilter(value);
-                setSubcategoryFilter('all');
-              }}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name.toLowerCase()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Subcategory" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Subcategories</SelectItem>
-                  {categoryFilter !== 'all' && getSubcategoriesForCategory(categoryFilter).map((sub) => (
-                    <SelectItem key={sub.id} value={sub.name?.toLowerCase() || `sub-${sub.id}`}>{sub.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">In Stock</SelectItem>
-                  <SelectItem value="out-of-stock">Out of Stock</SelectItem>
-                </SelectContent>
-              </Select>
-               {/* Skin Type Filter */}
-               <Select value={skinTypeFilter} onValueChange={setSkinTypeFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Skin Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Skin Types</SelectItem>
-                    <SelectItem value="oily">Oily</SelectItem>
-                    <SelectItem value="dry">Dry</SelectItem>
-                    <SelectItem value="sensitive">Sensitive</SelectItem>
-                    <SelectItem value="combination">Combination</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
             </div>
             <div className="flex items-center space-x-2">
               <div className="flex items-center rounded-lg border p-1">
@@ -512,16 +447,30 @@ export default function AdminProducts() {
         </CardContent>
       </Card>
 
-      {/* Products Display */}
+      {/* Dynamic Filters and Products Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Dynamic Filter Sidebar */}
+        <div className="lg:col-span-1">
+          <DynamicFilter
+            products={products}
+            categories={categories}
+            onFilterChange={handleFilterChange}
+            className="sticky top-4"
+          />
+        </div>
+
+        {/* Products Display */}
+        <div className="lg:col-span-3">
+
       {filteredProducts.length === 0 ? (
-        <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
-          <CardContent className="p-12 text-center">
-            <Package className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No products found</h3>
-            <p className="text-slate-600">Try adjusting your search or filter criteria</p>
-          </CardContent>
-        </Card>
-      ) : viewMode === 'grid' ? (
+            <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+              <CardContent className="p-12 text-center">
+                <Package className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No products found</h3>
+                <p className="text-slate-600">Try adjusting your search or filter criteria</p>
+              </CardContent>
+            </Card>
+          ) : viewMode === 'grid' ? (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="border-0 shadow-lg bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300 group">
@@ -597,71 +546,101 @@ export default function AdminProducts() {
           ))}
         </div>
       ) : (
-        <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+        <Card className="border border-slate-200/60 shadow-xl bg-white overflow-hidden">
           <CardHeader>
             <CardTitle>Product Inventory</CardTitle>
             <CardDescription>Detailed view of all products</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Subcategory</TableHead>
-                                  <TableHead>Skin Type</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Reviews</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-b border-slate-200 bg-slate-50/50">
+                  <TableHead className="text-slate-800 font-semibold py-4 px-6">Image</TableHead>
+                  <TableHead className="text-slate-800 font-semibold py-4">Product Details</TableHead>
+                  <TableHead className="text-slate-800 font-semibold py-4">Category</TableHead>
+                  <TableHead className="text-slate-800 font-semibold py-4">Price</TableHead>
+                  <TableHead className="text-slate-800 font-semibold py-4">Stock</TableHead>
+                  <TableHead className="text-slate-800 font-semibold py-4 text-right pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((product) => (
-                  <TableRow key={product.id} className="hover:bg-slate-50/80">
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
-                          {product.imageUrl ? (
-                            <img 
-                              src={product.imageUrl} 
-                              alt={product.name}
-                              className="w-full h-full object-cover"
+                  <TableRow key={product.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-all duration-200 group">
+                    <TableCell className="p-6">
+                      <div className="w-20 h-20 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                        {product.imageUrl ? (
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        ) : (
+                          <ImageIcon className="h-8 w-8 text-slate-400" />
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-6">
+                      <div className="space-y-2 max-w-xs">
+                        <h3 className="font-semibold text-slate-900 line-clamp-2 text-sm leading-tight group-hover:text-slate-700 transition-colors">{product.name}</h3>
+                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{product.shortDescription}</p>
+                        <div className="flex items-center space-x-1">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < Math.floor(parseFloat(product.rating)) 
+                                  ? "fill-yellow-400 text-yellow-400" 
+                                  : "text-slate-300"
+                              }`}
                             />
-                          ) : (
-                            <ImageIcon className="h-5 w-5 text-slate-400" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900">{product.name}</div>
+                          ))}
+                          <span className="text-xs text-slate-700 ml-1 font-medium">{product.rating}</span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>{product.subcategory || 'N/A'}</TableCell>
-                                        <TableCell>{product.skinType || 'N/A'}</TableCell>
-                    <TableCell className="font-medium">₹{product.price}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                        {product.rating}
+                    <TableCell className="py-6">
+                      <div className="space-y-2">
+                        <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                          {product.category}
+                        </Badge>
+                        {product.subcategory && (
+                          <Badge variant="outline" className="text-xs border-slate-300 text-slate-600">
+                            {product.subcategory}
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell>{product.reviewCount}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-6">
+                      <div className="space-y-1">
+                        <span className="font-bold text-slate-900 text-sm">₹{product.price}</span>
+                        {product.originalPrice && (
+                          <div className="flex flex-col space-y-1">
+                            <span className="text-xs text-slate-500 line-through">₹{product.originalPrice}</span>
+                            <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded-full">
+                              {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-6">
                       <Badge 
-                        variant={product.inStock ? 'default' : 'destructive'}
+                        variant={product.inStock ? "default" : "destructive"}
+                        className={`text-xs font-medium px-3 py-1 ${
+                          product.inStock 
+                            ? "bg-green-100 text-green-800 border border-green-200" 
+                            : "bg-red-100 text-red-800 border border-red-200"
+                        }`}
                       >
-                        {product.inStock ? 'In Stock' : 'Out of Stock'}
+                        {product.inStock ? "In Stock" : "Out of Stock"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-1">
+                    <TableCell className="text-right py-6 pr-6">
+                      <div className="flex justify-end space-x-2">
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="h-8 w-8 p-0 transition-all hover:bg-blue-100 hover:text-blue-600"
+                          className="h-9 w-9 p-0 rounded-lg transition-all hover:bg-blue-50 hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-blue-200"
                           onClick={() => handleViewProduct(product.id)}
                           title="View Product"
                         >
@@ -670,7 +649,7 @@ export default function AdminProducts() {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="h-8 w-8 p-0 transition-all hover:bg-emerald-100 hover:text-emerald-600"
+                          className="h-9 w-9 p-0 rounded-lg transition-all hover:bg-emerald-50 hover:text-emerald-600 hover:shadow-sm border border-transparent hover:border-emerald-200"
                           onClick={() => handleEditProduct(product.id)}
                           title="Edit Product"
                         >
@@ -679,7 +658,7 @@ export default function AdminProducts() {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="h-8 w-8 p-0 transition-all hover:bg-red-100 hover:text-red-600"
+                          className="h-9 w-9 p-0 rounded-lg transition-all hover:bg-red-50 hover:text-red-600 hover:shadow-sm border border-transparent hover:border-red-200"
                           onClick={() => handleDeleteProduct(product.id)}
                           title="Delete Product"
                         >
@@ -693,7 +672,9 @@ export default function AdminProducts() {
             </Table>
           </CardContent>
         </Card>
-      )}
+          )}
+        </div>
+      </div>
 
       {/* View Product Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>

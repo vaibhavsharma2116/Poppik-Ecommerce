@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "wouter";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Grid, List, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,17 +12,22 @@ import type { Product, Category } from "@/lib/types";
 
 export default function CategoryPage() {
   const params = useParams();
+  const [location] = useLocation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('name');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState({});
 
-  // Fetch products for this category
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
-    queryKey: [`/api/products/category/${params.slug}`],
+  // Get subcategory from URL params
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  const subcategorySlug = urlParams.get('subcategory');
+
+  // Fetch all products
+  const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
     queryFn: async () => {
-      const response = await fetch(`/api/products/category/${params.slug}`);
+      const response = await fetch("/api/products");
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
@@ -38,7 +43,35 @@ export default function CategoryPage() {
     },
   });
 
-  // Handle filter changes
+  // Fetch subcategories for current category
+  const { data: subcategories = [] } = useQuery({
+    queryKey: [`/api/categories/${params.slug}/subcategories`],
+    queryFn: async () => {
+      const response = await fetch(`/api/categories/${params.slug}/subcategories`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
+  // Filter products based on category and subcategory
+  const categoryFilteredProducts = useMemo(() => {
+    if (!allProducts.length) return [];
+
+    let filtered = allProducts.filter(product => 
+      product.category?.toLowerCase() === params.slug?.replace('-', ' ').toLowerCase()
+    );
+
+    // If subcategory is selected, further filter by subcategory
+    if (subcategorySlug) {
+      filtered = filtered.filter(product => 
+        product.subcategory?.toLowerCase() === subcategorySlug.replace('-', ' ').toLowerCase()
+      );
+    }
+
+    return filtered;
+  }, [allProducts, params.slug, subcategorySlug]);
+
+  // Handle filter changes - now working with category/subcategory filtered products
   const handleFilterChange = (filtered: Product[], filters: any) => {
     setFilteredProducts(filtered);
     setActiveFilters(filters);
@@ -64,12 +97,16 @@ export default function CategoryPage() {
     }
   });
 
-  // Initialize filtered products when products load
+  // Initialize filtered products when category filtered products load
   useEffect(() => {
-    if (products.length > 0 && filteredProducts.length === 0) {
-      setFilteredProducts(products);
+    if (categoryFilteredProducts.length > 0) {
+      setFilteredProducts(categoryFilteredProducts);
     }
-  }, [products]);
+  }, [categoryFilteredProducts]);
+
+  // Get current category and subcategory names for display
+  const currentCategory = categories.find(cat => cat.slug === params.slug);
+  const currentSubcategory = subcategories.find(sub => sub.slug === subcategorySlug);
 
   return (
     <div className="container mx-auto py-12">
@@ -81,10 +118,18 @@ export default function CategoryPage() {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 capitalize">
-              {params.slug?.replace('-', ' ')} Products
+              {currentCategory?.name || params.slug?.replace('-', ' ')} Products
+              {currentSubcategory && (
+                <span className="text-red-500 font-normal"> - {currentSubcategory.name}</span>
+              )}
             </h1>
             <p className="text-gray-600 mt-1">
-              {sortedProducts.length} of {products.length} products
+              {sortedProducts.length} of {categoryFilteredProducts.length} products
+              {subcategorySlug && (
+                <span className="ml-2 text-sm bg-red-100 text-red-700 px-2 py-1 rounded">
+                  {currentSubcategory?.name || subcategorySlug.replace('-', ' ')}
+                </span>
+              )}
             </p>
           </div>
 
@@ -141,7 +186,7 @@ export default function CategoryPage() {
                 </SheetHeader>
                 <div className="mt-6">
                   <DynamicFilter
-                    products={products}
+                    products={categoryFilteredProducts}
                     categories={categories}
                     onFilterChange={handleFilterChange}
                   />

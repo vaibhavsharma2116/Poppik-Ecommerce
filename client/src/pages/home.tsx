@@ -29,6 +29,10 @@ export default function Home() {
     queryKey: ["/api/products/featured"],
   });
 
+  const { data: newLaunchProducts, isLoading: newLaunchLoading } = useQuery<Product[]>({
+    queryKey: ["/api/products/new-launches"],
+  });
+
   const { data: allProducts, isLoading: allProductsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
@@ -219,26 +223,27 @@ export default function Home() {
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-[0.03]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,_var(--tw-gradient-stops))] from-purple-500 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,_var(--tw-gradient-stops))] from-pink-500 via-transparent to-transparent"></div>
         </div>
 
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-full mb-8 shadow-sm">
               <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
-                ⭐ Trending Now
+                ⭐ Featured Products
               </span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="text-transparent bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text">
-                Featured Products
+                Featured Collection
               </span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-light mb-8">
-              Our newest and most innovative products, carefully selected for their exceptional quality
+              Our featured products, carefully selected for their exceptional quality and popularity
             </p>
-            <Link href="/category/featured">
+            <Link href="/products?filter=featured">
               <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
-                <span>View All Featured</span>
+                <span>View All Featured ({featuredProducts?.length || 0})</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
@@ -259,11 +264,11 @@ export default function Home() {
                 </Card>
               ))}
             </div>
-          ) : (
+          ) : featuredProducts && featuredProducts.length > 0 ? (
             <>
               {/* Grid Layout for Featured Products - Max 4 per row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                {featuredProducts?.slice(0, 4).map((product) => (
+                {featuredProducts.slice(0, 8).map((product) => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
@@ -273,16 +278,21 @@ export default function Home() {
               </div>
 
               {/* View All Button */}
-              {featuredProducts && featuredProducts.length > 4 && (
+              {featuredProducts.length > 8 && (
                 <div className="text-center mt-10">
-                  <Link href="/category/featured">
+                  <Link href="/products?filter=featured">
                     <Button className="btn-primary px-8 py-3 rounded-full">
-                      View All Featured Products
+                      View All Featured Products ({featuredProducts.length})
                     </Button>
                   </Link>
                 </div>
               )}
             </>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No featured products available at the moment.</p>
+              <p className="text-gray-400 text-sm mt-2">Check back soon for new featured items!</p>
+            </div>
           )}
         </div>
       </section>
@@ -310,7 +320,7 @@ export default function Home() {
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-light mb-8">
               Discover our latest innovations - cutting-edge formulas and revolutionary beauty solutions
             </p>
-            <Link href="/category/new-launches">
+            <Link href="/products?filter=newLaunch">
               <Button className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
                 <span>Explore New Launches</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -346,16 +356,7 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* View All Button */}
-              {allProducts?.filter(product => product.newLaunch).length > 4 && (
-                <div className="text-center mt-10">
-                  <Link href="/category/new-launches">
-                    <Button className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                      View All New Launches
-                    </Button>
-                  </Link>
-                </div>
-              )}
+            
 
               {/* Show message if no new launch products */}
               {allProducts?.filter(product => product.newLaunch).length === 0 && (
@@ -401,9 +402,9 @@ export default function Home() {
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-light mb-8">
               Our most loved products by customers - tried, tested, and trusted by thousands
             </p>
-            <Link href="/category/bestsellers">
+            <Link href="/products?filter=bestseller">
               <Button className="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
-                <span>View All Bestsellers</span>
+                <span>View All Bestsellers ({bestsellerProducts?.length || 0})</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
@@ -424,11 +425,11 @@ export default function Home() {
                 </Card>
               ))}
             </div>
-          ) : (
+          ) : bestsellerProducts && bestsellerProducts.length > 0 ? (
             <>
               {/* Grid Layout for Bestsellers - Max 4 per row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                {bestsellerProducts?.slice(0, 4).map((product) => (
+                {bestsellerProducts.slice(0, 8).map((product) => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
@@ -438,16 +439,21 @@ export default function Home() {
               </div>
 
               {/* View All Button */}
-              {bestsellerProducts && bestsellerProducts.length > 4 && (
+              {bestsellerProducts.length > 8 && (
                 <div className="text-center mt-10">
-                  <Link href="/category/bestsellers">
+                  <Link href="/products?filter=bestseller">
                     <Button className="btn-primary px-8 py-3 rounded-full">
-                      View All Bestsellers
+                      View All Bestsellers ({bestsellerProducts.length})
                     </Button>
                   </Link>
                 </div>
               )}
             </>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No bestseller products available at the moment.</p>
+              <p className="text-gray-400 text-sm mt-2">Check back soon for our top-rated products!</p>
+            </div>
           )}
         </div>
       </section>

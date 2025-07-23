@@ -16,6 +16,7 @@ export interface Product {
   bestseller: boolean;
   newLaunch: boolean;
   saleOffer?: string;
+  skinType?: string;
   variants?: {
     colors?: string[];
     shades?: string[];

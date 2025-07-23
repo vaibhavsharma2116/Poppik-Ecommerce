@@ -229,16 +229,7 @@ export default function AdminSettings() {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Accept Credit Cards</Label>
-                <p className="text-sm text-muted-foreground">Enable credit card payments</p>
-              </div>
-              <Switch 
-                checked={paymentSettings.acceptCreditCards}
-                onCheckedChange={(checked) => setPaymentSettings(prev => ({ ...prev, acceptCreditCards: checked }))}
-              />
-            </div>
+            
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Accept PayPal</Label>

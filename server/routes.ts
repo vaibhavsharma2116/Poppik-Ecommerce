@@ -11,13 +11,19 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc, and, gte, lte, like, isNull, asc, or, sql } from "drizzle-orm";
 import { Pool } from "pg";
 import { ordersTable, orderItemsTable, users, sliders } from "../shared/schema";
-
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/my_pgdb",
 });
 
 const db = drizzle(pool);
+
+// PayPal configuration
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || 'paypal_client_id';
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || 'paypal_client_secret';
+const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://api.paypal.com' 
+  : 'https://api.sandbox.paypal.com';
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -1106,6 +1112,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  
+
+  // Get PayPal access token
+  const getPayPalAccessToken = async () => {
+    try {
+      const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+      
+      const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'grant_type=client_credentials',
+      });
+
+      const data = await response.json();
+      return data.access_token;
+    } catch (error) {
+      console.error('PayPal access token error:', error);
+      throw new Error('Failed to get PayPal access token');
+    }
+  };
+
+  // Create PayPal order
+  app.post("/api/payments/paypal/create-order", async (req, res) => {
+    try {
+      const { amount, currency = 'USD', customerInfo } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Valid amount is required" });
+      }
+
+      // Validate PayPal configuration
+      if (!process.env.PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENT_ID === 'paypal_client_id') {
+        console.error("PayPal not configured properly - using demo mode");
+        // For demo purposes, return a mock success response
+        return res.json({
+          orderId: `demo_${Date.now()}`,
+          approvalUrl: '#',
+          amount: amount.toString(),
+          currency: currency,
+        });
+      }
+
+      const accessToken = await getPayPalAccessToken();
+
+      const orderData = {
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: currency,
+            value: amount.toString(),
+          },
+          description: 'Beauty Store Purchase',
+          shipping: {
+            name: {
+              full_name: customerInfo?.name || 'Customer',
+            },
+            address: {
+              address_line_1: customerInfo?.address || '',
+              admin_area_2: customerInfo?.city || '',
+              admin_area_1: customerInfo?.state || '',
+              postal_code: customerInfo?.zipCode || '',
+              country_code: 'US',
+            },
+          },
+        }],
+        application_context: {
+          return_url: `${req.protocol}://${req.get('host')}/api/payments/paypal/success`,
+          cancel_url: `${req.protocol}://${req.get('host')}/api/payments/paypal/cancel`,
+          brand_name: 'Beauty Store',
+          landing_page: 'LOGIN',
+          user_action: 'PAY_NOW',
+        },
+      };
+
+      const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const order = await response.json();
+
+      if (!response.ok) {
+        throw new Error(order.message || 'PayPal order creation failed');
+      }
+
+      const approvalUrl = order.links.find((link: any) => link.rel === 'approve')?.href;
+
+      res.json({
+        orderId: order.id,
+        approvalUrl,
+        amount: orderData.purchase_units[0].amount.value,
+        currency: orderData.purchase_units[0].amount.currency_code,
+      });
+    } catch (error) {
+      console.error("PayPal order creation error:", error);
+      res.status(500).json({ error: "Failed to create PayPal order" });
+    }
+  });
+
+  // PayPal payment success callback
+  app.get("/api/payments/paypal/success", async (req, res) => {
+    try {
+      const { token, PayerID } = req.query;
+
+      if (!token || !PayerID) {
+        return res.redirect('/checkout?payment=failed');
+      }
+
+      const accessToken = await getPayPalAccessToken();
+
+      // Capture the payment
+      const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${token}/capture`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const captureData = await response.json();
+
+      if (response.ok && captureData.status === 'COMPLETED') {
+        res.redirect('/checkout?payment=success');
+      } else {
+        res.redirect('/checkout?payment=failed');
+      }
+    } catch (error) {
+      console.error("PayPal capture error:", error);
+      res.redirect('/checkout?payment=failed');
+    }
+  });
+
+  // PayPal payment cancel callback
+  app.get("/api/payments/paypal/cancel", (req, res) => {
+    res.redirect('/checkout?payment=cancelled');
+  });
+
+  // Verify PayPal payment
+  app.post("/api/payments/paypal/verify", async (req, res) => {
+    try {
+      const { orderId } = req.body;
+
+      if (!orderId) {
+        return res.status(400).json({ error: "Order ID is required" });
+      }
+
+      const accessToken = await getPayPalAccessToken();
+
+      const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      const orderData = await response.json();
+
+      if (response.ok && orderData.status === 'COMPLETED') {
+        res.json({ verified: true, message: "Payment verified successfully" });
+      } else {
+        res.status(400).json({ error: "Payment verification failed" });
+      }
+    } catch (error) {
+      console.error("PayPal verification error:", error);
+      res.status(500).json({ error: "Failed to verify payment" });
+    }
+  });
+
   // Create new order
   app.post("/api/orders", async (req, res) => {
     try {
@@ -1127,6 +1307,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!shippingAddress) {
+        return res.status(400).json({ error: "Shipping address is required" });
+      }
+
+      // Parse and validate totalAmount
+      const parsedTotalAmount = Number(totalAmount);
+      if (parsedTotalAmount <= 0) {
+        return res.status(400).json({ error: "Total amount must be greater than 0" });
+      }
+
+      // Create order
+      const orderData = {
+        userId: Number(userId),
+        totalAmount: Math.round(parsedTotalAmount), // Round to nearest integer for database
+        status: status || 'pending',
+        paymentMethod: paymentMethod || 'Credit Card',
+        shippingAddress: shippingAddress.toString(),
+        trackingNumber: null,
+        estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        createdAt: new Date(),
+      };
+
+      console.log("Creating order with data:", orderData);
+
+      const createdOrders = await db.insert(ordersTable).values(orderData).returning();
+      const order = createdOrders[0];
+
+      console.log("Order created:", order);
+
+      // Validate and create order items
+      const orderItems = items.map((item: any, index: number) => {
+        if (!item.productName && !item.name) {
+          throw new Error(`Item ${index + 1} is missing product name`);
+        }
+        if (!item.quantity || isNaN(Number(item.quantity))) {
+          throw new Error(`Item ${index + 1} has invalid quantity`);
+        }
+        if (!item.price) {
+          throw new Error(`Item ${index + 1} is missing price`);
+        }
+
+        return {
+          orderId: order.id,
+          productId: Number(item.productId || item.id || 0),
+          productName: item.productName || item.name,
+          productImage: item.productImage || item.image || '',
+          quantity: Number(item.quantity),
+          price: item.price.toString(),
+        };
+      });
+
+      console.log("Creating order items:", orderItems);
+
+      await db.insert(orderItemsTable).values(orderItems);
+
+      // Generate order ID
+      const orderId = `ORD-${order.id.toString().padStart(3, '0')}`;
+
+      console.log("Order created successfully with ID:", orderId);
+
+      res.status(201).json({ 
+        message: "Order created successfully",
+        orderId,
+        order: {
+          id: orderId,
+          totalAmount: order.totalAmount,
+          status: order.status,
+          createdAt: order.createdAt
+        }
+      });
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ 
+        error: "Failed to create order",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
 
   // Create sample orders for all users (for testing)
   app.post("/api/orders/create-sample-data", async (req, res) => {
@@ -1243,85 +1500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-        return res.status(400).json({ error: "Shipping address is required" });
-      }
-
-      // Parse and validate totalAmount
-      const parsedTotalAmount = Number(totalAmount);
-      if (parsedTotalAmount <= 0) {
-        return res.status(400).json({ error: "Total amount must be greater than 0" });
-      }
-
-      // Create order
-      const orderData = {
-        userId: Number(userId),
-        totalAmount: Math.round(parsedTotalAmount), // Round to nearest integer for database
-        status: status || 'pending',
-        paymentMethod: paymentMethod || 'Credit Card',
-        shippingAddress: shippingAddress.toString(),
-        trackingNumber: null,
-        estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        createdAt: new Date(),
-      };
-
-      console.log("Creating order with data:", orderData);
-
-      const createdOrders = await db.insert(ordersTable).values(orderData).returning();
-      const order = createdOrders[0];
-
-      console.log("Order created:", order);
-
-      // Validate and create order items
-      const orderItems = items.map((item: any, index: number) => {
-        if (!item.productName && !item.name) {
-          throw new Error(`Item ${index + 1} is missing product name`);
-        }
-        if (!item.quantity || isNaN(Number(item.quantity))) {
-          throw new Error(`Item ${index + 1} has invalid quantity`);
-        }
-        if (!item.price) {
-          throw new Error(`Item ${index + 1} is missing price`);
-        }
-
-        return {
-          orderId: order.id,
-          productId: Number(item.productId || item.id || 0),
-          productName: item.productName || item.name,
-          productImage: item.productImage || item.image || '',
-          quantity: Number(item.quantity),
-          price: item.price.toString(),
-        };
-      });
-
-      console.log("Creating order items:", orderItems);
-
-      await db.insert(orderItemsTable).values(orderItems);
-
-      // Generate order ID
-      const orderId = `ORD-${order.id.toString().padStart(3, '0')}`;
-
-      console.log("Order created successfully with ID:", orderId);
-
-      res.status(201).json({ 
-        message: "Order created successfully",
-        orderId,
-        order: {
-          id: orderId,
-          totalAmount: order.totalAmount,
-          status: order.status,
-          createdAt: order.createdAt
-        }
-      });
-    } catch (error) {
-      console.error("Error creating order:", error);
-      res.status(500).json({ 
-        error: "Failed to create order",
-        details: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  // Update order status (for admin)
+        // Update order status (for admin)
   app.put("/api/orders/:id/status", async (req, res) => {
     try {
       const orderId = req.params.id.replace('ORD-', '');

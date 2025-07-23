@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, CreditCard, MapPin, User, Package, CheckCircle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ export default function CheckoutPage() {
     state: "",
     zipCode: "",
     phone: "",
-    paymentMethod: "card",
+    paymentMethod: "paypal",
   });
 
   useEffect(() => {
@@ -77,6 +78,56 @@ export default function CheckoutPage() {
     }));
   };
 
+
+
+  const processPayPalPayment = async () => {
+    try {
+      // Create PayPal order
+      const response = await fetch('/api/payments/paypal/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          amount: total, 
+          currency: 'USD',
+          customerInfo: {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('PayPal API error:', errorText);
+        throw new Error(`Payment setup failed: ${response.status}`);
+      }
+
+      const orderData = await response.json();
+
+      if (!orderData.approvalUrl) {
+        throw new Error('Invalid payment response from server');
+      }
+
+      // Redirect to PayPal for approval
+      window.location.href = orderData.approvalUrl;
+
+      // Return true for now - actual verification will happen on return
+      return true;
+    } catch (error) {
+      console.error('PayPal payment error:', error);
+      toast({
+        title: "Payment Error", 
+        description: error instanceof Error ? error.message : "Payment processing failed",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -101,12 +152,32 @@ export default function CheckoutPage() {
     }
 
     try {
+      let paymentSuccessful = false;
+      let paymentMethod = 'Cash on Delivery';
+
+      // Process payment based on selected method
+      if (formData.paymentMethod === 'paypal') {
+        toast({
+          title: "Processing Payment",
+          description: "Redirecting to PayPal...",
+        });
+        paymentSuccessful = await processPayPalPayment();
+        paymentMethod = 'PayPal';
+      } else {
+        paymentSuccessful = true; // COD doesn't need payment processing
+        paymentMethod = 'Cash on Delivery';
+      }
+
+      if (!paymentSuccessful && formData.paymentMethod !== 'cod') {
+        // Error handling is now done within the payment processing functions
+        return;
+      }
+
       const orderData = {
         userId: user.id,
         totalAmount: total,
-        status: 'pending',
-        paymentMethod: formData.paymentMethod === 'card' ? 'Credit Card' : 
-                      formData.paymentMethod === 'upi' ? 'UPI' : 'Cash on Delivery',
+        status: paymentSuccessful ? 'confirmed' : 'pending',
+        paymentMethod,
         shippingAddress: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
         items: cartItems.map(item => ({
           productId: item.id,
@@ -357,17 +428,40 @@ export default function CheckoutPage() {
                     onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}
                     className="space-y-3"
                   >
-                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex-1">Credit/Debit Card</Label>
+
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
+                      <RadioGroupItem value="paypal" id="paypal" />
+                      <Label htmlFor="paypal" className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">PayPal Payment</p>
+                            <p className="text-sm text-gray-500">Pay securely with your PayPal account</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">PP</span>
+                            </div>
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Secure</span>
+                          </div>
+                        </div>
+                      </Label>
                     </div>
-                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                      <RadioGroupItem value="upi" id="upi" />
-                      <Label htmlFor="upi" className="flex-1">UPI Payment</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="cod" id="cod" />
-                      <Label htmlFor="cod" className="flex-1">Cash on Delivery</Label>
+                      <Label htmlFor="cod" className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Cash on Delivery</p>
+                            <p className="text-sm text-gray-500">Pay when you receive your order right away</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                              <span className="text-green-600 text-lg">₹</span>
+                            </div>
+                            <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">No fees</span>
+                          </div>
+                        </div>
+                      </Label>
                     </div>
                   </RadioGroup>
                 </CardContent>

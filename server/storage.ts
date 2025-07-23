@@ -133,7 +133,40 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByCategory(category: string): Promise<Product[]> {
     const db = await getDb();
-    return await db.select().from(products).where(eq(products.category, category));
+    
+    // First try exact match
+    let result = await db.select().from(products).where(eq(products.category, category));
+    
+    // If no exact match found, try case-insensitive partial matching
+    if (result.length === 0) {
+      const allProducts = await db.select().from(products);
+      const searchCategory = category.toLowerCase();
+      
+      result = allProducts.filter(product => {
+        if (!product.category) return false;
+        
+        const productCategory = product.category.toLowerCase();
+        
+        // Partial match
+        if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) return true;
+        
+        // Special category mappings
+        const categoryMappings: Record<string, string[]> = {
+          'skincare': ['skin', 'face', 'facial'],
+          'haircare': ['hair'],
+          'makeup': ['cosmetics', 'beauty'],
+          'bodycare': ['body'],
+          'eyecare': ['eye', 'eyes'],
+          'eye-drama': ['eye', 'eyes', 'eyecare'],
+          'beauty': ['makeup', 'cosmetics', 'skincare'],
+        };
+        
+        const mappedCategories = categoryMappings[searchCategory] || [];
+        return mappedCategories.some(mapped => productCategory.includes(mapped));
+      });
+    }
+    
+    return result;
   }
 
   async getFeaturedProducts(): Promise<Product[]> {

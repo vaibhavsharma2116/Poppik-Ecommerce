@@ -495,10 +495,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/category/:category", async (req, res) => {
     try {
       const { category } = req.params;
-      const products = await storage.getProductsByCategory(category);
-      res.json(products);
+      
+      // Get all products first
+      const allProducts = await storage.getProducts();
+      
+      // Filter products by category with flexible matching
+      const filteredProducts = allProducts.filter(product => {
+        if (!product.category) return false;
+        
+        const productCategory = product.category.toLowerCase();
+        const searchCategory = category.toLowerCase();
+        
+        // Exact match
+        if (productCategory === searchCategory) return true;
+        
+        // Partial match
+        if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) return true;
+        
+        // Special category mappings
+        const categoryMappings: Record<string, string[]> = {
+          'skincare': ['skin', 'face', 'facial'],
+          'haircare': ['hair'],
+          'makeup': ['cosmetics', 'beauty'],
+          'bodycare': ['body'],
+          'eyecare': ['eye', 'eyes'],
+          'eye-drama': ['eye', 'eyes', 'eyecare'],
+          'beauty': ['makeup', 'cosmetics', 'skincare'],
+        };
+        
+        const mappedCategories = categoryMappings[searchCategory] || [];
+        return mappedCategories.some(mapped => productCategory.includes(mapped));
+      });
+      
+      res.json(filteredProducts);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch products by category" });
+      console.log("Database unavailable, using sample product data with category filter");
+      const sampleProducts = generateSampleProducts();
+      const { category } = req.params;
+      const searchCategory = category.toLowerCase();
+      
+      const filteredSampleProducts = sampleProducts.filter(product => {
+        const productCategory = product.category.toLowerCase();
+        return productCategory.includes(searchCategory) || 
+               searchCategory.includes(productCategory) ||
+               (searchCategory.includes('eye') && productCategory.includes('makeup')) ||
+               (searchCategory.includes('beauty') && ['skincare', 'makeup'].some(cat => productCategory.includes(cat)));
+      });
+      
+      res.json(filteredSampleProducts);
     }
   });
 
@@ -1944,6 +1988,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
         howToUse: 'Apply to wet skin, massage in circular motions, rinse',
         size: '300ml',
         tags: 'body-scrub,exfoliant,coffee,sugar'
+      },
+      {
+        id: 11,
+        name: 'Eye Drama Mascara',
+        slug: 'eye-drama-mascara',
+        description: 'Volumizing mascara for dramatic, bold lashes.',
+        shortDescription: 'Dramatic volume for bold lashes',
+        price: 399,
+        originalPrice: 549,
+        category: 'Eye Care',
+        subcategory: 'Eye Makeup',
+        imageUrl: 'https://images.unsplash.com/photo-1583847427292-a9695a5cf4c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.6,
+        reviewCount: 142,
+        inStock: true,
+        featured: true,
+        bestseller: true,
+        newLaunch: false,
+        saleOffer: '27% OFF',
+        variants: 'Black, Brown, Blue',
+        ingredients: 'Vitamin E, Keratin, Natural Waxes',
+        benefits: 'Volumizes lashes, long-lasting, waterproof',
+        howToUse: 'Apply from root to tip in zigzag motion',
+        size: '12ml',
+        tags: 'mascara,eye-makeup,volume,drama'
+      },
+      {
+        id: 12,
+        name: 'Eye Cream Anti-Aging',
+        slug: 'eye-cream-anti-aging',
+        description: 'Intensive eye cream to reduce dark circles and fine lines.',
+        shortDescription: 'Reduces dark circles and fine lines',
+        price: 799,
+        originalPrice: 999,
+        category: 'Eye Care',
+        subcategory: 'Eye Treatment',
+        imageUrl: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.5,
+        reviewCount: 98,
+        inStock: true,
+        featured: false,
+        bestseller: true,
+        newLaunch: false,
+        saleOffer: '20% OFF',
+        variants: '15ml, 30ml',
+        ingredients: 'Retinol, Hyaluronic Acid, Caffeine',
+        benefits: 'Reduces dark circles, anti-aging, hydrates',
+        howToUse: 'Gently pat around eye area morning and night',
+        size: '15ml',
+        tags: 'eye-cream,anti-aging,dark-circles,retinol'
+      },
+      {
+        id: 13,
+        name: 'Beauty Blender Set',
+        slug: 'beauty-blender-set',
+        description: 'Professional makeup sponges for flawless application.',
+        shortDescription: 'Professional makeup sponges',
+        price: 299,
+        originalPrice: 399,
+        category: 'Beauty',
+        subcategory: 'Tools',
+        imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.4,
+        reviewCount: 156,
+        inStock: true,
+        featured: false,
+        bestseller: false,
+        newLaunch: true,
+        saleOffer: '25% OFF',
+        variants: 'Pink, Orange, Purple',
+        ingredients: 'Non-latex foam, Antimicrobial',
+        benefits: 'Seamless blending, reusable, easy to clean',
+        howToUse: 'Dampen sponge, squeeze out excess water, blend makeup',
+        size: 'Set of 3',
+        tags: 'beauty-blender,makeup-tools,sponge,blending'
+      },
+      {
+        id: 14,
+        name: 'Eye Shadow Palette',
+        slug: 'eye-shadow-palette',
+        description: '12 stunning shades for dramatic eye looks.',
+        shortDescription: '12 shades for dramatic eyes',
+        price: 599,
+        originalPrice: 799,
+        category: 'Eye Care',
+        subcategory: 'Eye Makeup',
+        imageUrl: 'https://images.unsplash.com/photo-1515688594390-b649af70d282?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        rating: 4.7,
+        reviewCount: 189,
+        inStock: true,
+        featured: true,
+        bestseller: false,
+        newLaunch: false,
+        saleOffer: '25% OFF',
+        variants: 'Warm Tones, Cool Tones, Neutral',
+        ingredients: 'Mica, Talc, Vitamin E',
+        benefits: 'High pigmentation, long-lasting, blendable',
+        howToUse: 'Apply with brush, blend well',
+        size: '12 x 2g',
+        tags: 'eyeshadow,palette,eye-makeup,pigmented'
       }
     ];
   }

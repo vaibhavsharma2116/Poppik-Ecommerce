@@ -1,485 +1,177 @@
-
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute } from "wouter";
-import { Link } from "wouter";
-import { ChevronRight, Filter, X } from "lucide-react";
-import ProductCard from "@/components/product-card";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Grid, List, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious,
-  PaginationEllipsis
-} from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import ProductCard from "@/components/product-card";
+import DynamicFilter from "@/components/dynamic-filter";
 import type { Product, Category } from "@/lib/types";
 
 export default function CategoryPage() {
-  const [, params] = useRoute("/category/:slug");
-  const categorySlug = params?.slug || "";
-  const [selectedSubcategory, setSelectedSubcategory] = useState("all");
-  const [sortBy, setSortBy] = useState("popular");
-  const [skinType, setSkinType] = useState("all-skin");
-  const [priceRange, setPriceRange] = useState("all-price");
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(12);
+  const params = useParams();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState('name');
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilters, setActiveFilters] = useState({});
 
-  const { data: category, isLoading: categoryLoading } = useQuery<Category>({
-    queryKey: [`/api/categories/${categorySlug}`],
-    enabled: !!categorySlug,
+  // Fetch products for this category
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+    queryKey: [`/api/products/category/${params.slug}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/products/category/${params.slug}`);
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return response.json();
+    },
   });
 
-  const { data: allProducts, isLoading: productsLoading } = useQuery<Product[]>({
-    queryKey: [`/api/products/category/${categorySlug}`],
-    enabled: !!categorySlug,
+  // Fetch all categories for filter component
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+    queryFn: async () => {
+      const response = await fetch("/api/categories");
+      if (!response.ok) throw new Error("Failed to fetch categories");
+      return response.json();
+    },
   });
 
-  // Dynamic subcategories from actual products
-  const availableSubcategories = useMemo(() => {
-    if (!allProducts) return [];
-    const subcategories = [...new Set(allProducts.map(p => p.subcategory).filter(Boolean))];
-    return subcategories.map(sub => ({
-      value: sub,
-      label: sub.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-    }));
-  }, [allProducts]);
+  // Handle filter changes
+  const handleFilterChange = (filtered: Product[], filters: any) => {
+    setFilteredProducts(filtered);
+    setActiveFilters(filters);
+  };
 
-  // Dynamic price ranges from actual products
-  const priceRanges = useMemo(() => {
-    if (!allProducts) return [];
-    const prices = allProducts.map(p => p.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    const range = maxPrice - minPrice;
-    
-    return [
-      { value: "all-price", label: "All Prices" },
-      { value: "0-25", label: `₹${minPrice} - ₹${Math.floor(minPrice + range * 0.25)}` },
-      { value: "25-50", label: `₹${Math.floor(minPrice + range * 0.25)} - ₹${Math.floor(minPrice + range * 0.5)}` },
-      { value: "50-75", label: `₹${Math.floor(minPrice + range * 0.5)} - ₹${Math.floor(minPrice + range * 0.75)}` },
-      { value: "75-100", label: `₹${Math.floor(minPrice + range * 0.75)} - ₹${maxPrice}` },
-    ];
-  }, [allProducts]);
+  // Apply search and sort to filtered products
+  const searchedProducts = filteredProducts.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  // Enhanced filtering and sorting logic
-  const filteredAndSortedProducts = useMemo(() => {
-    if (!allProducts) return [];
-
-    let filtered = [...allProducts];
-
-    // Filter by subcategory
-    if (selectedSubcategory !== "all") {
-      filtered = filtered.filter(product => 
-        product.subcategory && product.subcategory.toLowerCase() === selectedSubcategory.toLowerCase()
-      );
-    }
-
-    // Filter by skin type (if applicable)
-    if (skinType !== "all-skin") {
-      filtered = filtered.filter(product => {
-        const productSkinType = product.skinType?.toLowerCase();
-        const productDescription = product.description?.toLowerCase();
-        const selectedSkinType = skinType.toLowerCase();
-        
-        return productSkinType === selectedSkinType || 
-               productDescription?.includes(selectedSkinType) ||
-               productDescription?.includes(`${selectedSkinType} skin`) ||
-               product.name?.toLowerCase().includes(selectedSkinType);
-      });
-    }
-
-    // Filter by price range
-    if (priceRange !== "all-price") {
-      const [min, max] = priceRange.split('-').map(Number);
-      if (allProducts.length > 0) {
-        const prices = allProducts.map(p => parseFloat(p.price.toString()));
-        const minPrice = Math.min(...prices);
-        const maxPrice = Math.max(...prices);
-        const range = maxPrice - minPrice;
-        
-        const actualMin = minPrice + (range * min / 100);
-        const actualMax = minPrice + (range * max / 100);
-        
-        filtered = filtered.filter(product => {
-          const productPrice = parseFloat(product.price.toString());
-          return productPrice >= actualMin && productPrice <= actualMax;
-        });
-      }
-    }
-
-    // Sort products
+  const sortedProducts = [...searchedProducts].sort((a, b) => {
     switch (sortBy) {
-      case "price-low":
-        filtered.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        filtered.sort((a, b) => b.price - a.price);
-        break;
-      case "newest":
-        filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        break;
-      case "rating":
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      default: // popular
-        filtered.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+      case 'price-low':
+        return a.price - b.price;
+      case 'price-high':
+        return b.price - a.price;
+      case 'rating':
+        return b.rating - a.rating;
+      case 'name':
+      default:
+        return a.name.localeCompare(b.name);
     }
+  });
 
-    return filtered;
-  }, [allProducts, selectedSubcategory, sortBy, skinType, priceRange]);
-
-  // Pagination logic
-  const totalProducts = filteredAndSortedProducts.length;
-  const totalPages = Math.ceil(totalProducts / productsPerPage);
-  const startIndex = (currentPage - 1) * productsPerPage;
-  const endIndex = startIndex + productsPerPage;
-  const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex);
-
-  // Reset to first page when filters change
-  const resetPagination = () => {
-    setCurrentPage(1);
-  };
-
-  // Active filters count
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (selectedSubcategory !== "all") count++;
-    if (skinType !== "all-skin") count++;
-    if (priceRange !== "all-price") count++;
-    return count;
-  }, [selectedSubcategory, skinType, priceRange]);
-
-  // Clear all filters
-  const clearAllFilters = () => {
-    setSelectedSubcategory("all");
-    setSkinType("all-skin");
-    setPriceRange("all-price");
-    setCurrentPage(1);
-  };
-
-  if (categoryLoading) {
-    return (
-      <div className="py-16 bg-white">
-        <div className=" mx-auto px-4 sm:px-6 lg:px-8">
-          <Skeleton className="h-6 w-48 mb-8" />
-          <div className="text-center mb-12">
-            <Skeleton className="h-12 w-64 mx-auto mb-4" />
-            <Skeleton className="h-6 w-96 mx-auto" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!category) {
-    return (
-      <div className="py-16 bg-white">
-        <div className=" mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Category Not Found</h1>
-          <p className="text-gray-600 mb-8">The category you're looking for doesn't exist.</p>
-          <Link href="/">
-            <span className="text-red-500 hover:text-red-600 font-medium">← Back to Home</span>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Initialize filtered products when products load
+  useEffect(() => {
+    if (products.length > 0 && filteredProducts.length === 0) {
+      setFilteredProducts(products);
+    }
+  }, [products]);
 
   return (
-    <div className="py-16 bg-white">
-      <div className=" mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm mb-8">
-          <Link href="/" className="text-gray-500 hover:text-gray-700">
-            Home
-          </Link>
-          <ChevronRight className="h-4 w-4 text-gray-400" />
-          <span className="text-gray-900 font-medium">{category.name}</span>
-        </nav>
+    <div className="container mx-auto py-12">
+      <Link href="/" className="flex items-center gap-2 text-blue-500 hover:text-blue-700 mb-4">
+        <ArrowLeft className="h-4 w-4" />
+        Back to Home
+      </Link>
 
-        {/* Category Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{category.name}</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">{category.description}</p>
-        </div>
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 capitalize">
+              {params.slug?.replace('-', ' ')} Products
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {sortedProducts.length} of {products.length} products
+            </p>
+          </div>
 
-        {/* Filters Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {activeFiltersCount > 0 && (
-                <Badge variant="destructive" className="ml-1">
-                  {activeFiltersCount}
-                </Badge>
-              )}
-            </Button>
-            
-            {activeFiltersCount > 0 && (
+          <div className="flex gap-2 items-center flex-wrap">
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-48"
+            />
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name (A-Z)</SelectItem>
+                <SelectItem value="price-low">Price (Low to High)</SelectItem>
+                <SelectItem value="price-high">Price (High to Low)</SelectItem>
+                <SelectItem value="rating">Rating (High to Low)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex border rounded-lg">
               <Button
-                variant="ghost"
-                onClick={clearAllFilters}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
               >
-                Clear all
+                <Grid className="h-4 w-4" />
               </Button>
-            )}
-          </div>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="popular">Most Popular</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="rating">Highest Rated</SelectItem>
-            </SelectContent>
-          </Select>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-96 overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Filter Products</SheetTitle>
+                  <SheetDescription>
+                    Narrow down your search with these filters.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6">
+                  <DynamicFilter
+                    products={products}
+                    categories={categories}
+                    onFilterChange={handleFilterChange}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
 
-        {/* Active Filters */}
-        {activeFiltersCount > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {selectedSubcategory !== "all" && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {availableSubcategories.find(s => s.value === selectedSubcategory)?.label}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setSelectedSubcategory("all")}
-                />
-              </Badge>
-            )}
-            {skinType !== "all-skin" && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {skinType.charAt(0).toUpperCase() + skinType.slice(1)} Skin
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setSkinType("all-skin")}
-                />
-              </Badge>
-            )}
-            {priceRange !== "all-price" && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {priceRanges.find(p => p.value === priceRange)?.label}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setPriceRange("all-price")}
-                />
-              </Badge>
-            )}
+        {sortedProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No products match your current filters.</p>
+            <p className="text-gray-400 text-sm mt-2">Try adjusting your search or filter criteria.</p>
           </div>
-        )}
-
-        {/* Expandable Filters */}
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
-            <Select value={selectedSubcategory} onValueChange={(value) => {
-              setSelectedSubcategory(value);
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Products" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Products</SelectItem>
-                {availableSubcategories.map((subcategory) => (
-                  <SelectItem key={subcategory.value} value={subcategory.value}>
-                    {subcategory.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={skinType} onValueChange={(value) => {
-              setSkinType(value);
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Skin Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-skin">All Skin Types</SelectItem>
-                <SelectItem value="oily">Oily Skin</SelectItem>
-                <SelectItem value="dry">Dry Skin</SelectItem>
-                <SelectItem value="sensitive">Sensitive Skin</SelectItem>
-                <SelectItem value="combination">Combination Skin</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={priceRange} onValueChange={(value) => {
-              setPriceRange(value);
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Price Range" />
-              </SelectTrigger>
-              <SelectContent>
-                {priceRanges.map((range) => (
-                  <SelectItem key={range.value} value={range.value}>
-                    {range.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Products Grid */}
-        {productsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-64 w-full" />
-                <CardContent className="p-6 space-y-3">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-6 w-1/2" />
-                </CardContent>
-              </Card>
+        ) : (
+          <div className={`
+            ${viewMode === 'grid' 
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
+              : 'space-y-4'
+            }
+          `}>
+            {sortedProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                viewMode={viewMode}
+              />
             ))}
           </div>
-        ) : filteredAndSortedProducts && filteredAndSortedProducts.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {currentProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-            
-            {/* Product count */}
-            <div className="text-center mt-8">
-              <p className="text-gray-600">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalProducts)} of {totalProducts} product{totalProducts !== 1 ? 's' : ''} in {category.name}
-                {activeFiltersCount > 0 && (
-                  <span className="ml-2 text-sm">
-                    ({activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} applied)
-                  </span>
-                )}
-              </p>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-8">
-                <Pagination>
-                  <PaginationContent>
-                    {currentPage > 1 && (
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          href="#" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentPage(currentPage - 1);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        />
-                      </PaginationItem>
-                    )}
-                    
-                    {/* Page numbers */}
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <PaginationItem key={pageNumber}>
-                          <PaginationLink
-                            href="#"
-                            isActive={pageNumber === currentPage}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentPage(pageNumber);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-                    
-                    {totalPages > 5 && currentPage < totalPages - 2 && (
-                      <>
-                        <PaginationItem>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentPage(totalPages);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                          >
-                            {totalPages}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </>
-                    )}
-                    
-                    {currentPage < totalPages && (
-                      <PaginationItem>
-                        <PaginationNext 
-                          href="#" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentPage(currentPage + 1);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        />
-                      </PaginationItem>
-                    )}
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-16">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 mb-8">
-              {activeFiltersCount > 0 
-                ? "Try adjusting your filters to see more products."
-                : "Check back later for new products in this category."
-              }
-            </p>
-            {activeFiltersCount > 0 ? (
-              <Button onClick={clearAllFilters} variant="outline">
-                Clear All Filters
-              </Button>
-            ) : (
-              <Link href="/">
-                <span className="text-red-500 hover:text-red-600 font-medium">← Continue Shopping</span>
-              </Link>
-            )}
-          </div>
         )}
-      </div>
     </div>
   );
 }

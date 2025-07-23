@@ -1,13 +1,22 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { ArrowRight, Star, Sparkles, TrendingUp, Heart, ShoppingCart, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import ProductCard from "@/components/product-card";
 import HeroBanner from "@/components/hero-banner";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import DynamicFilter from "@/components/dynamic-filter";
 import type { Product, Category } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [filteredAllProducts, setFilteredAllProducts] = useState<Product[]>([]);
+  const [showAllProductsFilter, setShowAllProductsFilter] = useState(false);
+
   const { data: categories, isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });

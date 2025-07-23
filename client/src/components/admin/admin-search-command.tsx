@@ -39,29 +39,47 @@ interface SearchResults {
 interface AdminSearchCommandProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialQuery?: string;
 }
 
-export default function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandProps) {
+export default function AdminSearchCommand({ open, onOpenChange, initialQuery = "" }: AdminSearchCommandProps) {
   const [query, setQuery] = useState("");
   const [, setLocation] = useLocation();
 
-  const { data: searchResults, isLoading } = useQuery<SearchResults>({
+  // Debug logging
+  console.log('AdminSearchCommand props:', { open, initialQuery, query });
+
+  const { data: searchResults, isLoading, error } = useQuery<SearchResults>({
     queryKey: ["/api/admin/search", query],
     queryFn: async () => {
       if (!query.trim()) return { products: [], customers: [], orders: [] };
+      console.log('Making admin search request for:', query);
       const response = await fetch(`/api/admin/search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error("Search failed");
-      return response.json();
+      if (!response.ok) {
+        console.error('Search API error:', response.status, response.statusText);
+        throw new Error("Search failed");
+      }
+      const data = await response.json();
+      console.log('Search results received:', data);
+      return data;
     },
     enabled: query.trim().length > 0,
+    retry: 1,
   });
 
+  // Log any search errors
+  if (error) {
+    console.error('Search query error:', error);
+  }
+
   useEffect(() => {
-    if (!open) {
+    if (open && initialQuery) {
+      setQuery(initialQuery);
+    } else if (!open) {
       // Clear query immediately when dialog closes
       setQuery("");
     }
-  }, [open]);
+  }, [open, initialQuery]);
 
   // Handle dialog close properly
   const handleClose = (isOpen: boolean) => {

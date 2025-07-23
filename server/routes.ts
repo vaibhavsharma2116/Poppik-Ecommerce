@@ -1145,19 +1145,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valid amount is required" });
       }
 
-      // Validate PayPal configuration
-      if (!process.env.PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENT_ID === 'paypal_client_id') {
-        console.error("PayPal not configured properly - using demo mode");
-        // For demo purposes, return a mock success response
-        return res.json({
-          orderId: `demo_${Date.now()}`,
-          approvalUrl: '#',
-          amount: amount.toString(),
-          currency: currency,
+      // Check PayPal configuration
+      if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET || 
+          process.env.PAYPAL_CLIENT_ID === 'paypal_client_id' || 
+          process.env.PAYPAL_CLIENT_SECRET === 'paypal_client_secret') {
+        console.error("PayPal credentials not configured properly");
+        return res.status(500).json({ 
+          error: "PayPal payment is not configured. Please use Cash on Delivery instead.",
+          configError: true
         });
       }
 
-      const accessToken = await getPayPalAccessToken();
+      let accessToken;
+      try {
+        accessToken = await getPayPalAccessToken();
+      } catch (tokenError) {
+        console.error("Failed to get PayPal access token:", tokenError);
+        return res.status(500).json({ 
+          error: "PayPal authentication failed. Please try again or use Cash on Delivery.",
+          authError: true
+        });
+      }
 
       const orderData = {
         intent: 'CAPTURE',
@@ -1201,10 +1209,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await response.json();
 
       if (!response.ok) {
-        throw new Error(order.message || 'PayPal order creation failed');
+        console.error("PayPal API error:", order);
+        let errorMessage = "Failed to create PayPal order";
+        
+        if (order.details && order.details.length > 0) {
+          errorMessage = order.details[0].description || errorMessage;
+        } else if (order.message) {
+          errorMessage = order.message;
+        }
+        
+        return res.status(500).json({ 
+          error: errorMessage,
+          paypalError: true,
+          details: order.details || []
+        });
       }
 
-      const approvalUrl = order.links.find((link: any) => link.rel === 'approve')?.href;
+      const approvalUrl = order.links?.find((link: any) => link.rel === 'approve')?.href;
+
+      if (!approvalUrl) {
+        console.error("No approval URL found in PayPal response:", order);
+        return res.status(500).json({ 
+          error: "PayPal response missing approval URL. Please try again.",
+          paypalError: true
+        });
+      }
 
       res.json({
         orderId: order.id,
@@ -1214,7 +1243,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("PayPal order creation error:", error);
-      res.status(500).json({ error: "Failed to create PayPal order" });
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to create PayPal order",
+        details: error instanceof Error ? error.stack : undefined
+      });
     }
   });
 
@@ -2920,9 +2952,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const query = req.query.q;
 
-      if (!query || query.trim().length === 0) {
+      if (!query || query.toString().trim().length === 0) {
         return res.json({ products: [], customers: [], orders: [] });
       }
+
+      console.log("Admin search query:", query);
 
       const searchTerm = query.toString().toLowerCase();
 
@@ -2937,7 +2971,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (product.tags && product.tags.toLowerCase().includes(searchTerm))
         ).slice(0, 5);
       } catch (error) {
-        console.log("Products search failed, using empty array");
+        console.log("Products search failed:", error.message);
+        products = [];
       }
 
       // Search customers
@@ -2953,18 +2988,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }).from(users);
 
         customers = allUsers.filter(user => 
-          user.firstName.toLowerCase().includes(searchTerm) ||
-          user.lastName.toLowerCase().includes(searchTerm) ||
-          user.email.toLowerCase().includes(searchTerm) ||
-          `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm)
+          (user.firstName && user.firstName.toLowerCase().includes(searchTerm)) ||
+          (user.lastName && user.lastName.toLowerCase().includes(searchTerm)) ||
+          (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+          `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase().includes(searchTerm)
         ).map(user => ({
           id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
           email: user.email,
           phone: user.phone || 'N/A'
         })).slice(0, 5);
       } catch (error) {
-        console.log("Customers search failed, using empty array");
+        console.log("Customers search failed:", error.message);
+        customers = [];
       }
 
       // Search orders
@@ -2976,33 +3012,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allOrders.filter(order => {
             const orderId = `ORD-${order.id.toString().padStart(3, '0')}`;
             return orderId.toLowerCase().includes(searchTerm) ||
-                   order.status.toLowerCase().includes(searchTerm);
+                   (order.status && order.status.toLowerCase().includes(searchTerm));
           }).slice(0, 5).map(async (order) => {
-            // Get user info for the order
-            const user = await db
-              .select({
-                firstName: users.firstName,
-                lastName: users.lastName,
-                email: users.email,
-              })
-              .from(users)
-              .where(eq(users.id, order.userId))
-              .limit(1);
+            try {
+              // Get user info for the order
+              const user = await db
+                .select({
+                  firstName: users.firstName,
+                  lastName: users.lastName,
+                  email: users.email,
+                })
+                .from(users)
+                .where(eq(users.id, order.userId))
+                .limit(1);
 
-            const userData = user[0] || { firstName: 'Unknown', lastName: 'Customer', email: 'unknown@email.com' };
+              const userData = user[0] || { firstName: 'Unknown', lastName: 'Customer', email: 'unknown@email.com' };
 
-            return {
-              id: `ORD-${order.id.toString().padStart(3, '0')}`,
-              customerName: `${userData.firstName} ${userData.lastName}`,
-              customerEmail: userData.email,
-              date: order.createdAt.toISOString().split('T')[0],
-              status: order.status,
-              total: `₹${order.totalAmount}`
-            };
+              return {
+                id: `ORD-${order.id.toString().padStart(3, '0')}`,
+                customerName: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Unknown Customer',
+                customerEmail: userData.email,
+                date: order.createdAt.toISOString().split('T')[0],
+                status: order.status,
+                total: `₹${order.totalAmount}`
+              };
+            } catch (userError) {
+              console.log("Error fetching user for order:", order.id);
+              return {
+                id: `ORD-${order.id.toString().padStart(3, '0')}`,
+                customerName: 'Unknown Customer',
+                customerEmail: 'unknown@email.com',
+                date: order.createdAt.toISOString().split('T')[0],
+                status: order.status,
+                total: `₹${order.totalAmount}`
+              };
+            }
           })
         );
       } catch (error) {
-        console.log("Orders search failed, using empty array");
+        console.log("Orders search failed:", error.message);
+        orders = [];
       }
 
       res.json({ products, customers, orders });

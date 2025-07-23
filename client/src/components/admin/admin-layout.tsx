@@ -97,6 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [darkMode, setDarkMode] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Check authentication on component mount
   useEffect(() => {
@@ -190,11 +191,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Debug function to check search dialog state
-  const handleSearchClick = () => {
-    console.log('Search clicked, current state:', isSearchOpen);
+  // Handle search opening
+  const handleSearchOpen = () => {
+    console.log('Opening search dialog');
     setIsSearchOpen(true);
-    console.log('Search state after click:', true);
   };
 
   // Show loading screen while authenticating
@@ -369,24 +369,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Button>
 
             {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 max-w-2xl">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search products, orders, customers... (Ctrl+K)"
-                className="pl-10 bg-white/80 border-slate-200/60 placeholder:text-slate-400 cursor-pointer"
-                onClick={handleSearchClick}
-                onFocus={(e) => {
-                  e.preventDefault();
-                  e.target.blur();
-                  handleSearchClick();
-                }}
+                placeholder="Search products, orders, customers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/80 border-slate-200/60 placeholder:text-slate-400"
                 onKeyDown={(e) => {
                   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                     e.preventDefault();
                     setIsSearchOpen(true);
                   }
+                  if (e.key === 'Enter' && searchTerm.trim()) {
+                    setIsSearchOpen(true);
+                  }
                 }}
-                readOnly
+                onFocus={() => {
+                  if (searchTerm.trim()) {
+                    setIsSearchOpen(true);
+                  }
+                }}
               />
             </div>
           </div>
@@ -501,7 +504,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Global Search Command */}
         <AdminSearchCommand 
           open={isSearchOpen} 
-          onOpenChange={setIsSearchOpen} 
+          onOpenChange={(open) => {
+            setIsSearchOpen(open);
+            if (!open) {
+              setSearchTerm("");
+            }
+          }}
+          initialQuery={searchTerm}
         />
       </div>
     </div>

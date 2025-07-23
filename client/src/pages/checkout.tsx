@@ -100,16 +100,38 @@ export default function CheckoutPage() {
         }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('PayPal API error:', errorText);
-        throw new Error(`Payment setup failed: ${response.status}`);
-      }
-
       const orderData = await response.json();
 
-      if (!orderData.approvalUrl) {
-        throw new Error('Invalid payment response from server');
+      if (!response.ok) {
+        console.error('PayPal API error:', orderData);
+        
+        let errorMessage = "Payment processing failed";
+        
+        if (orderData.configError) {
+          errorMessage = "PayPal is not configured. Please use Cash on Delivery.";
+        } else if (orderData.authError) {
+          errorMessage = "PayPal authentication failed. Please try Cash on Delivery.";
+        } else if (orderData.paypalError) {
+          errorMessage = orderData.error || "PayPal service error. Please try again.";
+        } else {
+          errorMessage = orderData.error || `Payment setup failed (${response.status})`;
+        }
+        
+        toast({
+          title: "Payment Error", 
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!orderData.approvalUrl || orderData.approvalUrl === '#') {
+        toast({
+          title: "Configuration Error",
+          description: "PayPal is not properly configured. Please use Cash on Delivery.",
+          variant: "destructive",
+        });
+        return false;
       }
 
       // Redirect to PayPal for approval

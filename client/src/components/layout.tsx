@@ -4,6 +4,7 @@ import { Search, ShoppingCart, Menu, X, User, Heart, LogOut } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import SearchCommand from "@/components/search-command";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -12,22 +13,59 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import type { Category, Subcategory } from "@/lib/types";
+import type { Category, Subcategory, Product } from "@/lib/types";
+import { useQuery } from "@tanstack/react-query";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const [location] = useLocation();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchCommandOpen, setIsSearchCommandOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [location] = useLocation();
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+
+  // Search functionality
+  const { data: searchResults = [], isLoading: isSearchLoading } = useQuery<Product[]>({
+    queryKey: ["/api/search", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery.trim()) return [];
+      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) throw new Error("Search failed");
+      return response.json();
+    },
+    enabled: searchQuery.trim().length > 0,
+  });
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSearchResults(value.trim().length > 0);
+  };
+
+  const handleSearchResultClick = (productSlug: string) => {
+    setSearchQuery("");
+    setShowSearchResults(false);
+    window.location.href = `/product/${productSlug}`;
+  };
+
+  const handleSearchInputFocus = () => {
+    if (searchQuery.trim().length > 0) {
+      setShowSearchResults(true);
+    }
+  };
+
+  const handleSearchInputBlur = () => {
+    // Delay hiding results to allow clicking on them
+    setTimeout(() => setShowSearchResults(false), 200);
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -140,9 +178,7 @@ export default function Layout({ children }: LayoutProps) {
     return location.startsWith(href);
   };
 
-  useEffect(() => {
-    setIsSearchOpen(false);
-  }, [location]);
+  
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -171,29 +207,69 @@ export default function Layout({ children }: LayoutProps) {
               </h1>
             </Link>
 
-            {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-lg mx-8">
-              <div className="relative w-full">
+            {/* Desktop Search */}
+            <div className="hidden md:flex items-center space-x-4 relative">
+              <div className="relative w-96">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search for products..."
-                  className="w-full pr-10"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={handleSearchInputChange}
+                  onFocus={handleSearchInputFocus}
+                  onBlur={handleSearchInputBlur}
+                  className="w-full pl-10 pr-4"
                 />
-                <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                
+                {/* Search Results Dropdown */}
+                {showSearchResults && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+                    {isSearchLoading ? (
+                      <div className="p-4 text-center text-gray-500">Searching...</div>
+                    ) : searchResults.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">No products found</div>
+                    ) : (
+                      <div className="py-2">
+                        {searchResults.map((product) => (
+                          <div
+                            key={product.id}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                            onClick={() => handleSearchResultClick(product.slug)}
+                          >
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-10 h-10 object-cover rounded"
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{product.name}</div>
+                              <div className="text-sm text-gray-500">
+                                {product.category?.name} • ${product.price}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Right Icons */}
             <div className="flex items-center space-x-4">
-              {/* Search Toggle - Mobile */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="md:hidden"
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-              >
-                <Search className="h-5 w-5" />
-              </Button>
+              {/* Mobile Search */}
+              <div className="md:hidden flex items-center space-x-2">
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsSearchCommandOpen(true)}
+                  >
+                    <Search className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
 
               {/* Wishlist Icon */}
               <Link href="/wishlist">
@@ -280,7 +356,7 @@ export default function Layout({ children }: LayoutProps) {
                   <div className="flex flex-col space-y-4 pt-4 border-t">
                 {user ? (
                   <>
-                    <Link href="/profile" onClick={() => setIsSearchOpen(false)}>
+                    <Link href="/profile">
                       <Button variant="ghost" className="w-full justify-start">
                         <User className="h-4 w-4 mr-2" />
                         My Profile ({user.firstName})
@@ -289,30 +365,27 @@ export default function Layout({ children }: LayoutProps) {
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start text-red-600"
-                      onClick={() => {
-                        handleLogout();
-                        setIsSearchOpen(false);
-                      }}
+                      onClick={handleLogout}
                     >
                       <LogOut className="h-4 w-4 mr-2" />
                       Logout
                     </Button>
                   </>
                 ) : (
-                  <Link href="/auth/login" onClick={() => setIsSearchOpen(false)}>
+                  <Link href="/auth/login">
                     <Button variant="ghost" className="w-full justify-start">
                       <User className="h-4 w-4 mr-2" />
                       Login / Signup
                     </Button>
                   </Link>
                 )}
-                <Link href="/wishlist" onClick={() => setIsSearchOpen(false)}>
+                <Link href="/wishlist">
                   <Button variant="ghost" className="w-full justify-start">
                     <Heart className="h-4 w-4 mr-2" />
                     Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
                   </Button>
                 </Link>
-                <Link href="/cart" onClick={() => setIsSearchOpen(false)}>
+                <Link href="/cart">
                   <Button variant="ghost" className="w-full justify-start">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Cart
@@ -325,24 +398,59 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Search Command */}
-          {/* <SearchCommand
+          <SearchCommand
             open={isSearchCommandOpen}
             onOpenChange={setIsSearchCommandOpen}
-          /> */}
+          />
 
           {/* Mobile Search Bar */}
-          {isSearchOpen && (
-            <div className="md:hidden pb-4">
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Search for products..."
-                  className="w-full pr-10"
-                />
-                <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-              </div>
+          <div className="md:hidden px-4 pb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                onFocus={handleSearchInputFocus}
+                onBlur={handleSearchInputBlur}
+                className="w-full pl-10 pr-4"
+              />
+              
+              {/* Mobile Search Results Dropdown */}
+              {showSearchResults && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+                  {isSearchLoading ? (
+                    <div className="p-4 text-center text-gray-500">Searching...</div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">No products found</div>
+                  ) : (
+                    <div className="py-2">
+                      {searchResults.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                          onClick={() => handleSearchResultClick(product.slug)}
+                        >
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{product.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {product.category?.name} • ${product.price}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Navigation - Desktop */}

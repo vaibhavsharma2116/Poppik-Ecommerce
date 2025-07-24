@@ -83,57 +83,57 @@ export default function Home() {
             <div className="mt-8 w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-500 mx-auto rounded-full"></div>
           </div>
 
-          {/* Dynamic Categories Grid */}
+          {/* Dynamic Categories Grid - Mobile-first Design */}
           {categoriesLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 mb-12 sm:mb-16 md:mb-20">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="space-y-4">
-                  <Skeleton className="aspect-square rounded-3xl" />
-                  <Skeleton className="h-6 w-3/4 mx-auto" />
-                  <Skeleton className="h-4 w-1/2 mx-auto" />
+                <div key={i} className="space-y-2 sm:space-y-3 md:space-y-4">
+                  <Skeleton className="aspect-square rounded-2xl sm:rounded-3xl" />
+                  <Skeleton className="h-4 sm:h-5 md:h-6 w-3/4 mx-auto" />
+                  <Skeleton className="h-3 sm:h-4 w-1/2 mx-auto" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 mb-16 sm:mb-20 md:mb-24">
               {categories?.map((category, index) => (
                 <Link key={category.id} href={`/category/${category.slug}`}>
                   <div 
-                    className="group relative overflow-hidden rounded-3xl bg-white shadow-lg hover:shadow-2xl transition-all duration-700 transform hover:-translate-y-3 hover:rotate-1"
+                    className="group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-sm hover:shadow-lg sm:hover:shadow-xl md:hover:shadow-2xl transition-all duration-300 sm:duration-500 md:duration-700 transform hover:scale-105 sm:hover:-translate-y-1 md:hover:-translate-y-3 md:hover:rotate-1"
                     style={{
-                      animationDelay: `${index * 150}ms`,
-                      animation: 'fadeInUp 0.8s ease-out forwards'
+                      animationDelay: `${index * 100}ms`,
+                      animation: 'fadeInUp 0.6s ease-out forwards'
                     }}
                   >
                     <div className="aspect-square overflow-hidden relative">
-                      <div className={`relative h-full p-8 bg-gradient-to-br ${categoryGradients[category.slug as keyof typeof categoryGradients] || 'from-gray-100 to-gray-200'}`}>
-                        {/* Decorative Elements */}
-                        <div className="absolute top-4 right-4 w-8 h-8 bg-white/20 rounded-full blur-sm"></div>
-                        <div className="absolute bottom-4 left-4 w-6 h-6 bg-white/30 rounded-full blur-sm"></div>
+                      <div className={`relative h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br ${categoryGradients[category.slug as keyof typeof categoryGradients] || 'from-gray-100 to-gray-200'}`}>
+                        {/* Decorative Elements - Hidden on mobile for cleaner look */}
+                        <div className="hidden sm:block absolute top-3 sm:top-4 right-3 sm:right-4 w-4 sm:w-6 md:w-8 h-4 sm:h-6 md:h-8 bg-white/20 rounded-full blur-sm"></div>
+                        <div className="hidden sm:block absolute bottom-3 sm:bottom-4 left-3 sm:left-4 w-3 sm:w-4 md:w-6 h-3 sm:h-4 md:h-6 bg-white/30 rounded-full blur-sm"></div>
 
                         <img
                           src={categoryImages[category.slug as keyof typeof categoryImages] || category.imageUrl}
                           alt={category.name}
-                          className="w-full h-full object-cover rounded-2xl group-hover:scale-110 transition-transform duration-700 shadow-xl"
+                          className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-300 sm:duration-500 md:duration-700 shadow-md sm:shadow-lg md:shadow-xl"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent rounded-2xl group-hover:from-black/5 transition-all duration-500"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent rounded-xl sm:rounded-2xl group-hover:from-black/5 transition-all duration-300 sm:duration-500"></div>
 
-                        {/* Floating Badge */}
-                        {/* <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg">
-                          <span className="text-xs font-semibold text-gray-700">{category.productCount} items</span>
-                        </div> */}
+                        {/* Product count badge - Responsive sizing */}
+                        <div className="absolute top-2 sm:top-3 md:top-4 lg:top-6 left-2 sm:left-3 md:left-4 lg:left-6 bg-white/90 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full shadow-sm sm:shadow-md md:shadow-lg">
+                          <span className="text-xs sm:text-xs md:text-sm font-semibold text-gray-700">{category.productCount}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-8 text-center relative">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">
+                    <div className="p-3 sm:p-4 md:p-6 lg:p-8 text-center relative">
+                      <h3 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-gray-900 mb-1 sm:mb-2 md:mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300 line-clamp-1">
                         {category.name}
                       </h3>
-                      <p className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors mb-4">
-                        Explore {category.productCount} premium products
+                      <p className="text-xs sm:text-sm text-gray-500 group-hover:text-gray-600 transition-colors mb-2 sm:mb-3 md:mb-4 line-clamp-1">
+                        {category.productCount} products
                       </p>
-                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                        <span className="text-sm font-medium text-gray-700">Shop Now</span>
-                        <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="hidden sm:flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">Shop Now</span>
+                        <svg className="w-3 sm:w-4 h-3 sm:h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>
                       </div>
@@ -188,13 +188,13 @@ export default function Home() {
               </div>
             ) : (
               <>
-                {/* Optimized Grid Layout - 4 products per row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                {/* Mobile-first Grid Layout */}
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
                   {allProducts?.slice(0, 8).map((product) => (
                     <ProductCard 
                       key={product.id} 
                       product={product} 
-                      className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1" 
+                      className="mobile-product-card shadow-sm hover:shadow-md transition-all duration-300" 
                     />
                   ))}
                 </div>
@@ -266,13 +266,13 @@ export default function Home() {
             </div>
           ) : featuredProducts && featuredProducts.length > 0 ? (
             <>
-              {/* Grid Layout for Featured Products - Max 4 per row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {/* Mobile-first Grid Layout for Featured Products */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
                 {featuredProducts.slice(0, 8).map((product) => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
-                    className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                    className="mobile-product-card shadow-sm hover:shadow-md transition-all duration-300"
                   />
                 ))}
               </div>
@@ -345,13 +345,13 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* Grid Layout for New Launch Products - Max 4 per row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {/* Mobile-first Grid Layout for New Launch Products */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
                 {allProducts?.filter(product => product.newLaunch).slice(0, 4).map((product) => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
-                    className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 relative"
+                    className="mobile-product-card shadow-sm hover:shadow-md transition-all duration-300 relative"
                   />
                 ))}
               </div>
@@ -427,13 +427,13 @@ export default function Home() {
             </div>
           ) : bestsellerProducts && bestsellerProducts.length > 0 ? (
             <>
-              {/* Grid Layout for Bestsellers - Max 4 per row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {/* Mobile-first Grid Layout for Bestsellers */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6 lg:gap-8">
                 {bestsellerProducts.slice(0, 8).map((product) => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
-                    className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                    className="mobile-product-card shadow-sm hover:shadow-md transition-all duration-300"
                   />
                 ))}
               </div>

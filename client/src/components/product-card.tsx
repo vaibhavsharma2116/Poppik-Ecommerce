@@ -254,57 +254,49 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
     <Card className={`product-card group ${className}`}>
       <div className="relative overflow-hidden">
         {product.saleOffer && (
-          <Badge className="sale-badge animate-pulse">
+          <Badge className="absolute top-1 left-1 z-10 bg-red-500 text-white px-1.5 py-0.5 text-xs animate-pulse">
             {product.saleOffer}
           </Badge>
         )}
         <button
           onClick={toggleWishlist}
-          className="absolute top-3 right-3 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-50 hover:scale-110 transition-all duration-200 z-10"
+          className="absolute top-1 right-1 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-red-50 hover:scale-110 transition-all duration-200 z-10"
         >
-          <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
+          <Heart className={`h-3 w-3 transition-colors ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
         </button>
         <Link href={`/product/${product.slug}`}>
           <div className="relative overflow-hidden bg-gray-50">
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="product-image w-full h-72 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
+              className="product-image w-full h-36 sm:h-48 md:h-64 lg:h-72 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
         </Link>
       </div>
 
-      <CardContent className="p-5 space-y-3">
+      <CardContent className="mobile-product-content p-2 sm:p-3 md:p-4 lg:p-5 space-y-1 sm:space-y-2 md:space-y-3">
         <div className="flex items-center justify-between">
           <div className="star-rating">
             {renderStars(parseFloat(product.rating))}
           </div>
-          <span className="text-gray-600 text-sm font-medium">{product.rating}</span>
+          <span className="text-gray-600 text-xs sm:text-sm font-medium">{product.rating}</span>
         </div>
 
         <Link href={`/product/${product.slug}`}>
-          <h3 className="font-semibold text-gray-900 hover:text-black transition-colors cursor-pointer line-clamp-2 min-h-[2.5rem]">
+          <h3 className="mobile-product-title font-medium text-gray-900 hover:text-black transition-colors cursor-pointer line-clamp-2 min-h-[2rem] text-xs sm:text-sm md:text-base">
             {product.name}
           </h3>
         </Link>
 
-        <p className="text-gray-600 text-sm line-clamp-2 min-h-[2.5rem]">
-          {product.shortDescription}
-        </p>
-
-        {product.size && (
-          <p className="text-gray-500 text-xs bg-gray-50 px-2 py-1 rounded-md inline-block">{product.size}</p>
-        )}
-
-        <div className="space-y-3">
-          <div className="flex items-baseline space-x-2">
-            <span className="text-lg font-bold text-gray-900">
+        <div className="space-y-1 sm:space-y-2">
+          <div className="flex items-baseline space-x-1 sm:space-x-2">
+            <span className="mobile-product-price text-sm sm:text-base md:text-lg font-bold text-gray-900">
               ₹{product.price}
             </span>
             {product.originalPrice && (
-              <span className="text-sm text-gray-500 line-through">
+              <span className="text-xs sm:text-sm text-gray-500 line-through">
                 ₹{product.originalPrice}
               </span>
             )}
@@ -317,18 +309,18 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
 
           {product.variants?.colors || product.variants?.shades ? (
             <Link href={`/product/${product.slug}`}>
-              <Button size="sm" className="btn-primary w-full text-xs py-2.5 hover:bg-gray-800 transition-colors">
-                Select Shade
+              <Button size="sm" className="btn-primary w-full text-xs py-1.5 sm:py-2 hover:bg-gray-800 transition-colors">
+                Select
               </Button>
             </Link>
           ) : (
             <Button 
               size="sm" 
-              className="btn-primary w-full text-xs py-2.5 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
+              className="btn-primary w-full text-xs py-1.5 sm:py-2 flex items-center justify-center gap-1 hover:bg-gray-800 transition-colors"
               onClick={addToCart}
             >
               <ShoppingCart className="h-3 w-3" />
-              Add to Cart
+              <span className="hidden sm:inline">Add to</span> Cart
             </Button>
           )}
         </div>

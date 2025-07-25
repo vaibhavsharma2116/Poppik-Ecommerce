@@ -49,12 +49,12 @@ export default function ProductsPage() {
             break;
         }
       }
-        
+
       let categoryParam = searchParams.get('category');
       if (categoryParam && categoryParam !== "all") {
         filtered = filtered.filter(product => product.category === categoryParam);
       }
-      
+
       setFilteredProducts(filtered);
     }
   }, [allProducts, searchParams]);
@@ -100,64 +100,26 @@ export default function ProductsPage() {
   }, [filteredProducts, sortBy]);
 
   return (
-    <div className="py-16 bg-white">
-      <div className=" mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm mb-8">
-          <Link href="/" className="text-gray-500 hover:text-gray-700">
-            Home
-          </Link>
-          <ChevronRight className="h-4 w-4 text-gray-400" />
-          <span className="text-gray-900 font-medium">All Products</span>
-        </nav>
-
-        {/* Page Header */}
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">All Products</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover our complete collection of premium beauty and wellness products
-          </p>
+          <div className="bg-white/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 max-w-4xl mx-auto">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">Our Products</h1>
+            <p className="text-xl text-gray-700 font-medium">Discover our complete range of premium beauty products</p>
+          </div>
         </div>
 
-        {/* Filters and Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            {/* Mobile Filter Trigger */}
-            <div className="md:hidden">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <SlidersHorizontal className="h-4 w-4 mr-2" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="w-96 overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle>Filter Products</SheetTitle>
-                    <SheetDescription>
-                      Narrow down your search with advanced filters.
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    {allProducts && categories && (
-                      <DynamicFilter
-                        products={allProducts}
-                        categories={categories}
-                        onFilterChange={handleFilterChange}
-                      />
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-
+        {/* Controls */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 space-y-4 lg:space-y-0">
+          <div className="flex items-center space-x-4">
             {/* View Mode Toggle */}
-            <div className="flex items-center border rounded-md">
+            <div className="flex items-center bg-white/70 backdrop-blur-md border border-white/20 rounded-2xl p-1 shadow-lg">
               <Button
                 variant={viewMode === "grid" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("grid")}
-                className="rounded-r-none"
+                className={`rounded-xl transition-all duration-200 ${viewMode === "grid" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg" : "hover:bg-gray-100"}`}
               >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
@@ -165,7 +127,7 @@ export default function ProductsPage() {
                 variant={viewMode === "list" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className="rounded-l-none"
+                className={`rounded-xl transition-all duration-200 ${viewMode === "list" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg" : "hover:bg-gray-100"}`}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -174,95 +136,113 @@ export default function ProductsPage() {
 
           <div className="flex items-center gap-4">
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-64 bg-white/70 backdrop-blur-md border border-white/20 rounded-xl shadow-lg">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
+              <SelectContent className="bg-white/90 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl">
+                <SelectItem value="popular" className="rounded-lg">Most Popular</SelectItem>
+                <SelectItem value="price-low" className="rounded-lg">Price: Low to High</SelectItem>
+                <SelectItem value="price-high" className="rounded-lg">Price: High to Low</SelectItem>
+                <SelectItem value="newest" className="rounded-lg">Newest First</SelectItem>
+                <SelectItem value="rating" className="rounded-lg">Highest Rated</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Main Content Layout */}
+        {/* Filter and Products Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Desktop Filter Sidebar */}
-          <div className="hidden md:block lg:col-span-1">
-            {allProducts && categories && !productsLoading && !categoriesLoading && (
-              <div className="sticky top-4">
-                <DynamicFilter
-                  products={allProducts}
-                  categories={categories}
-                  onFilterChange={handleFilterChange}
-                />
-              </div>
-            )}
+          <div className="hidden lg:block">
+            <div className="sticky top-4">
+              <DynamicFilter
+                products={allProducts || []}
+                categories={categories || []}
+                onFilterChange={handleFilterChange}
+                className="bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20"
+              />
+            </div>
+          </div>
+
+          {/* Mobile Filter Sheet */}
+          <div className="lg:hidden mb-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-full bg-white/70 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 bg-white/90 backdrop-blur-md">
+                <SheetHeader>
+                  <SheetTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Filters</SheetTitle>
+                  <SheetDescription className="text-gray-600 font-medium">
+                    Filter products by category, price, and more.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6">
+                  <DynamicFilter
+                    products={allProducts || []}
+                    categories={categories || []}
+                    onFilterChange={handleFilterChange}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
 
           {/* Products Display */}
           <div className="lg:col-span-3">
             {productsLoading || categoriesLoading ? (
-              <div className={`grid gap-6 ${
-                viewMode === "grid" 
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" 
-                  : "grid-cols-1"
-              }`}>
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Card key={i} className="overflow-hidden">
-                    <Skeleton className="h-64 w-full" />
-                    <CardContent className="p-6 space-y-3">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-6 w-1/2" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="overflow-hidden bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20">
+                    <Skeleton className="h-64 w-full rounded-t-3xl" />
+                    <CardContent className="p-6">
+                      <Skeleton className="h-6 w-3/4 mb-3 rounded-xl" />
+                      <Skeleton className="h-5 w-1/2 mb-3 rounded-xl" />
+                      <Skeleton className="h-8 w-1/4 rounded-xl" />
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            ) : sortedProducts && sortedProducts.length > 0 ? (
+            ) : (
               <>
-                <div className={`grid ${
-                  viewMode === "grid" 
-                    ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-4 md:gap-6" 
-                    : "grid-cols-1 gap-4"
-                }`}>
-                  {sortedProducts.map((product) => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      className="shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
-                    />
-                  ))}
+                {/* Results Count */}
+                <div className="flex items-center justify-between mb-8">
+                  <div className="bg-white/70 backdrop-blur-md rounded-2xl px-6 py-4 shadow-lg border border-white/20">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {filteredProducts.length} Products Found
+                    </h2>
+                  </div>
                 </div>
 
-                {/* Product count */}
-                <div className="text-center mt-12">
-                  <p className="text-gray-600">
-                    Showing {sortedProducts.length} of {allProducts?.length || 0} product{sortedProducts.length !== 1 ? 's' : ''}
-                    {Object.keys(activeFilters).length > 0 && (
-                      <span className="ml-2 text-sm">
-                        (with filters applied)
-                      </span>
-                    )}
-                  </p>
-                </div>
+                {/* Products Grid/List */}
+                {filteredProducts.length > 0 ? (
+                  <div className={viewMode === "grid" 
+                    ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8" 
+                    : "space-y-6"
+                  }>
+                    {filteredProducts.map((product) => (
+                      <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        viewMode={viewMode}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-20">
+                    <div className="max-w-md mx-auto bg-white/70 backdrop-blur-md rounded-3xl p-12 shadow-2xl border border-white/20">
+                      <div className="w-32 h-32 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full"></div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">No products found</h3>
+                      <p className="text-gray-600 text-lg font-medium">Try adjusting your filters or search terms</p>
+                    </div>
+                  </div>
+                )}
               </>
-            ) : (
-              <div className="text-center py-16">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-                <p className="text-gray-600 mb-8">
-                  {Object.keys(activeFilters).length > 0 
-                    ? "Try adjusting your filters to see more products."
-                    : "Check back later for new products."
-                  }
-                </p>
-                <Link href="/">
-                  <span className="text-red-500 hover:text-red-600 font-medium">← Continue Shopping</span>
-                </Link>
-              </div>
             )}
           </div>
         </div>

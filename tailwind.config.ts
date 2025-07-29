@@ -5,6 +5,14 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        'sans': ['DM Sans', 'Outfit', 'system-ui', 'sans-serif'],
+        'heading': ['Space Grotesk', 'Outfit', 'sans-serif'],
+        'display': ['Outfit', 'Space Grotesk', 'sans-serif'],
+        'body': ['DM Sans', 'Outfit', 'sans-serif'],
+        'elegant': ['Crimson Text', 'Georgia', 'serif'],
+        'accent': ['Space Grotesk', 'sans-serif'],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

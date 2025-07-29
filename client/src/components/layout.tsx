@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, ShoppingCart, Menu, X, User, Heart, LogOut, Sparkles } from "lucide-react";
@@ -364,7 +365,7 @@ export default function Layout({ children }: LayoutProps) {
                         Navigation
                       </h2>
                     </div>
-
+                    
                     {staticNavItems.map((item) => (
                       <Link
                         key={item.name}
@@ -378,7 +379,7 @@ export default function Layout({ children }: LayoutProps) {
                         {item.name}
                       </Link>
                     ))}
-
+                    
                     <div className="border-t border-white/20 pt-4">
                       <h3 className="text-sm font-semibold text-white/70 mb-3 uppercase tracking-wider">Categories</h3>
                       {categories.map((category) => (
@@ -396,7 +397,7 @@ export default function Layout({ children }: LayoutProps) {
                       ))}
                     </div>
                   </div>
-
+                  
                   <div className="flex flex-col space-y-4 pt-6 border-t border-white/20 mt-8">
                     {user ? (
                       <>
@@ -423,14 +424,14 @@ export default function Layout({ children }: LayoutProps) {
                         </Button>
                       </Link>
                     )}
-
+                    
                     <Link href="/wishlist">
                       <Button variant="ghost" className="w-full justify-start bg-pink-500/20 hover:bg-pink-500/30 text-white rounded-xl">
                         <Heart className="h-5 w-5 mr-3" />
                         Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
                       </Button>
                     </Link>
-
+                    
                     <Link href="/cart">
                       <Button variant="ghost" className="w-full justify-start bg-indigo-500/20 hover:bg-indigo-500/30 text-white rounded-xl">
                         <ShoppingCart className="h-5 w-5 mr-3" />
@@ -510,132 +511,107 @@ export default function Layout({ children }: LayoutProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-center h-16">
               <NavigationMenu>
-                <NavigationMenuList className="space-x-1">
+                <NavigationMenuList className="space-x-6">
                   <NavigationMenuItem>
                     <NavigationMenuLink asChild>
                       <Link
                         href="/"
-                        className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl relative overflow-hidden group ${
+                        className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl ${
                           isActiveLink("/")
-                            ? "text-yellow-300 bg-gradient-to-r from-purple-600/40 to-pink-600/40 shadow-lg border border-yellow-300/30"
-                            : "text-white bg-gradient-to-r from-blue-600/20 to-cyan-600/20 hover:from-blue-600/30 hover:to-cyan-600/30 hover:text-yellow-300 border border-blue-500/30"
+                            ? "text-yellow-300 bg-gradient-to-r from-purple-600/30 to-pink-600/30 shadow-lg"
+                            : "text-white/90"
                         }`}
                       >
-                        <span className="relative z-10">🏠 Home</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                        <span className="relative z-10">Home</span>
                       </Link>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
 
-                  {/* Dynamic Categories - Always Visible */}
-                  {!loading && categories.map((category, index) => {
+                  {/* Dynamic Categories with Subcategory Dropdown */}
+                  {!loading && categories.map((category) => {
                     const categorySubcategories = getSubcategoriesForCategory(category.id);
-                    const colorClasses = [
-                      "from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border-purple-500/30",
-                      "from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border-green-500/30",
-                      "from-orange-600/20 to-red-600/20 hover:from-orange-600/30 hover:to-red-600/30 border-orange-500/30",
-                      "from-indigo-600/20 to-blue-600/20 hover:from-indigo-600/30 hover:to-blue-600/30 border-indigo-500/30",
-                      "from-pink-600/20 to-rose-600/20 hover:from-pink-600/30 hover:to-rose-600/30 border-pink-500/30",
-                      "from-teal-600/20 to-cyan-600/20 hover:from-teal-600/30 hover:to-cyan-600/30 border-teal-500/30"
-                    ];
-                    const colorClass = colorClasses[index % colorClasses.length];
-
-                    const categoryEmojis = ["💄", "🧴", "✨", "🌟", "💅", "🎨"];
-                    const emoji = categoryEmojis[index % categoryEmojis.length];
-
+                    
                     if (categorySubcategories.length > 0) {
                       return (
                         <NavigationMenuItem key={category.id}>
-                          <NavigationMenuTrigger className={`text-lg font-semibold px-6 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group bg-gradient-to-r ${colorClass} ${
-                            isActiveLink(`/category/${category.slug}`)
-                              ? "text-yellow-300 shadow-lg"
-                              : "text-white hover:text-yellow-300"
-                          } border`}>
+                          <NavigationMenuTrigger 
+                            className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl bg-transparent border-0 hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-pink-600/20 hover:shadow-lg hover:scale-105 ${
+                              isActiveLink(`/category/${category.slug}`)
+                                ? "text-yellow-300 bg-gradient-to-r from-purple-600/30 to-pink-600/30 shadow-lg"
+                                : "text-white/90 hover:text-yellow-300"
+                            }`}
+                          >
                             <span className="relative z-10">{category.name}</span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                           </NavigationMenuTrigger>
                           <NavigationMenuContent>
-                            <div className="grid gap-6 p-8 w-[600px] grid-cols-3 bg-gradient-to-br from-white via-purple-50 to-pink-50 border border-white/20 shadow-2xl rounded-2xl">
-                              <div className="space-y-4">
-                                <div className="border-b border-purple-200 pb-3">
-                                  <h4 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent uppercase tracking-wider">
-                                    {category.name}
-                                  </h4>
-                                </div>
-                                {categorySubcategories.slice(0, 4).map((subcategory) => (
-                                  <NavigationMenuLink key={subcategory.id} asChild>
-                                    <Link 
-                                      href={`/category/${category.slug}?subcategory=${subcategory.slug}`}
-                                      className="group block select-none rounded-2xl p-4 leading-none no-underline outline-none transition-all duration-300 hover:bg-gradient-to-r hover:from-purple-100/80 hover:to-pink-100/80 hover:shadow-lg border border-transparent hover:border-purple-200/50 hover:scale-[1.02]"
-                                      onClick={() => {
-                                        setTimeout(() => {
-                                          window.location.href = `/category/${category.slug}?subcategory=${subcategory.slug}`;
-                                        }, 100);
+                            <div className="w-80 p-6 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl">
+                              {/* Main Category Link */}
+                              <div className="mb-4">
+                                <Link
+                                  href={`/category/${category.slug}`}
+                                  className="group block p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 rounded-xl transition-all duration-300 border border-purple-200/50"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
+                                        All {category.name}
+                                      </h3>
+                                      <p className="text-sm text-gray-600 mt-1">View all products</p>
+                                    </div>
+                                    <div className="text-purple-500 group-hover:text-purple-700 group-hover:scale-110 transition-all duration-300">
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </Link>
+                              </div>
+
+                              {/* Subcategories */}
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
+                                  Subcategories
+                                </h4>
+                                <div className="grid gap-2">
+                                  {categorySubcategories.map((subcategory, index) => (
+                                    <Link
+                                      key={subcategory.id}
+                                      href={`/category/${category.slug}/${subcategory.slug}`}
+                                      className="group block p-3 hover:bg-gradient-to-r hover:from-purple-100/80 hover:to-pink-100/80 rounded-xl transition-all duration-300 border border-transparent hover:border-purple-200/50 hover:shadow-md"
+                                      style={{
+                                        animationDelay: `${index * 50}ms`
                                       }}
                                     >
-                                      <div className="text-base font-semibold text-gray-900 group-hover:text-purple-700 mb-2">
-                                        {subcategory.name}
-                                      </div>
-                                      <p className="text-sm text-gray-600 group-hover:text-purple-600 leading-relaxed">
-                                        {subcategory.description.length > 50 
-                                          ? `${subcategory.description.substring(0, 50)}...` 
-                                          : subcategory.description
-                                        }
-                                      </p>
-                                    </Link>
-                                  </NavigationMenuLink>
-                                ))}
-                              </div>
-
-                              {categorySubcategories.length > 4 && (
-                                <div className="space-y-4">
-                                  <div className="border-b border-purple-200 pb-3">
-                                    <h4 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent uppercase tracking-wider">More Options</h4>
-                                  </div>
-                                  {categorySubcategories.slice(4, 8).map((subcategory) => (
-                                    <NavigationMenuLink key={subcategory.id} asChild>
-                                      <Link 
-                                        href={`/category/${category.slug}?subcategory=${subcategory.slug}`}
-                                        className="group block select-none rounded-2xl p-4 leading-none no-underline outline-none transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-100/80 hover:to-purple-100/80 hover:shadow-lg border border-transparent hover:border-indigo-200/50 hover:scale-[1.02]"
-                                        onClick={() => {
-                                          setTimeout(() => {
-                                            window.location.href = `/category/${category.slug}?subcategory=${subcategory.slug}`;
-                                          }, 100);
-                                        }}
-                                      >
-                                        <div className="text-base font-semibold text-gray-900 group-hover:text-indigo-700 mb-2">
-                                          {subcategory.name}
+                                      <div className="flex items-center space-x-3">
+                                        <div className="flex-shrink-0">
+                                          <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full group-hover:scale-150 transition-transform duration-300"></div>
                                         </div>
-                                        <p className="text-sm text-gray-600 group-hover:text-indigo-600 leading-relaxed">
-                                          {subcategory.description.length > 50 
-                                            ? `${subcategory.description.substring(0, 50)}...` 
-                                            : subcategory.description
-                                          }
-                                        </p>
-                                      </Link>
-                                    </NavigationMenuLink>
-                                  ))}
-                              </div>
-                              )}
-
-                              <div className="space-y-4">
-                                <div className="border-b border-pink-200 pb-3">
-                                  <h4 className="text-lg font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent uppercase tracking-wider">Featured</h4>
-                                </div>
-
-                                <div className="bg-gradient-to-br from-pink-100 to-purple-100 p-5 rounded-2xl border border-pink-200 shadow-lg">
-                                  <NavigationMenuLink asChild>
-                                    <Link href={`/category/${category.slug}`} className="block group">
-                                      <div className="text-lg font-bold text-pink-700 mb-3 group-hover:text-pink-800">View All Products</div>
-                                      <div className="text-sm text-gray-700 mb-4 leading-relaxed">
-                                        Complete {category.name.toLowerCase()} collection with premium quality
-                                      </div>
-                                      <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                                        Shop Now →
+                                        <div className="flex-1">
+                                          <h5 className="font-semibold text-gray-800 group-hover:text-purple-700 transition-colors">
+                                            {subcategory.name}
+                                          </h5>
+                                          {subcategory.description && (
+                                            <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                                              {subcategory.description}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <div className="text-gray-400 group-hover:text-purple-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                          </svg>
+                                        </div>
                                       </div>
                                     </Link>
-                                  </NavigationMenuLink>
+                                  ))}
                                 </div>
+                              </div>
+
+                              {/* Footer */}
+                              <div className="mt-4 pt-4 border-t border-gray-200/50">
+                                <p className="text-xs text-gray-500 text-center">
+                                  Browse {categorySubcategories.length} subcategories
+                                </p>
                               </div>
                             </div>
                           </NavigationMenuContent>
@@ -647,14 +623,13 @@ export default function Layout({ children }: LayoutProps) {
                           <NavigationMenuLink asChild>
                             <Link
                               href={`/category/${category.slug}`}
-                              className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl relative overflow-hidden group bg-gradient-to-r ${colorClass} ${
+                              className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-pink-600/20 hover:shadow-lg hover:scale-105 ${
                                 isActiveLink(`/category/${category.slug}`)
-                                  ? "text-yellow-300 shadow-lg"
-                                  : "text-white hover:text-yellow-300"
-                              } border`}
+                                  ? "text-yellow-300 bg-gradient-to-r from-purple-600/30 to-pink-600/30 shadow-lg"
+                                  : "text-white/90 hover:text-yellow-300"
+                              }`}
                             >
                               <span className="relative z-10">{category.name}</span>
-                              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                             </Link>
                           </NavigationMenuLink>
                         </NavigationMenuItem>
@@ -666,14 +641,13 @@ export default function Layout({ children }: LayoutProps) {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/about"
-                        className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl relative overflow-hidden group bg-gradient-to-r from-amber-600/20 to-yellow-600/20 hover:from-amber-600/30 hover:to-yellow-600/30 border border-amber-500/30 ${
+                        className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl ${
                           isActiveLink("/about")
-                            ? "text-yellow-300 shadow-lg"
-                            : "text-white hover:text-yellow-300"
+                            ? "text-yellow-300 bg-gradient-to-r from-purple-600/30 to-pink-600/30 shadow-lg"
+                            : "text-white/90"
                         }`}
                       >
-                        <span className="relative z-10">ℹ️ About</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-yellow-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                        <span className="relative z-10">About</span>
                       </Link>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
@@ -682,14 +656,13 @@ export default function Layout({ children }: LayoutProps) {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/contact"
-                        className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl relative overflow-hidden group bg-gradient-to-r from-emerald-600/20 to-green-600/20 hover:from-emerald-600/30 hover:to-green-600/30 border border-emerald-500/30 ${
+                        className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl ${
                           isActiveLink("/contact")
-                            ? "text-yellow-300 shadow-lg"
-                            : "text-white hover:text-yellow-300"
+                            ? "text-yellow-300 bg-gradient-to-r from-purple-600/30 to-pink-600/30 shadow-lg"
+                            : "text-white/90"
                         }`}
                       >
-                        <span className="relative z-10">📞 Contact</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                        <span className="relative z-10">Contact</span>
                       </Link>
                     </NavigationMenuLink>
                   </NavigationMenuItem>

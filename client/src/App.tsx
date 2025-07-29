@@ -71,6 +71,7 @@ function Router() {
         <Layout>
           <Switch>
             <Route path="/" component={Home} />
+            <Route path="/category/:slug/:subcategorySlug" component={Category} />
             <Route path="/category/:slug" component={Category} />
             <Route path="/products" component={ProductsPage} />
             <Route path="/product/:slug" component={ProductDetail} />

@@ -19,9 +19,9 @@ export default function CategoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState({});
 
-  // Get subcategory from URL params
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
-  const subcategorySlug = urlParams.get('subcategory');
+  // Get subcategory from URL path (e.g., /category/skincare/face-serums)
+  const categorySlug = params.slug;
+  const subcategorySlug = params.subcategorySlug;
 
   // Fetch all products
   const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
@@ -57,11 +57,12 @@ export default function CategoryPage() {
   const categoryFilteredProducts = useMemo(() => {
     if (!allProducts.length) return [];
 
+    // First filter by category
     let filtered = allProducts.filter(product => 
-      product.category?.toLowerCase() === params.slug?.replace('-', ' ').toLowerCase()
+      product.category?.toLowerCase() === categorySlug?.replace('-', ' ').toLowerCase()
     );
 
-    // If subcategory is selected, further filter by subcategory
+    // If subcategory is selected from URL path, further filter by subcategory
     if (subcategorySlug) {
       filtered = filtered.filter(product => 
         product.subcategory?.toLowerCase() === subcategorySlug.replace('-', ' ').toLowerCase()
@@ -69,7 +70,7 @@ export default function CategoryPage() {
     }
 
     return filtered;
-  }, [allProducts, params.slug, subcategorySlug]);
+  }, [allProducts, categorySlug, subcategorySlug]);
 
   // Handle filter changes - now working with category/subcategory filtered products
   const handleFilterChange = (filtered: Product[], filters: any) => {
@@ -105,7 +106,7 @@ export default function CategoryPage() {
   }, [categoryFilteredProducts]);
 
   // Get current category and subcategory names for display
-  const currentCategory = categories.find(cat => cat.slug === params.slug);
+  const currentCategory = categories.find(cat => cat.slug === categorySlug);
   const currentSubcategory = subcategories.find(sub => sub.slug === subcategorySlug);
 
   return (
@@ -117,17 +118,34 @@ export default function CategoryPage() {
 
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 capitalize">
-              {currentCategory?.name || params.slug?.replace('-', ' ')} Products
-              {currentSubcategory && (
-                <span className="text-red-500 font-normal"> - {currentSubcategory.name}</span>
+            {/* Breadcrumb */}
+            <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+              <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
+              <span>/</span>
+              <Link href={`/category/${categorySlug}`} className="hover:text-blue-600 transition-colors">
+                {currentCategory?.name || categorySlug?.replace('-', ' ')}
+              </Link>
+              {subcategorySlug && (
+                <>
+                  <span>/</span>
+                  <span className="text-gray-900 font-medium">
+                    {currentSubcategory?.name || subcategorySlug.replace('-', ' ')}
+                  </span>
+                </>
               )}
+            </nav>
+
+            <h1 className="text-3xl font-bold text-gray-900 capitalize">
+              {subcategorySlug 
+                ? (currentSubcategory?.name || subcategorySlug.replace('-', ' '))
+                : (currentCategory?.name || categorySlug?.replace('-', ' '))
+              } Products
             </h1>
             <p className="text-gray-600 mt-1">
-              {sortedProducts.length} of {categoryFilteredProducts.length} products
+              {sortedProducts.length} of {categoryFilteredProducts.length} products found
               {subcategorySlug && (
-                <span className="ml-2 text-sm bg-red-100 text-red-700 px-2 py-1 rounded">
-                  {currentSubcategory?.name || subcategorySlug.replace('-', ' ')}
+                <span className="ml-2 text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+                  in {currentSubcategory?.name || subcategorySlug.replace('-', ' ')}
                 </span>
               )}
             </p>

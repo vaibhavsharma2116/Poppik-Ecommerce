@@ -197,12 +197,12 @@ export default function Layout({ children }: LayoutProps) {
 
 
       {/* Main Header */}
-      <header className=" bg-white border-b border-gray-200">
+      <header className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 border-b border-pink-300 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/">
-              <h1 className="text-2xl font-bold text-black cursor-pointer">
+              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-yellow-300 transition-colors duration-300 drop-shadow-lg">
                 Poppik
               </h1>
             </Link>
@@ -210,7 +210,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Desktop Search */}
             <div className="hidden md:flex items-center space-x-4 relative">
               <div className="relative w-96">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
                 <Input
                   type="text"
                   placeholder="Search products..."
@@ -218,7 +218,7 @@ export default function Layout({ children }: LayoutProps) {
                   onChange={handleSearchInputChange}
                   onFocus={handleSearchInputFocus}
                   onBlur={handleSearchInputBlur}
-                  className="w-full pl-10 pr-4"
+                  className="w-full pl-10 pr-4 bg-white/90 backdrop-blur-sm border-white/50 placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-yellow-300 transition-all duration-300"
                 />
                 
                 {/* Search Results Dropdown */}
@@ -265,6 +265,7 @@ export default function Layout({ children }: LayoutProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsSearchCommandOpen(true)}
+                    className="text-white hover:text-yellow-300 hover:bg-white/20 transition-all duration-300"
                   >
                     <Search className="h-5 w-5" />
                   </Button>
@@ -273,10 +274,10 @@ export default function Layout({ children }: LayoutProps) {
 
               {/* Wishlist Icon */}
               <Link href="/wishlist">
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative text-white hover:text-yellow-300 hover:bg-white/20 transition-all duration-300">
                   <Heart className="h-5 w-5" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-400 to-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-lg animate-pulse">
                       {wishlistCount}
                     </span>
                   )}
@@ -284,10 +285,10 @@ export default function Layout({ children }: LayoutProps) {
               </Link>
 
               <Link href="/cart">
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative text-white hover:text-yellow-300 hover:bg-white/20 transition-all duration-300">
                   <ShoppingCart className="h-5 w-5" />
                   {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-400 to-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-lg animate-bounce">
                       {cartCount}
                     </span>
                   )}
@@ -296,7 +297,7 @@ export default function Layout({ children }: LayoutProps) {
               {user ? (
                 <div className="flex items-center space-x-2">
                   <Link href="/profile">
-                    <Button variant="ghost" size="sm" className="hidden md:flex">
+                    <Button variant="ghost" size="sm" className="hidden md:flex text-white hover:text-yellow-300 hover:bg-white/20 transition-all duration-300">
                       Welcome, {user.firstName}
                     </Button>
                   </Link>
@@ -305,13 +306,14 @@ export default function Layout({ children }: LayoutProps) {
                     size="sm"
                     onClick={handleLogout}
                     title="Logout"
+                    className="text-white hover:text-red-300 hover:bg-white/20 transition-all duration-300"
                   >
                     <LogOut className="h-5 w-5" />
                   </Button>
                 </div>
               ) : (
                 <Link href="/auth/login">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="text-white hover:text-yellow-300 hover:bg-white/20 transition-all duration-300">
                     <User className="h-5 w-5" />
                   </Button>
                 </Link>
@@ -320,7 +322,7 @@ export default function Layout({ children }: LayoutProps) {
               {/* Mobile Menu */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="md:hidden">
+                  <Button variant="ghost" size="sm" className="md:hidden text-white hover:text-yellow-300 hover:bg-white/20 transition-all duration-300">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -406,7 +408,7 @@ export default function Layout({ children }: LayoutProps) {
           {/* Mobile Search Bar */}
           <div className="md:hidden px-4 pb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
               <Input
                 type="text"
                 placeholder="Search products..."
@@ -414,7 +416,7 @@ export default function Layout({ children }: LayoutProps) {
                 onChange={handleSearchInputChange}
                 onFocus={handleSearchInputFocus}
                 onBlur={handleSearchInputBlur}
-                className="w-full pl-10 pr-4"
+                className="w-full pl-10 pr-4 bg-white/90 backdrop-blur-sm border-white/50 placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-yellow-300 transition-all duration-300"
               />
               
               {/* Mobile Search Results Dropdown */}
@@ -454,7 +456,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Navigation - Desktop */}
-        <nav className="bg-gray-50 border-t border-gray-200 hidden md:block">
+        <nav className="bg-blac hidden md:block shadow-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-center h-12">
               <NavigationMenu>
@@ -463,10 +465,10 @@ export default function Layout({ children }: LayoutProps) {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/"
-                        className={`text-sm font-medium transition-colors px-4 py-2 ${
+                        className={`text-sm font-medium transition-colors px-4 py-2 transition-colors px-4 py-2 ${
                           isActiveLink("/")
-                            ? "text-red-500"
-                            : "text-gray-600 hover:text-red-500"
+                            ? "text-yellow-300 bg-white/20 rounded-full"
+                            : "text-white text-yellow-300 bg-white/20 rounded-full"
                         }`}
                       >
                         Home
@@ -481,10 +483,10 @@ export default function Layout({ children }: LayoutProps) {
                     if (categorySubcategories.length > 0) {
                       return (
                         <NavigationMenuItem key={category.id}>
-                          <NavigationMenuTrigger className={`text-sm font-medium ${
+                          <NavigationMenuTrigger className={`text-sm font-medium transition-colors px-4 py-2 ${
                             isActiveLink(`/category/${category.slug}`)
-                              ? "text-red-500"
-                              : "text-gray-600 hover:text-red-500"
+                              ? "text-yellow-300 bg-white/20 rounded-full"
+                              : "text-black text-white-300 bg-white/20 rounded-full"
                           }`}>
                             {category.name}
                           </NavigationMenuTrigger>
@@ -508,7 +510,7 @@ export default function Layout({ children }: LayoutProps) {
                                         }, 100);
                                       }}
                                     >
-                                      <div className="text-sm font-medium text-gray-900 group-hover:text-red-600">
+                                      <div className="text-sm font-medium transition-colors px-4 py-2 text-gray-900 group-hover:text-red-600">
                                         {subcategory.name}
                                       </div>
                                       <p className="text-xs text-gray-500 mt-1 group-hover:text-red-500">
@@ -539,7 +541,7 @@ export default function Layout({ children }: LayoutProps) {
                                           }, 100);
                                         }}
                                       >
-                                        <div className="text-sm font-medium text-gray-900 group-hover:text-red-600">
+                                        <div className="text-sm font-medium transition-colors px-4 py-2 text-gray-900 group-hover:text-red-600">
                                           {subcategory.name}
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1 group-hover:text-red-500">
@@ -584,10 +586,10 @@ export default function Layout({ children }: LayoutProps) {
                           <NavigationMenuLink asChild>
                             <Link
                               href={`/category/${category.slug}`}
-                              className={`text-sm font-medium transition-colors px-4 py-2 ${
+                              className={`text-sm font-medium transition-colors px-4 py-2 transition-colors px-4 py-2 ${
                                 isActiveLink(`/category/${category.slug}`)
-                                  ? "text-red-500"
-                                  : "text-gray-600 hover:text-red-500"
+                                  ? "text-yellow-300 bg-white/20 rounded-full"
+                                  : "text-white text-yellow-300 bg-white/20 rounded-full"
                               }`}
                             >
                               {category.name}
@@ -602,10 +604,10 @@ export default function Layout({ children }: LayoutProps) {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/about"
-                        className={`text-sm font-medium transition-colors px-4 py-2 ${
+                        className={`text-sm font-medium transition-colors px-4 py-2 transition-colors px-4 py-2 ${
                           isActiveLink("/about")
-                            ? "text-red-500"
-                            : "text-gray-600 hover:text-red-500"
+                            ? "text-yellow-300 bg-white/20 rounded-full"
+                            : "text-white text-yellow-300 bg-white/20 rounded-full"
                         }`}
                       >
                         About
@@ -617,10 +619,10 @@ export default function Layout({ children }: LayoutProps) {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/contact"
-                        className={`text-sm font-medium transition-colors px-4 py-2 ${
+                        className={`text-sm font-medium transition-colors px-4 py-2 transition-colors px-4 py-2 ${
                           isActiveLink("/contact")
-                            ? "text-red-500"
-                            : "text-gray-600 hover:text-red-500"
+                            ? "text-yellow-300 bg-white/20 rounded-full"
+                            : "text-white text-yellow-300 bg-white/20 rounded-full"
                         }`}
                       >
                         Contact

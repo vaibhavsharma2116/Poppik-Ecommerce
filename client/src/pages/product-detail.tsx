@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
@@ -455,6 +454,192 @@ export default function ProductDetail() {
             </div>
           </Tabs>
         </div>
+
+        {/* Customer Reviews Section */}
+        <section className="bg-white/60 backdrop-blur-md rounded-xl sm:rounded-3xl p-4 sm:p-8 shadow-xl sm:shadow-2xl border border-white/20 mb-8 sm:mb-16">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2 sm:mb-4">Customer Reviews</h2>
+            <p className="text-gray-600 text-sm sm:text-lg font-medium">What our customers are saying</p>
+          </div>
+
+          {/* Reviews Summary */}
+          <div className="bg-gradient-to-br from-yellow-50/80 to-orange-50/80 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-yellow-200/50">
+            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+              <div className="text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
+                  <div className="flex">
+                    {renderStars(parseFloat(product.rating))}
+                  </div>
+                  <span className="text-3xl font-bold text-gray-900">{product.rating}</span>
+                </div>
+                <p className="text-gray-600 font-medium">Based on {product.reviewCount.toLocaleString()} reviews</p>
+              </div>
+              <div className="space-y-2 w-full md:w-64">
+                {[5, 4, 3, 2, 1].map((stars) => (
+                  <div key={stars} className="flex items-center space-x-2">
+                    <span className="text-sm font-medium w-8">{stars}★</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-yellow-400 to-orange-400 h-2 rounded-full"
+                        style={{ 
+                          width: `${stars === 5 ? 70 : stars === 4 ? 20 : stars === 3 ? 7 : stars === 2 ? 2 : 1}%` 
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-sm text-gray-500 w-8">
+                      {stars === 5 ? '70%' : stars === 4 ? '20%' : stars === 3 ? '7%' : stars === 2 ? '2%' : '1%'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Individual Reviews */}
+          <div className="space-y-6">
+            {/* Review 1 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  P
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-gray-900">Priya Sharma</h4>
+                      <p className="text-sm text-gray-500">Verified Purchase • 2 weeks ago</p>
+                    </div>
+                    <div className="flex">
+                      {renderStars(5)}
+                    </div>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    "Amazing product! I've been using this for a month now and can see visible improvements in my skin. The texture is perfect and it absorbs quickly without leaving any sticky residue. Highly recommended!"
+                  </p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (23)</button>
+                    <button className="hover:text-pink-600 transition-colors">Reply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 2 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  A
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-gray-900">Anita Desai</h4>
+                      <p className="text-sm text-gray-500">Verified Purchase • 1 month ago</p>
+                    </div>
+                    <div className="flex">
+                      {renderStars(5)}
+                    </div>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    "Love this! Perfect for my sensitive skin. No irritation at all and the results are fantastic. The packaging is also very hygienic and travel-friendly."
+                  </p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (18)</button>
+                    <button className="hover:text-pink-600 transition-colors">Reply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 3 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  R
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-gray-900">Riya Patel</h4>
+                      <p className="text-sm text-gray-500">Verified Purchase • 3 weeks ago</p>
+                    </div>
+                    <div className="flex">
+                      {renderStars(4)}
+                    </div>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    "Good product overall. Takes some time to show results but definitely worth it. The customer service is also excellent. Will definitely repurchase!"
+                  </p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (12)</button>
+                    <button className="hover:text-pink-600 transition-colors">Reply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 4 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  S
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-gray-900">Sneha Gupta</h4>
+                      <p className="text-sm text-gray-500">Verified Purchase • 1 week ago</p>
+                    </div>
+                    <div className="flex">
+                      {renderStars(5)}
+                    </div>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    "Excellent quality! Fast delivery and great packaging. This has become part of my daily skincare routine. My skin feels so much softer and looks brighter."
+                  </p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (31)</button>
+                    <button className="hover:text-pink-600 transition-colors">Reply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 5 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  M
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-gray-900">Meera Singh</h4>
+                      <p className="text-sm text-gray-500">Verified Purchase • 5 days ago</p>
+                    </div>
+                    <div className="flex">
+                      {renderStars(4)}
+                    </div>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    "Really impressed with the quality. Been using it for just a few days but already noticing improvements. The texture is lightweight and non-greasy. Perfect for oily skin like mine."
+                  </p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (8)</button>
+                    <button className="hover:text-pink-600 transition-colors">Reply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Load More Reviews Button */}
+          <div className="text-center mt-8">
+            <Button variant="outline" className="border-2 border-purple-200 hover:border-purple-400 rounded-xl px-8 py-3 font-semibold">
+              Load More Reviews
+            </Button>
+          </div>
+        </section>
 
         {/* Related Products */}
         {filteredRelatedProducts.length > 0 && (

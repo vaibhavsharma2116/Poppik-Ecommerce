@@ -1,35 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  /* Professional Color Palette */
+  --background: hsl(0, 0%, 99%);
+  --foreground: hsl(240, 10%, 3.9%);
+  --muted: hsl(240, 4.8%, 95.9%);
+  --muted-foreground: hsl(240, 3.8%, 46.1%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --popover-foreground: hsl(240, 10%, 3.9%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(0, 84.2%, 60.2%);
-  --primary-foreground: hsl(60, 9.1%, 97.8%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
+  --card-foreground: hsl(240, 10%, 3.9%);
+  --border: hsl(240, 5.9%, 90%);
+  --input: hsl(240, 5.9%, 90%);
+  --primary: hsl(262.1, 83.3%, 57.8%);
+  --primary-foreground: hsl(210, 20%, 98%);
+  --secondary: hsl(220, 14.3%, 95.9%);
+  --secondary-foreground: hsl(220.9, 39.3%, 11%);
+  --accent: hsl(220, 14.3%, 95.9%);
+  --accent-foreground: hsl(220.9, 39.3%, 11%);
   --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
-  --radius: 0.5rem;
+  --destructive-foreground: hsl(210, 20%, 98%);
+  --ring: hsl(262.1, 83.3%, 57.8%);
+  --radius: 0.75rem;
   
-  /* Custom colors for beauty theme */
-  --brand-red: hsl(0, 84.2%, 60.2%);
-  --brand-pink: hsl(320, 65%, 95%);
-  --brand-purple: hsl(280, 40%, 95%);
-  --brand-blue: hsl(220, 50%, 95%);
-  --brand-green: hsl(140, 40%, 95%);
+  /* Premium Brand Colors */
+  --brand-primary: hsl(262.1, 83.3%, 57.8%);
+  --brand-secondary: hsl(221.2, 83.2%, 53.3%);
+  --brand-accent: hsl(142.1, 76.2%, 36.3%);
+  --brand-warning: hsl(38, 92%, 50%);
+  --brand-danger: hsl(0, 84.2%, 60.2%);
+  --brand-success: hsl(142.1, 76.2%, 36.3%);
+  
+  /* Luxury Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(262.1, 83.3%, 57.8%) 0%, hsl(221.2, 83.2%, 53.3%) 100%);
+  --gradient-secondary: linear-gradient(135deg, hsl(317.4, 87.1%, 65.5%) 0%, hsl(262.1, 83.3%, 57.8%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(142.1, 76.2%, 36.3%) 0%, hsl(173.4, 58.9%, 39.1%) 100%);
+  --gradient-warm: linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(25.7, 95%, 53.1%) 100%);
+  
+  /* Professional Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* Beauty Theme Colors */
+  --beauty-rose: hsl(330, 85%, 96%);
+  --beauty-lavender: hsl(270, 50%, 96%);
+  --beauty-mint: hsl(150, 40%, 96%);
+  --beauty-pearl: hsl(45, 30%, 97%);
+  --beauty-blush: hsl(345, 75%, 95%);
 }
 
 .dark {
@@ -39,19 +63,19 @@
   --muted-foreground: hsl(240, 5%, 64.9%);
   --popover: hsl(240, 10%, 3.9%);
   --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
+  --card: hsl(240, 6%, 10%);
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(0, 84.2%, 60.2%);
-  --primary-foreground: hsl(60, 9.1%, 97.8%);
+  --primary: hsl(262.1, 83.3%, 57.8%);
+  --primary-foreground: hsl(210, 20%, 98%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);
   --accent: hsl(240, 3.7%, 15.9%);
   --accent-foreground: hsl(0, 0%, 98%);
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
+  --ring: hsl(262.1, 83.3%, 57.8%);
 }
 
 @layer base {
@@ -60,66 +84,180 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    @apply antialiased bg-background text-foreground;
+    font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', 'Inter', serif;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-heading {
+    font-family: 'Poppins', sans-serif;
   }
 }
 
 @layer components {
   .product-card {
-    @apply bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden;
+    @apply bg-white/90 backdrop-blur-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-700 overflow-hidden;
+    background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(254,240,252,0.95) 25%, rgba(240,245,255,0.9) 50%, rgba(245,243,255,0.85) 75%, rgba(255,240,245,0.8) 100%);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    box-shadow: 
+      0 4px 6px -1px rgba(139, 92, 246, 0.1),
+      0 2px 4px -1px rgba(236, 72, 153, 0.06),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .product-card:hover {
+    transform: translateY(-12px) scale(1.03);
+    box-shadow: 
+      0 35px 60px -12px rgba(139, 92, 246, 0.3),
+      0 15px 25px -5px rgba(236, 72, 153, 0.2),
+      0 0 0 2px rgba(168, 85, 247, 0.2),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+    border-image: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3), rgba(59, 130, 246, 0.3)) 1;
   }
   
   .product-card:hover .product-image {
-    @apply scale-105;
+    @apply scale-110;
   }
   
   .product-image {
-    @apply transition-transform duration-300;
+    @apply transition-all duration-700 ease-out;
+    filter: brightness(1) contrast(1);
+  }
+
+  .product-card:hover .product-image {
+    filter: brightness(1.05) contrast(1.1);
+  }
+
+  /* Enhanced star rating */
+  .star-rating {
+    @apply flex items-center space-x-0.5;
+  }
+
+  .star-rating svg {
+    @apply drop-shadow-sm transition-all duration-300;
+  }
+
+  /* Improved category card animations */
+  .category-card {
+    @apply cursor-pointer rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-700 transform hover:-translate-y-3 hover:scale-105;
+    background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 50%, rgba(241,245,249,0.9) 100%);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   }
   
   .category-card {
-    @apply cursor-pointer;
+    @apply cursor-pointer rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.8) 50%, rgba(241,245,249,0.7) 100%);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(219,234,254,0.3);
   }
   
   .category-card:hover .category-image {
-    @apply scale-105;
+    @apply scale-110;
   }
   
   .category-image {
-    @apply transition-transform duration-300;
+    @apply transition-transform duration-500 ease-out;
   }
   
   .sale-badge {
-    @apply absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium z-10;
+    @apply absolute top-4 left-4 text-white px-4 py-2 rounded-full text-xs font-semibold z-10 shadow-lg;
+    background: var(--gradient-warm);
+    backdrop-filter: blur(10px);
   }
   
   .star-rating {
-    @apply flex text-yellow-400 text-sm;
+    @apply flex text-amber-400 text-sm drop-shadow-sm;
   }
   
   .btn-primary {
-    @apply bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors;
+    @apply text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5;
+    background: var(--gradient-primary);
+    font-family: 'Poppins', sans-serif;
   }
   
   .btn-secondary {
-    @apply border border-black text-black px-6 py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors;
+    @apply border-2 border-gray-900 text-gray-900 px-8 py-4 rounded-xl font-semibold hover:bg-gray-900 hover:text-white transition-all duration-300 transform hover:-translate-y-0.5;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .btn-luxury {
+    @apply text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1;
+    background: var(--gradient-secondary);
+    font-family: 'Poppins', sans-serif;
   }
   
   .gradient-pink {
-    background: linear-gradient(to bottom right, var(--brand-pink), hsl(320, 45%, 90%));
+    background: linear-gradient(135deg, var(--beauty-rose) 0%, hsl(330, 70%, 92%) 100%);
+    backdrop-filter: blur(20px);
   }
   
   .gradient-purple {
-    background: linear-gradient(to bottom right, var(--brand-purple), hsl(280, 30%, 90%));
+    background: linear-gradient(135deg, var(--beauty-lavender) 0%, hsl(270, 60%, 92%) 100%);
+    backdrop-filter: blur(20px);
   }
   
   .gradient-blue {
-    background: linear-gradient(to bottom right, var(--brand-blue), hsl(220, 40%, 90%));
+    background: linear-gradient(135deg, hsl(220, 70%, 96%) 0%, hsl(220, 60%, 90%) 100%);
+    backdrop-filter: blur(20px);
   }
   
   .gradient-green {
-    background: linear-gradient(to bottom right, var(--brand-green), hsl(140, 30%, 90%));
+    background: linear-gradient(135deg, var(--beauty-mint) 0%, hsl(150, 50%, 92%) 100%);
+    backdrop-filter: blur(20px);
+  }
+
+  .gradient-primary-bg {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary-bg {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-accent-bg {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-warm-bg {
+    background: var(--gradient-warm);
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
   }
   
   .scrollbar-hide {

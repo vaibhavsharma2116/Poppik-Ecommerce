@@ -45,10 +45,10 @@ export default function Home() {
   };
 
   const categoryGradients = {
-    skincare: "from-pink-100 via-rose-50 to-pink-200",
-    haircare: "from-blue-100 via-sky-50 to-blue-200", 
-    makeup: "from-purple-100 via-violet-50 to-purple-200",
-    bodycare: "from-green-100 via-emerald-50 to-green-200"
+    skincare: "from-pink-200 via-rose-100 to-pink-300",
+    haircare: "from-blue-200 via-sky-100 to-cyan-200", 
+    makeup: "from-purple-200 via-violet-100 to-fuchsia-200",
+    bodycare: "from-green-200 via-emerald-100 to-teal-200"
   };
 
   return (
@@ -57,11 +57,12 @@ export default function Home() {
       <HeroBanner />
 
       {/* Enhanced Categories Section */}
-      <section className="py-24 bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.02]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_var(--tw-gradient-stops))] from-pink-500 via-transparent to-transparent"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_var(--tw-gradient-stops))] from-purple-500 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 opacity-[0.1]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_var(--tw-gradient-stops))] from-pink-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_var(--tw-gradient-stops))] from-purple-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_var(--tw-gradient-stops))] from-blue-300 via-transparent to-transparent"></div>
         </div>
 
         <div className="mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -99,7 +100,7 @@ export default function Home() {
               {categories?.map((category, index) => (
                 <Link key={category.id} href={`/category/${category.slug}`}>
                   <div 
-                    className="group relative overflow-hidden rounded-3xl bg-white shadow-lg hover:shadow-2xl transition-all duration-700 transform hover:-translate-y-3 hover:rotate-1"
+                    className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-pink-50 to-purple-50 shadow-xl hover:shadow-2xl transition-all duration-700 transform hover:-translate-y-3 hover:rotate-1 border border-pink-100"
                     style={{
                       animationDelay: `${index * 150}ms`,
                       animation: 'fadeInUp 0.8s ease-out forwards'
@@ -147,8 +148,8 @@ export default function Home() {
           {/* Enhanced Products Section */}
           <div className="space-y-12">
             <div className="text-center">
-              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-full mb-6">
-                <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">
+              <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 rounded-full mb-6 shadow-lg">
+                <span className="text-sm font-semibold text-transparent bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text">
                   🌟 Curated Collection
                 </span>
               </div>
@@ -219,11 +220,12 @@ export default function Home() {
       </section>
 
       {/* Featured Products Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-50 via-white to-pink-50 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-purple-100 via-pink-50 to-rose-100 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,_var(--tw-gradient-stops))] from-purple-500 via-transparent to-transparent"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,_var(--tw-gradient-stops))] from-pink-500 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 opacity-[0.08]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,_var(--tw-gradient-stops))] from-purple-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,_var(--tw-gradient-stops))] from-pink-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,_var(--tw-gradient-stops))] from-rose-300 via-transparent to-transparent"></div>
         </div>
 
         <div className=" mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -298,11 +300,12 @@ export default function Home() {
       </section>
 
       {/* New Launch Products Section */}
-      <section className="py-20 bg-gradient-to-br from-emerald-50 via-white to-teal-50 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-emerald-100 via-green-50 to-teal-100 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,_var(--tw-gradient-stops))] from-emerald-500 via-transparent to-transparent"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,_var(--tw-gradient-stops))] from-teal-500 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 opacity-[0.1]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,_var(--tw-gradient-stops))] from-emerald-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,_var(--tw-gradient-stops))] from-teal-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_80%,_var(--tw-gradient-stops))] from-green-300 via-transparent to-transparent"></div>
         </div>
 
         <div className="mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -381,10 +384,12 @@ export default function Home() {
       </section>
 
       {/* Bestsellers Section */}
-      <section className="py-20 bg-gradient-to-br from-amber-50 via-white to-yellow-50 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_var(--tw-gradient-stops))] from-amber-500 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 opacity-[0.1]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_var(--tw-gradient-stops))] from-amber-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_70%,_var(--tw-gradient-stops))] from-yellow-400 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_50%,_var(--tw-gradient-stops))] from-orange-300 via-transparent to-transparent"></div>
         </div>
 
         <div className="mx-auto px-4 sm:px-6 lg:px-8 relative">

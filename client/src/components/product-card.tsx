@@ -20,7 +20,6 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, className = "", viewMode = 'grid' }: ProductCardProps) {
   const [isInWishlist, setIsInWishlist] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
 
   // Check if product is in wishlist
@@ -145,42 +144,42 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
 
   if (viewMode === 'list') {
     return (
-      <Card className={`product-card group flex overflow-hidden bg-gradient-to-r from-white via-pink-50 to-purple-50 border-2 border-transparent hover:border-pink-200 hover:shadow-2xl transition-all duration-500 ${className}`}>
+      <Card className={`product-card group flex overflow-hidden ${className}`}>
         <div className="relative w-48 flex-shrink-0">
           {product.saleOffer && (
-            <Badge className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-3 py-1 animate-pulse shadow-lg">
+            <Badge className="absolute top-2 left-2 z-10 bg-red-500 text-white text-xs px-2 py-1 animate-pulse">
               {product.saleOffer}
             </Badge>
           )}
           <button
             onClick={toggleWishlist}
-            className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-lg hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:scale-110 transition-all duration-300 z-10 border border-pink-100"
+            className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-red-50 hover:scale-110 transition-all duration-200 z-10"
           >
-            <Heart className={`h-4 w-4 transition-all duration-300 ${isInWishlist ? "text-red-500 fill-current animate-pulse" : "text-gray-400 hover:text-pink-500"}`} />
+            <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
           </button>
           <Link href={`/product/${product.slug}`}>
-            <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50 h-48 rounded-lg">
+            <div className="relative overflow-hidden bg-gray-50 h-48">
               <img
                 src={product.imageUrl}
                 alt={product.name}
-                className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition-transform duration-700 rounded-lg"
+                className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
+              <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
           </Link>
         </div>
 
-        <CardContent className="flex-1 p-6 flex flex-col justify-between bg-gradient-to-br from-white via-pink-25 to-purple-25">
+        <CardContent className="flex-1 p-6 flex flex-col justify-between">
           <div className="space-y-3">
-            <div className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-lg p-2 border border-pink-100">
+            <div className="flex items-center justify-between">
               <div className="star-rating">
                 {renderStars(parseFloat(product.rating))}
               </div>
-              <span className="text-gray-700 text-sm font-semibold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">{product.rating}</span>
+              <span className="text-gray-600 text-sm font-medium">{product.rating}</span>
             </div>
 
             <Link href={`/product/${product.slug}`}>
-              <h3 className="font-bold text-gray-900 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-300 cursor-pointer text-lg leading-tight">
+              <h3 className="font-semibold text-gray-900 hover:text-black transition-colors cursor-pointer text-lg">
                 {product.name}
               </h3>
             </Link>
@@ -193,20 +192,20 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
               <p className="text-gray-500 text-xs bg-gray-50 px-2 py-1 rounded-md inline-block">{product.size}</p>
             )}
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {product.bestseller && (
-                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 hover:from-yellow-200 hover:to-orange-200 border border-yellow-300 shadow-md">
-                  ⭐ Bestseller
+                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                  Bestseller
                 </Badge>
               )}
               {product.newLaunch && (
-                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-300 font-semibold animate-pulse shadow-lg">
+                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-200 font-semibold animate-pulse shadow-sm">
                   🚀 New Launch
                 </Badge>
               )}
               {product.featured && (
-                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 hover:from-blue-200 hover:to-indigo-200 border border-blue-300 shadow-md">
-                  ✨ Featured
+                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200">
+                  Featured
                 </Badge>
               )}
             </div>
@@ -231,14 +230,14 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
 
             {product.variants?.colors || product.variants?.shades ? (
               <Link href={`/product/${product.slug}`}>
-                <Button size="sm" className="w-full text-sm py-3 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <Button size="sm" className="btn-primary w-full text-sm py-3 hover:bg-gray-800 transition-colors">
                   Select Shade
                 </Button>
               </Link>
             ) : (
               <Button 
                 size="sm" 
-                className="w-full text-sm py-3 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                className="btn-primary w-full text-sm py-3 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
                 onClick={addToCart}
               >
                 <ShoppingCart className="h-4 w-4" />
@@ -252,57 +251,60 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
   }
 
   return (
-    <Card 
-      className={`product-card group bg-gradient-to-br from-white via-pink-50 to-purple-50 border-2 border-transparent hover:border-pink-200 hover:shadow-2xl transition-all duration-500 transform hover:scale-105 ${className}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="relative overflow-hidden rounded-t-2xl">
+    <Card className={`product-card group ${className}`}>
+      <div className="relative overflow-hidden">
         {product.saleOffer && (
-          <Badge className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 text-xs animate-pulse shadow-lg font-bold">
+          <Badge className="sale-badge animate-pulse">
             {product.saleOffer}
           </Badge>
         )}
         <button
           onClick={toggleWishlist}
-          className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-lg hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:scale-110 transition-all duration-300 z-10 border border-pink-100"
+          className="absolute top-3 right-3 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-50 hover:scale-110 transition-all duration-200 z-10"
         >
-          <Heart className={`h-4 w-4 transition-all duration-300 ${isInWishlist ? "text-red-500 fill-current animate-pulse" : "text-gray-400 hover:text-pink-500"}`} />
+          <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
         </button>
         <Link href={`/product/${product.slug}`}>
-          <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50">
+          <div className="relative overflow-hidden bg-gray-50">
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="product-image w-full h-36 sm:h-48 md:h-64 lg:h-72 object-cover cursor-pointer group-hover:scale-110 transition-transform duration-700"
+              className="product-image w-full h-72 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
             />
-            <div className={`absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
-            <div className={`absolute inset-0 bg-gradient-to-r from-pink-500/10 to-purple-500/10 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
+            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
         </Link>
       </div>
 
-      <CardContent className="mobile-product-content p-2 sm:p-3 md:p-4 lg:p-5 space-y-1 sm:space-y-2 md:space-y-3 bg-gradient-to-b from-white to-pink-25">
-        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-pink-100 shadow-sm">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
           <div className="star-rating">
             {renderStars(parseFloat(product.rating))}
           </div>
-          <span className="text-gray-700 text-xs sm:text-sm font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">{product.rating}</span>
+          <span className="text-gray-600 text-sm font-medium">{product.rating}</span>
         </div>
 
         <Link href={`/product/${product.slug}`}>
-          <h3 className="mobile-product-title font-semibold text-gray-900 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-300 cursor-pointer line-clamp-2 min-h-[2rem] text-xs sm:text-sm md:text-base">
+          <h3 className="font-semibold text-gray-900 hover:text-black transition-colors cursor-pointer line-clamp-2 min-h-[2.5rem]">
             {product.name}
           </h3>
         </Link>
 
-        <div className="space-y-1 sm:space-y-2">
-          <div className="flex items-baseline space-x-1 sm:space-x-2">
-            <span className="mobile-product-price text-sm sm:text-base md:text-lg font-bold text-gray-900">
+        <p className="text-gray-600 text-sm line-clamp-2 min-h-[2.5rem]">
+          {product.shortDescription}
+        </p>
+
+        {product.size && (
+          <p className="text-gray-500 text-xs bg-gray-50 px-2 py-1 rounded-md inline-block">{product.size}</p>
+        )}
+
+        <div className="space-y-3">
+          <div className="flex items-baseline space-x-2">
+            <span className="text-lg font-bold text-gray-900">
               ₹{product.price}
             </span>
             {product.originalPrice && (
-              <span className="text-xs sm:text-sm text-gray-500 line-through">
+              <span className="text-sm text-gray-500 line-through">
                 ₹{product.originalPrice}
               </span>
             )}
@@ -315,18 +317,18 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
 
           {product.variants?.colors || product.variants?.shades ? (
             <Link href={`/product/${product.slug}`}>
-              <Button size="sm" className="w-full text-xs py-1.5 sm:py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                Select
+              <Button size="sm" className="btn-primary w-full text-xs py-2.5 hover:bg-gray-800 transition-colors">
+                Select Shade
               </Button>
             </Link>
           ) : (
             <Button 
               size="sm" 
-              className="w-full text-xs py-1.5 sm:py-2 flex items-center justify-center gap-1 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+              className="btn-primary w-full text-xs py-2.5 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
               onClick={addToCart}
             >
               <ShoppingCart className="h-3 w-3" />
-              <span className="hidden sm:inline">Add to</span> Cart
+              Add to Cart
             </Button>
           )}
         </div>
@@ -334,18 +336,18 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
         {/* Product badges */}
         <div className="flex flex-wrap gap-1.5">
           {product.bestseller && (
-            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 hover:from-yellow-200 hover:to-orange-200 border border-yellow-300 shadow-sm font-semibold">
-              ⭐ Bestseller
+            <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+              Bestseller
             </Badge>
           )}
           {product.newLaunch && (
-            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-300 font-semibold animate-pulse shadow-md">
+            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-200 font-semibold animate-pulse shadow-sm">
               🚀 New Launch
             </Badge>
           )}
           {product.featured && (
-            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 hover:from-blue-200 hover:to-indigo-200 border border-blue-300 shadow-sm font-semibold">
-              ✨ Featured
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200">
+              Featured
             </Badge>
           )}
         </div>

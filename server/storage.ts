@@ -133,23 +133,23 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByCategory(category: string): Promise<Product[]> {
     const db = await getDb();
-
+    
     // First try exact match
     let result = await db.select().from(products).where(eq(products.category, category));
-
+    
     // If no exact match found, try case-insensitive partial matching
     if (result.length === 0) {
       const allProducts = await db.select().from(products);
       const searchCategory = category.toLowerCase();
-
+      
       result = allProducts.filter(product => {
         if (!product.category) return false;
-
+        
         const productCategory = product.category.toLowerCase();
-
+        
         // Partial match
         if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) return true;
-
+        
         // Special category mappings
         const categoryMappings: Record<string, string[]> = {
           'skincare': ['skin', 'face', 'facial'],
@@ -160,12 +160,12 @@ export class DatabaseStorage implements IStorage {
           'eye-drama': ['eye', 'eyes', 'eyecare'],
           'beauty': ['makeup', 'cosmetics', 'skincare'],
         };
-
+        
         const mappedCategories = categoryMappings[searchCategory] || [];
         return mappedCategories.some(mapped => productCategory.includes(mapped));
       });
     }
-
+    
     return result;
   }
 
@@ -356,29 +356,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(subcategories).where(eq(subcategories.categoryId, categoryId));
   }
 
-  async createSubcategory(subcategoryData: any): Promise<Subcategory> {
-    try {
-      const db = await getDb();
-      console.log('Creating subcategory with data:', subcategoryData);
-
-      // Ensure categoryId is properly converted to integer
-      const processedData = {
-        ...subcategoryData,
-        categoryId: parseInt(subcategoryData.categoryId),
-        productCount: subcategoryData.productCount || 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      console.log('Processed subcategory data:', processedData);
-
-      const [subcategory] = await db.insert(subcategories).values(processedData).returning();
-      console.log('Subcategory created successfully:', subcategory);
-      return subcategory;
-    } catch (error) {
-      console.error('Error creating subcategory:', error);
-      throw error;
-    }
+  async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
+    const db = await getDb();
+    const result = await db.insert(subcategories).values(subcategory).returning();
+    return result[0];
   }
 
   async updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined> {
@@ -422,7 +403,7 @@ export class DatabaseStorage implements IStorage {
 
   async createContactSubmission(submissionData: any): Promise<any> {
     const db = await getDb();
-
+    
     const contactData = {
       firstName: submissionData.firstName,
       lastName: submissionData.lastName,
@@ -451,7 +432,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<any> {
     const db = await getDb();
-
+    
     const updateData: any = { status };
     if (respondedAt) {
       updateData.respondedAt = respondedAt;
@@ -461,7 +442,7 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(contactSubmissions.id, id))
       .returning();
-
+    
     return result[0] || null;
   }
 

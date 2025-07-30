@@ -62,11 +62,14 @@ export default function AdminCategories() {
 
   // Category mutations
   const createCategoryMutation = useMutation({
-    mutationFn: async (categoryData: any) => {
+    mutationFn: async (category: Omit<Category, 'id' | 'productCount'>) => {
       const response = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoryData)
+        body: JSON.stringify({
+          ...category,
+          imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400'
+        })
       });
       if (!response.ok) throw new Error('Failed to create category');
       return response.json();
@@ -75,8 +78,6 @@ export default function AdminCategories() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsAddCategoryModalOpen(false);
       setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
-      setSelectedImage(null);
-      setImagePreview('');
     }
   });
 
@@ -95,8 +96,6 @@ export default function AdminCategories() {
       setIsEditModalOpen(false);
       setEditingCategory(null);
       setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
-      setSelectedImage(null);
-      setImagePreview('');
     }
   });
 
@@ -200,75 +199,36 @@ export default function AdminCategories() {
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log('Image selected:', file.name, file.size, file.type);
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select a valid image file');
-        return;
-      }
-
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
-        return;
-      }
-
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
-      };
-      reader.onerror = (e) => {
-        console.error('Error reading file:', e);
-        alert('Error reading image file');
       };
       reader.readAsDataURL(file);
     }
   };
 
   const uploadImage = async (): Promise<string | null> => {
-    if (!selectedImage) {
-      console.log('No image selected for upload');
-      return null;
-    }
+    if (!selectedImage) return null;
 
-    console.log('Starting image upload...', selectedImage.name, selectedImage.size);
     setUploading(true);
-    
     const formData = new FormData();
     formData.append('image', selectedImage);
 
     try {
-      console.log('Sending upload request...');
       const response = await fetch('/api/upload/image', {
         method: 'POST',
         body: formData,
       });
 
-      console.log('Upload response status:', response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Upload failed with response:', errorText);
-        throw new Error(`Failed to upload image: ${response.status} - ${errorText}`);
+        throw new Error('Failed to upload image');
       }
 
       const data = await response.json();
-      console.log('Upload successful, received data:', data);
-      
-      if (!data.imageUrl) {
-        throw new Error('No image URL returned from server');
-      }
-
-      // Return the full URL that can be used immediately
-      const fullImageUrl = data.imageUrl.startsWith('http') ? data.imageUrl : `${window.location.origin}${data.imageUrl}`;
-      console.log('Full image URL:', fullImageUrl);
-      
-      return fullImageUrl;
+      return data.imageUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Image upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
       return null;
     } finally {
       setUploading(false);
@@ -277,59 +237,28 @@ export default function AdminCategories() {
 
   const handleAddCategory = async () => {
     try {
-      // Validation
-      if (!categoryFormData.name.trim()) {
-        alert('Category name is required');
-        return;
-      }
-
-      if (!selectedImage) {
-        alert('Please select an image for the category');
-        return;
-      }
-
-      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
       
-      // Upload image first
-      console.log('Uploading image...');
-      const uploadedImageUrl = await uploadImage();
-      if (!uploadedImageUrl) {
-        console.error('Failed to upload image');
-        alert('Failed to upload image. Please try again.');
-        return;
+      // Upload image if selected
+      let imageUrl = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400';
+      if (selectedImage) {
+        const uploadedImageUrl = await uploadImage();
+        if (uploadedImageUrl) {
+          imageUrl = uploadedImageUrl;
+        }
       }
 
-      console.log('Image uploaded successfully:', uploadedImageUrl);
-
-      // Create category with uploaded image URL
-      const categoryData = {
-        name: categoryFormData.name.trim(),
-        slug: slug,
-        description: categoryFormData.description.trim(),
-        status: categoryFormData.status,
-        imageUrl: uploadedImageUrl
-      };
-
-      console.log('Creating category with data:', categoryData);
-      createCategoryMutation.mutate(categoryData);
+      createCategoryMutation.mutate({
+        ...categoryFormData,
+        slug,
+        imageUrl
+      });
     } catch (error) {
       console.error('Error creating category:', error);
-      alert('Error creating category: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
   const handleAddSubcategory = () => {
-    // Validation
-    if (!subcategoryFormData.name.trim()) {
-      alert('Subcategory name is required');
-      return;
-    }
-    
-    if (!subcategoryFormData.categoryId) {
-      alert('Please select a parent category');
-      return;
-    }
-
     const slug = subcategoryFormData.slug || subcategoryFormData.name.toLowerCase().replace(/\s+/g, '-');
     createSubcategoryMutation.mutate({
       ...subcategoryFormData,
@@ -368,36 +297,25 @@ export default function AdminCategories() {
     if (!editingCategory) return;
     
     try {
-      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
       
       // Upload new image if selected, otherwise keep existing
       let imageUrl = editingCategory.imageUrl;
       if (selectedImage) {
-        console.log('Uploading new image for category update...');
         const uploadedImageUrl = await uploadImage();
         if (uploadedImageUrl) {
           imageUrl = uploadedImageUrl;
-          console.log('New image uploaded successfully:', imageUrl);
-        } else {
-          alert('Failed to upload new image. Keeping existing image.');
-          return; // Stop execution if image upload fails
         }
       }
 
-      const updateData = {
+      updateCategoryMutation.mutate({
         id: editingCategory.id,
-        name: categoryFormData.name.trim(),
-        slug: slug,
-        description: categoryFormData.description.trim(),
-        status: categoryFormData.status,
-        imageUrl: imageUrl
-      };
-
-      console.log('Updating category with data:', updateData);
-      updateCategoryMutation.mutate(updateData);
+        ...categoryFormData,
+        slug,
+        imageUrl
+      });
     } catch (error) {
       console.error('Error updating category:', error);
-      alert('Error updating category: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -815,13 +733,9 @@ export default function AdminCategories() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              if (isAddCategoryModalOpen) {
-                setIsAddCategoryModalOpen(false);
-              }
-              if (isEditModalOpen) {
-                setIsEditModalOpen(false);
-                setEditingCategory(null);
-              }
+              setIsAddCategoryModalOpen(false);
+              setIsEditModalOpen(false);
+              setEditingCategory(null);
               setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
               setSelectedImage(null);
               setImagePreview('');

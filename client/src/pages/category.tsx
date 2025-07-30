@@ -19,9 +19,10 @@ export default function CategoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState({});
 
-  // Get subcategory from URL path (e.g., /category/skincare/face-serums)
-  const categorySlug = params.slug;
-  const subcategorySlug = params.subcategorySlug;
+  // Parse URL path to get category and subcategory
+  const pathParts = location.split('/').filter(Boolean);
+  const categorySlug = pathParts[1]; // /category/skincare -> 'skincare'
+  const subcategorySlug = pathParts[2]; // /category/skincare/face-serums -> 'face-serums'
 
   // Fetch all products
   const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
@@ -45,12 +46,14 @@ export default function CategoryPage() {
 
   // Fetch subcategories for current category
   const { data: subcategories = [] } = useQuery({
-    queryKey: [`/api/categories/${params.slug}/subcategories`],
+    queryKey: [`/api/categories/${categorySlug}/subcategories`],
     queryFn: async () => {
-      const response = await fetch(`/api/categories/${params.slug}/subcategories`);
+      if (!categorySlug) return [];
+      const response = await fetch(`/api/categories/${categorySlug}/subcategories`);
       if (!response.ok) return [];
       return response.json();
     },
+    enabled: !!categorySlug,
   });
 
   // Filter products based on category and subcategory
@@ -58,15 +61,53 @@ export default function CategoryPage() {
     if (!allProducts.length) return [];
 
     // First filter by category
-    let filtered = allProducts.filter(product => 
-      product.category?.toLowerCase() === categorySlug?.replace('-', ' ').toLowerCase()
-    );
+    let filtered = allProducts.filter(product => {
+      if (!product.category) return false;
+      
+      const productCategoryName = typeof product.category === 'string' 
+        ? product.category.toLowerCase() 
+        : product.category.name?.toLowerCase() || '';
+      
+      const searchCategory = categorySlug?.toLowerCase();
+      
+      // Direct match by slug or name
+      if (productCategoryName === searchCategory) return true;
+      if (productCategoryName.replace(/\s+/g, '-') === searchCategory) return true;
+      if (searchCategory?.replace(/-/g, ' ') === productCategoryName) return true;
+      
+      // Handle special category mappings
+      const categoryMappings: Record<string, string[]> = {
+        'skincare': ['skincare', 'skin care', 'skin-care'],
+        'haircare': ['haircare', 'hair care', 'hair-care'], 
+        'makeup': ['makeup', 'cosmetics', 'make-up'],
+        'bodycare': ['body care', 'bodycare', 'body-care'],
+        'eyecare': ['eye care', 'eyecare', 'eye-care'],
+        'beauty': ['beauty', 'makeup', 'cosmetics']
+      };
+      
+      const mappedCategories = categoryMappings[searchCategory || ''] || [];
+      return mappedCategories.some(mapped => 
+        productCategoryName.includes(mapped) || 
+        mapped.includes(productCategoryName)
+      );
+    });
 
     // If subcategory is selected from URL path, further filter by subcategory
     if (subcategorySlug) {
-      filtered = filtered.filter(product => 
-        product.subcategory?.toLowerCase() === subcategorySlug.replace('-', ' ').toLowerCase()
-      );
+      filtered = filtered.filter(product => {
+        if (!product.subcategory) return false;
+        
+        const productSubcategoryName = typeof product.subcategory === 'string'
+          ? product.subcategory.toLowerCase()
+          : product.subcategory.name?.toLowerCase() || '';
+          
+        const searchSubcategory = subcategorySlug.replace(/-/g, ' ').toLowerCase();
+        
+        return productSubcategoryName === searchSubcategory ||
+               productSubcategoryName.replace(/\s+/g, '-') === subcategorySlug.toLowerCase() ||
+               productSubcategoryName.includes(searchSubcategory) ||
+               searchSubcategory.includes(productSubcategoryName);
+      });
     }
 
     return filtered;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, ShoppingCart, Menu, X, User, Heart, LogOut, Sparkles } from "lucide-react";
@@ -28,9 +27,6 @@ export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
   // Search functionality
@@ -134,36 +130,27 @@ export default function Layout({ children }: LayoutProps) {
     window.location.href = "/";
   };
 
-  // Fetch categories and subcategories
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [categoriesRes, subcategoriesRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/subcategories')
-        ]);
+  // Fetch categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+    queryFn: async () => {
+      const response = await fetch("/api/categories");
+      if (!response.ok) throw new Error("Failed to fetch categories");
+      return response.json();
+    },
+  });
 
-        if (categoriesRes.ok && subcategoriesRes.ok) {
-          const [categoriesData, subcategoriesData] = await Promise.all([
-            categoriesRes.json(),
-            subcategoriesRes.json()
-          ]);
+  // Fetch subcategories
+  const { data: subcategories = [] } = useQuery<Subcategory[]>({
+    queryKey: ["/api/subcategories"],
+    queryFn: async () => {
+      const response = await fetch("/api/subcategories");
+      if (!response.ok) throw new Error("Failed to fetch subcategories");
+      return response.json();
+    },
+  });
 
-          // Filter only active categories
-          setCategories(categoriesData.filter((cat: Category) => cat.status === 'Active'));
-          setSubcategories(subcategoriesData.filter((sub: Subcategory) => sub.status === 'Active'));
-        }
-      } catch (error) {
-        console.error('Failed to fetch navigation data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Get subcategories for a specific category
+  // Function to get subcategories for a specific category
   const getSubcategoriesForCategory = (categoryId: number) => {
     return subcategories.filter(sub => sub.categoryId === categoryId);
   };
@@ -365,7 +352,7 @@ export default function Layout({ children }: LayoutProps) {
                         Navigation
                       </h2>
                     </div>
-                    
+
                     {staticNavItems.map((item) => (
                       <Link
                         key={item.name}
@@ -379,7 +366,7 @@ export default function Layout({ children }: LayoutProps) {
                         {item.name}
                       </Link>
                     ))}
-                    
+
                     <div className="border-t border-white/20 pt-4">
                       <h3 className="text-sm font-semibold text-white/70 mb-3 uppercase tracking-wider">Categories</h3>
                       {categories.map((category) => (
@@ -397,7 +384,7 @@ export default function Layout({ children }: LayoutProps) {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col space-y-4 pt-6 border-t border-white/20 mt-8">
                     {user ? (
                       <>
@@ -424,14 +411,14 @@ export default function Layout({ children }: LayoutProps) {
                         </Button>
                       </Link>
                     )}
-                    
+
                     <Link href="/wishlist">
                       <Button variant="ghost" className="w-full justify-start bg-pink-500/20 hover:bg-pink-500/30 text-white rounded-xl">
                         <Heart className="h-5 w-5 mr-3" />
                         Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
                       </Button>
                     </Link>
-                    
+
                     <Link href="/cart">
                       <Button variant="ghost" className="w-full justify-start bg-indigo-500/20 hover:bg-indigo-500/30 text-white rounded-xl">
                         <ShoppingCart className="h-5 w-5 mr-3" />
@@ -528,14 +515,14 @@ export default function Layout({ children }: LayoutProps) {
                   </NavigationMenuItem>
 
                   {/* Dynamic Categories with Subcategory Dropdown */}
-                  {!loading && categories.map((category) => {
+                  {!categoriesLoading && categories.map((category) => {
                     const categorySubcategories = getSubcategoriesForCategory(category.id);
-                    
+
                     if (categorySubcategories.length > 0) {
                       return (
                         <NavigationMenuItem key={category.id}>
                           <NavigationMenuTrigger 
-                            className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl bg-transparent border-0 hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-pink-600/20 hover:shadow-lg hover:scale-105 ${
+                            className={`text-lg font-semibold transition-all duration-300 px-6 py-3 rounded-xl bg-transparent border-0 hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-pink-600/20 hover:shadow-lg hover:scale-105 data-[state=open]:bg-gradient-to-r data-[state=open]:from-purple-600/30 data-[state=open]:to-pink-600/30 ${
                               isActiveLink(`/category/${category.slug}`)
                                 ? "text-yellow-300 bg-gradient-to-r from-purple-600/30 to-pink-600/30 shadow-lg"
                                 : "text-white/90 hover:text-yellow-300"
@@ -544,24 +531,24 @@ export default function Layout({ children }: LayoutProps) {
                             <span className="relative z-10">{category.name}</span>
                           </NavigationMenuTrigger>
                           <NavigationMenuContent>
-                            <div className="w-80 p-6 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl">
+                            <div className="w-80 p-6 bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl shadow-2xl">
                               {/* Main Category Link */}
                               <div className="mb-4">
                                 <Link
                                   href={`/category/${category.slug}`}
-                                  className="group block p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 rounded-xl transition-all duration-300 border border-purple-200/50"
+                                  className="group block p-4 hover:bg-gradient-to-r hover:from-purple-100/80 hover:to-pink-100/80 rounded-xl transition-all duration-300 border border-transparent hover:border-purple-200/50 hover:shadow-md"
                                 >
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
-                                        All {category.name}
-                                      </h3>
-                                      <p className="text-sm text-gray-600 mt-1">View all products</p>
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex-shrink-0">
+                                      <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full group-hover:scale-125 transition-transform duration-300"></div>
                                     </div>
-                                    <div className="text-purple-500 group-hover:text-purple-700 group-hover:scale-110 transition-all duration-300">
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                      </svg>
+                                    <div className="flex-1">
+                                      <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors text-lg">
+                                        View All {category.name}
+                                      </h4>
+                                      <p className="text-sm text-gray-500 mt-1">
+                                        Browse complete {category.name.toLowerCase()} collection
+                                      </p>
                                     </div>
                                   </div>
                                 </Link>
@@ -572,7 +559,7 @@ export default function Layout({ children }: LayoutProps) {
                                 <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
                                   Subcategories
                                 </h4>
-                                <div className="grid gap-2">
+                                <div className="grid gap-2 max-h-64 overflow-y-auto">
                                   {categorySubcategories.map((subcategory, index) => (
                                     <Link
                                       key={subcategory.id}

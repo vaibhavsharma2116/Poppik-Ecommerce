@@ -80,21 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching public sliders:', error);
       console.log("Database unavailable, using sample slider data");
-      const sampleSliders = [
-        {
-          id: 1,
-          title: "Premium Beauty Collection",
-          subtitle: "Discover our latest range",
-          description: "Transform your beauty routine with our premium skincare and makeup products",
-          imageUrl: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600",
-          badge: "New Arrival",
-          primaryActionText: "Shop Now",
-          primaryActionUrl: "/products",
-          isActive: true,
-          sortOrder: 1
-        }
-      ];
-      res.json(sampleSliders);
+
+
     }
   });
 
@@ -514,23 +501,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/category/:category", async (req, res) => {
     try {
       const { category } = req.params;
-
+      
       // Get all products first
       const allProducts = await storage.getProducts();
-
+      
       // Filter products by category with flexible matching
       const filteredProducts = allProducts.filter(product => {
         if (!product.category) return false;
-
+        
         const productCategory = product.category.toLowerCase();
         const searchCategory = category.toLowerCase();
-
+        
         // Exact match
         if (productCategory === searchCategory) return true;
-
+        
         // Partial match
         if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) return true;
-
+        
         // Special category mappings
         const categoryMappings: Record<string, string[]> = {
           'skincare': ['skin', 'face', 'facial'],
@@ -541,18 +528,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'eye-drama': ['eye', 'eyes', 'eyecare'],
           'beauty': ['makeup', 'cosmetics', 'skincare'],
         };
-
+        
         const mappedCategories = categoryMappings[searchCategory] || [];
         return mappedCategories.some(mapped => productCategory.includes(mapped));
       });
-
+      
       res.json(filteredProducts);
     } catch (error) {
       console.log("Database unavailable, using sample product data with category filter");
       const sampleProducts = generateSampleProducts();
       const { category } = req.params;
       const searchCategory = category.toLowerCase();
-
+      
       const filteredSampleProducts = sampleProducts.filter(product => {
         const productCategory = product.category.toLowerCase();
         return productCategory.includes(searchCategory) || 
@@ -560,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                (searchCategory.includes('eye') && productCategory.includes('makeup')) ||
                (searchCategory.includes('beauty') && ['skincare', 'makeup'].some(cat => productCategory.includes(cat)));
       });
-
+      
       res.json(filteredSampleProducts);
     }
   });
@@ -747,26 +734,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(subcategories);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch subcategories" });
-    }
-  });
-
-  app.get("/api/categories/:slug/subcategories", async (req, res) => {
-    try {
-      const { slug } = req.params;
-
-      // First get the category by slug
-      const category = await storage.getCategoryBySlug(slug);
-      if (!category) {
-        return res.status(404).json({ error: "Category not found" });
-      }
-
-      // Then get subcategories for this category
-      const subcategories = await storage.getSubcategoriesByCategory(category.id);
-      res.json(subcategories);
-    } catch (error) {
-      console.log("Database unavailable, using sample subcategory data");
-      const sampleSubcategories = generateSampleSubcategories();
-      res.json(sampleSubcategories);
     }
   });
 
@@ -1145,13 +1112,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  
 
   // Get PayPal access token
   const getPayPalAccessToken = async () => {
     try {
       const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
-
+      
       const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
         method: 'POST',
         headers: {
@@ -1244,13 +1211,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!response.ok) {
         console.error("PayPal API error:", order);
         let errorMessage = "Failed to create PayPal order";
-
+        
         if (order.details && order.details.length > 0) {
           errorMessage = order.details[0].description || errorMessage;
         } else if (order.message) {
           errorMessage = order.message;
         }
-
+        
         return res.status(500).json({ 
           error: errorMessage,
           paypalError: true,
@@ -3187,66 +3154,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting slider:', error);
       res.status(500).json({ error: 'Failed to delete slider' });
-    }
-  });
-
-  // Get subcategories for a specific category by slug
-  app.get("/api/categories/:categorySlug/subcategories", async (req, res) => {
-    try {
-      const { categorySlug } = req.params;
-      const db = await getDb();
-
-      // First find the category by slug
-      const category = await db.select()
-        .from(categories)
-        .where(eq(categories.slug, categorySlug))
-        .limit(1);
-
-      if (category.length === 0) {
-        return res.status(404).json({ error: "Category not found" });
-      }
-
-      // Then get subcategories for this category
-      const subcategoriesResult = await db.select()
-        .from(subcategories)
-        .where(eq(subcategories.categoryId, category[0].id));
-
-      res.json(subcategoriesResult);
-    } catch (error) {
-      console.error('Database connection failed:', error);
-
-      // Return sample subcategories based on category slug for development
-      const sampleSubcategoriesByCategory: Record<string, any[]> = {
-        'skincare': [
-          { id: 1, name: "Face Serums", slug: "face-serums", categoryId: 1, description: "Targeted treatments for skin concerns" },
-          { id: 2, name: "Moisturizers", slug: "moisturizers", categoryId: 1, description: "Hydrating creams and lotions" },
-          { id: 3, name: "Cleansers", slug: "cleansers", categoryId: 1, description: "Gentle face wash and cleansing products" },
-          { id: 11, name: "Face Masks", slug: "face-masks", categoryId: 1, description: "Treatment masks for skin" },
-          { id: 12, name: "Toners", slug: "toners", categoryId: 1, description: "Balancing skin toners" }
-        ],
-        'haircare': [
-          { id: 4, name: "Shampoos", slug: "shampoos", categoryId: 2, description: "Cleansing hair products" },
-          { id: 5, name: "Conditioners", slug: "conditioners", categoryId: 2, description: "Hair conditioning treatments" },
-          { id: 13, name: "Hair Oils", slug: "hair-oils", categoryId: 2, description: "Nourishing hair oils" },
-          { id: 14, name: "Hair Masks", slug: "hair-masks", categoryId: 2, description: "Deep conditioning treatments" }
-        ],
-        'makeup': [
-          { id: 6, name: "Foundations", slug: "foundations", categoryId: 3, description: "Base makeup products" },
-          { id: 7, name: "Lipsticks", slug: "lipsticks", categoryId: 3, description: "Lip color products" },
-          { id: 15, name: "Eye Makeup", slug: "eye-makeup", categoryId: 3, description: "Eye shadows and liners" },
-          { id: 16, name: "Blush", slug: "blush", categoryId: 3, description: "Cheek color products" }
-        ],
-        'bodycare': [
-          { id: 8, name: "Body Lotions", slug: "body-lotions", categoryId: 4, description: "Moisturizing body care" },
-          { id: 9, name: "Body Wash", slug: "body-wash", categoryId: 4, description: "Cleansing body products" }
-        ],
-        'eyecare': [
-          { id: 10, name: "Eye Creams", slug: "eye-creams", categoryId: 5, description: "Specialized eye care products" }
-        ]
-      };
-
-      const categorySubcategories = sampleSubcategoriesByCategory[req.params.categorySlug] || [];
-      res.json(categorySubcategories);
     }
   });
 

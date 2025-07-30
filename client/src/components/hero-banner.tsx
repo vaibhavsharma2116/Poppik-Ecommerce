@@ -22,7 +22,7 @@ interface HeroBannerProps {
 
 export default function HeroBanner({
   autoplay = true,
-  autoplayDelay = 5000,
+  autoplayDelay = 8001,
   showIndicators = true,
   showProgress = true,
   showControls = true,

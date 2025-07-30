@@ -20,6 +20,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, className = "", viewMode = 'grid' }: ProductCardProps) {
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
 
   // Check if product is in wishlist
@@ -144,42 +145,42 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
 
   if (viewMode === 'list') {
     return (
-      <Card className={`product-card group flex overflow-hidden ${className}`}>
+      <Card className={`product-card group flex overflow-hidden bg-gradient-to-r from-white via-pink-50 to-purple-50 border-2 border-transparent hover:border-pink-200 hover:shadow-2xl transition-all duration-500 ${className}`}>
         <div className="relative w-48 flex-shrink-0">
           {product.saleOffer && (
-            <Badge className="absolute top-2 left-2 z-10 bg-red-500 text-white text-xs px-2 py-1 animate-pulse">
+            <Badge className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-3 py-1 animate-pulse shadow-lg">
               {product.saleOffer}
             </Badge>
           )}
           <button
             onClick={toggleWishlist}
-            className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-red-50 hover:scale-110 transition-all duration-200 z-10"
+            className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-lg hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:scale-110 transition-all duration-300 z-10 border border-pink-100"
           >
-            <Heart className={`h-4 w-4 transition-colors ${isInWishlist ? "text-red-500 fill-current" : "text-gray-400"}`} />
+            <Heart className={`h-4 w-4 transition-all duration-300 ${isInWishlist ? "text-red-500 fill-current animate-pulse" : "text-gray-400 hover:text-pink-500"}`} />
           </button>
           <Link href={`/product/${product.slug}`}>
-            <div className="relative overflow-hidden bg-gray-50 h-48">
+            <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50 h-48 rounded-lg">
               <img
                 src={product.imageUrl}
                 alt={product.name}
-                className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition-transform duration-700 rounded-lg"
               />
-              <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
             </div>
           </Link>
         </div>
 
-        <CardContent className="flex-1 p-6 flex flex-col justify-between">
+        <CardContent className="flex-1 p-6 flex flex-col justify-between bg-gradient-to-br from-white via-pink-25 to-purple-25">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-lg p-2 border border-pink-100">
               <div className="star-rating">
                 {renderStars(parseFloat(product.rating))}
               </div>
-              <span className="text-gray-600 text-sm font-medium">{product.rating}</span>
+              <span className="text-gray-700 text-sm font-semibold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">{product.rating}</span>
             </div>
 
             <Link href={`/product/${product.slug}`}>
-              <h3 className="font-semibold text-gray-900 hover:text-black transition-colors cursor-pointer text-lg">
+              <h3 className="font-bold text-gray-900 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-300 cursor-pointer text-lg leading-tight">
                 {product.name}
               </h3>
             </Link>
@@ -192,20 +193,20 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
               <p className="text-gray-500 text-xs bg-gray-50 px-2 py-1 rounded-md inline-block">{product.size}</p>
             )}
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {product.bestseller && (
-                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
-                  Bestseller
+                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 hover:from-yellow-200 hover:to-orange-200 border border-yellow-300 shadow-md">
+                  ⭐ Bestseller
                 </Badge>
               )}
               {product.newLaunch && (
-                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-200 font-semibold animate-pulse shadow-sm">
+                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-300 font-semibold animate-pulse shadow-lg">
                   🚀 New Launch
                 </Badge>
               )}
               {product.featured && (
-                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200">
-                  Featured
+                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 hover:from-blue-200 hover:to-indigo-200 border border-blue-300 shadow-md">
+                  ✨ Featured
                 </Badge>
               )}
             </div>
@@ -230,14 +231,14 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
 
             {product.variants?.colors || product.variants?.shades ? (
               <Link href={`/product/${product.slug}`}>
-                <Button size="sm" className="btn-primary w-full text-sm py-3 hover:bg-gray-800 transition-colors">
+                <Button size="sm" className="w-full text-sm py-3 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                   Select Shade
                 </Button>
               </Link>
             ) : (
               <Button 
                 size="sm" 
-                className="btn-primary w-full text-sm py-3 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
+                className="w-full text-sm py-3 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 onClick={addToCart}
               >
                 <ShoppingCart className="h-4 w-4" />
@@ -251,136 +252,100 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
   }
 
   return (
-    <Card className={`product-card group relative overflow-hidden bg-gradient-to-br from-white via-rose-50/30 to-purple-50/40 backdrop-blur-sm border border-gradient-to-r from-pink-200/30 via-purple-200/30 to-blue-200/30 shadow-xl hover:shadow-2xl transition-all duration-700 transform hover:-translate-y-3 hover:scale-[1.03] ${className}`}>
-      {/* Enhanced Gradient overlay for premium look */}
-      <div className="absolute inset-0 bg-gradient-to-br from-pink-100/60 via-purple-100/50 to-blue-100/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-      
-      {/* Colorful animated border */}
-      <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none rounded-xl"></div>
-      
-      <div className="relative overflow-hidden rounded-t-xl">
+    <Card 
+      className={`product-card group bg-gradient-to-br from-white via-pink-50 to-purple-50 border-2 border-transparent hover:border-pink-200 hover:shadow-2xl transition-all duration-500 transform hover:scale-105 ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative overflow-hidden rounded-t-2xl">
         {product.saleOffer && (
-          <Badge className="absolute top-4 left-4 z-20 bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 text-white px-4 py-2 text-xs font-bold shadow-xl animate-pulse rounded-full border-2 border-white/30 backdrop-blur-sm">
-            ✨ {product.saleOffer}
+          <Badge className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 text-xs animate-pulse shadow-lg font-bold">
+            {product.saleOffer}
           </Badge>
         )}
-        
         <button
           onClick={toggleWishlist}
-          className="absolute top-4 right-4 z-20 p-3 bg-gradient-to-br from-white/95 to-pink-50/90 backdrop-blur-sm rounded-full shadow-xl hover:shadow-2xl hover:scale-125 transition-all duration-300 border-2 border-white/60 hover:border-pink-200/70"
+          className="absolute top-2 right-2 p-2 bg-white/95 backdrop-blur-sm rounded-full shadow-lg hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:scale-110 transition-all duration-300 z-10 border border-pink-100"
         >
-          <Heart className={`h-4 w-4 transition-all duration-300 ${isInWishlist ? "text-red-500 fill-current scale-125 drop-shadow-lg" : "text-gray-400 hover:text-pink-500"}`} />
+          <Heart className={`h-4 w-4 transition-all duration-300 ${isInWishlist ? "text-red-500 fill-current animate-pulse" : "text-gray-400 hover:text-pink-500"}`} />
         </button>
-
         <Link href={`/product/${product.slug}`}>
-          <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 aspect-square">
+          <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50">
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="product-image w-full h-full object-cover cursor-pointer group-hover:scale-115 transition-transform duration-700 ease-out"
+              className="product-image w-full h-36 sm:h-48 md:h-64 lg:h-72 object-cover cursor-pointer group-hover:scale-110 transition-transform duration-700"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-purple-500/20 via-pink-300/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            
-            {/* Enhanced Rainbow shimmer effect on hover */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-400/30 via-purple-400/30 via-blue-400/30 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1200 ease-out"></div>
-            
-            {/* Colorful corner accents */}
-            <div className="absolute top-0 left-0 w-0 h-0 border-t-[20px] border-t-pink-400/20 border-r-[20px] border-r-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="absolute bottom-0 right-0 w-0 h-0 border-b-[20px] border-b-blue-400/20 border-l-[20px] border-l-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className={`absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
+            <div className={`absolute inset-0 bg-gradient-to-r from-pink-500/10 to-purple-500/10 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
           </div>
         </Link>
       </div>
 
-      <CardContent className="relative p-6 space-y-4 bg-gradient-to-br from-white/95 to-rose-50/80 backdrop-blur-sm">
-        {/* Enhanced Rating and review section */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-yellow-50 p-3 rounded-lg border border-amber-100/50">
-          <div className="flex items-center space-x-1">
+      <CardContent className="mobile-product-content p-2 sm:p-3 md:p-4 lg:p-5 space-y-1 sm:space-y-2 md:space-y-3 bg-gradient-to-b from-white to-pink-25">
+        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-pink-100 shadow-sm">
+          <div className="star-rating">
             {renderStars(parseFloat(product.rating))}
           </div>
-          <div className="flex items-center space-x-1">
-            <span className="text-amber-700 text-sm font-bold bg-amber-100 px-2 py-1 rounded-full">{product.rating}</span>
-            <span className="text-amber-600 text-xs font-medium">({product.reviewCount || 0})</span>
-          </div>
+          <span className="text-gray-700 text-xs sm:text-sm font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">{product.rating}</span>
         </div>
 
-        {/* Enhanced Product title */}
         <Link href={`/product/${product.slug}`}>
-          <h3 className="font-bold text-gray-900 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:bg-clip-text hover:text-transparent transition-all duration-300 cursor-pointer line-clamp-2 min-h-[3rem] text-lg leading-tight group-hover:scale-105">
+          <h3 className="mobile-product-title font-semibold text-gray-900 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 hover:bg-clip-text hover:text-transparent transition-all duration-300 cursor-pointer line-clamp-2 min-h-[2rem] text-xs sm:text-sm md:text-base">
             {product.name}
           </h3>
         </Link>
 
-        {/* Product description */}
-        <p className="text-gray-600 text-sm line-clamp-2 min-h-[2.5rem] leading-relaxed">
-          {product.shortDescription}
-        </p>
-
-        {/* Enhanced Size info */}
-        {product.size && (
-          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 border border-purple-200/50 rounded-full shadow-sm">
-            <span className="text-purple-700 text-xs font-semibold">📏 {product.size}</span>
-          </div>
-        )}
-
-        {/* Enhanced Price section with vibrant styling */}
-        <div className="space-y-4 bg-gradient-to-r from-blue-50/50 via-purple-50/50 to-pink-50/50 p-4 rounded-xl border border-purple-100/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-baseline space-x-3">
-              <span className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent drop-shadow-sm">
-                ₹{product.price}
-              </span>
-              {product.originalPrice && (
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-500 line-through bg-gray-100 px-2 py-1 rounded-md">
-                    ₹{product.originalPrice}
-                  </span>
-                </div>
-              )}
-            </div>
+        <div className="space-y-1 sm:space-y-2">
+          <div className="flex items-baseline space-x-1 sm:space-x-2">
+            <span className="mobile-product-price text-sm sm:text-base md:text-lg font-bold text-gray-900">
+              ₹{product.price}
+            </span>
             {product.originalPrice && (
-              <div className="bg-gradient-to-r from-green-400 to-emerald-400 text-white px-3 py-2 rounded-full shadow-lg animate-pulse">
-                <span className="text-xs font-bold">
-                  🎉 {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                </span>
-              </div>
+              <span className="text-xs sm:text-sm text-gray-500 line-through">
+                ₹{product.originalPrice}
+              </span>
+            )}
+            {product.originalPrice && (
+              <span className="text-xs text-green-600 font-medium">
+                {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off
+              </span>
             )}
           </div>
 
-          {/* Enhanced Action button */}
           {product.variants?.colors || product.variants?.shades ? (
             <Link href={`/product/${product.slug}`}>
-              <Button className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white py-4 px-6 rounded-xl font-bold text-sm shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-0 relative overflow-hidden">
-                <span className="relative z-10">🎨 Select Shade</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-pink-400/20 to-purple-400/20 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+              <Button size="sm" className="w-full text-xs py-1.5 sm:py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                Select
               </Button>
             </Link>
           ) : (
             <Button 
-              className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white py-4 px-6 rounded-xl font-bold text-sm shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 flex items-center justify-center gap-3 border-0 relative overflow-hidden"
+              size="sm" 
+              className="w-full text-xs py-1.5 sm:py-2 flex items-center justify-center gap-1 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               onClick={addToCart}
             >
-              <ShoppingCart className="h-5 w-5 animate-bounce" />
-              <span className="relative z-10">Add to Cart</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-green-400/20 to-blue-400/20 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+              <ShoppingCart className="h-3 w-3" />
+              <span className="hidden sm:inline">Add to</span> Cart
             </Button>
           )}
         </div>
 
-        {/* Enhanced Product badges with vibrant designs */}
-        <div className="flex flex-wrap gap-3 pt-2">
+        {/* Product badges */}
+        <div className="flex flex-wrap gap-1.5">
           {product.bestseller && (
-            <Badge className="text-xs bg-gradient-to-r from-amber-400 to-yellow-400 text-white border-2 border-amber-300 hover:from-amber-500 hover:to-yellow-500 font-bold px-4 py-2 shadow-lg animate-pulse rounded-full">
-              🏆 Bestseller
+            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 hover:from-yellow-200 hover:to-orange-200 border border-yellow-300 shadow-sm font-semibold">
+              ⭐ Bestseller
             </Badge>
           )}
           {product.newLaunch && (
-            <Badge className="text-xs bg-gradient-to-r from-emerald-400 to-teal-400 text-white border-2 border-emerald-300 hover:from-emerald-500 hover:to-teal-500 font-bold px-4 py-2 animate-bounce shadow-lg rounded-full">
+            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 hover:from-emerald-200 hover:to-teal-200 border border-emerald-300 font-semibold animate-pulse shadow-md">
               🚀 New Launch
             </Badge>
           )}
           {product.featured && (
-            <Badge className="text-xs bg-gradient-to-r from-blue-400 to-indigo-400 text-white border-2 border-blue-300 hover:from-blue-500 hover:to-indigo-500 font-bold px-4 py-2 shadow-lg rounded-full">
-              ⭐ Featured
+            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 hover:from-blue-200 hover:to-indigo-200 border border-blue-300 shadow-sm font-semibold">
+              ✨ Featured
             </Badge>
           )}
         </div>

@@ -19,9 +19,10 @@ export default function CategoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState({});
 
-  // Get subcategory from URL params
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
-  const subcategorySlug = urlParams.get('subcategory');
+  // Parse URL path to get category and subcategory
+  const pathParts = location.split('/').filter(Boolean);
+  const categorySlug = pathParts[1]; // /category/skincare -> 'skincare'
+  const subcategorySlug = pathParts[2]; // /category/skincare/face-serums -> 'face-serums'
 
   // Fetch all products
   const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
@@ -45,31 +46,72 @@ export default function CategoryPage() {
 
   // Fetch subcategories for current category
   const { data: subcategories = [] } = useQuery({
-    queryKey: [`/api/categories/${params.slug}/subcategories`],
+    queryKey: [`/api/categories/${categorySlug}/subcategories`],
     queryFn: async () => {
-      const response = await fetch(`/api/categories/${params.slug}/subcategories`);
+      if (!categorySlug) return [];
+      const response = await fetch(`/api/categories/${categorySlug}/subcategories`);
       if (!response.ok) return [];
       return response.json();
     },
+    enabled: !!categorySlug,
   });
 
   // Filter products based on category and subcategory
   const categoryFilteredProducts = useMemo(() => {
     if (!allProducts.length) return [];
 
-    let filtered = allProducts.filter(product => 
-      product.category?.toLowerCase() === params.slug?.replace('-', ' ').toLowerCase()
-    );
-
-    // If subcategory is selected, further filter by subcategory
-    if (subcategorySlug) {
-      filtered = filtered.filter(product => 
-        product.subcategory?.toLowerCase() === subcategorySlug.replace('-', ' ').toLowerCase()
+    // First filter by category
+    let filtered = allProducts.filter(product => {
+      if (!product.category) return false;
+      
+      const productCategoryName = typeof product.category === 'string' 
+        ? product.category.toLowerCase() 
+        : product.category.name?.toLowerCase() || '';
+      
+      const searchCategory = categorySlug?.toLowerCase();
+      
+      // Direct match by slug or name
+      if (productCategoryName === searchCategory) return true;
+      if (productCategoryName.replace(/\s+/g, '-') === searchCategory) return true;
+      if (searchCategory?.replace(/-/g, ' ') === productCategoryName) return true;
+      
+      // Handle special category mappings
+      const categoryMappings: Record<string, string[]> = {
+        'skincare': ['skincare', 'skin care', 'skin-care'],
+        'haircare': ['haircare', 'hair care', 'hair-care'], 
+        'makeup': ['makeup', 'cosmetics', 'make-up'],
+        'bodycare': ['body care', 'bodycare', 'body-care'],
+        'eyecare': ['eye care', 'eyecare', 'eye-care'],
+        'beauty': ['beauty', 'makeup', 'cosmetics']
+      };
+      
+      const mappedCategories = categoryMappings[searchCategory || ''] || [];
+      return mappedCategories.some(mapped => 
+        productCategoryName.includes(mapped) || 
+        mapped.includes(productCategoryName)
       );
+    });
+
+    // If subcategory is selected from URL path, further filter by subcategory
+    if (subcategorySlug) {
+      filtered = filtered.filter(product => {
+        if (!product.subcategory) return false;
+        
+        const productSubcategoryName = typeof product.subcategory === 'string'
+          ? product.subcategory.toLowerCase()
+          : product.subcategory.name?.toLowerCase() || '';
+          
+        const searchSubcategory = subcategorySlug.replace(/-/g, ' ').toLowerCase();
+        
+        return productSubcategoryName === searchSubcategory ||
+               productSubcategoryName.replace(/\s+/g, '-') === subcategorySlug.toLowerCase() ||
+               productSubcategoryName.includes(searchSubcategory) ||
+               searchSubcategory.includes(productSubcategoryName);
+      });
     }
 
     return filtered;
-  }, [allProducts, params.slug, subcategorySlug]);
+  }, [allProducts, categorySlug, subcategorySlug]);
 
   // Handle filter changes - now working with category/subcategory filtered products
   const handleFilterChange = (filtered: Product[], filters: any) => {
@@ -105,7 +147,7 @@ export default function CategoryPage() {
   }, [categoryFilteredProducts]);
 
   // Get current category and subcategory names for display
-  const currentCategory = categories.find(cat => cat.slug === params.slug);
+  const currentCategory = categories.find(cat => cat.slug === categorySlug);
   const currentSubcategory = subcategories.find(sub => sub.slug === subcategorySlug);
 
   return (
@@ -117,17 +159,34 @@ export default function CategoryPage() {
 
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 capitalize">
-              {currentCategory?.name || params.slug?.replace('-', ' ')} Products
-              {currentSubcategory && (
-                <span className="text-red-500 font-normal"> - {currentSubcategory.name}</span>
+            {/* Breadcrumb */}
+            <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+              <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
+              <span>/</span>
+              <Link href={`/category/${categorySlug}`} className="hover:text-blue-600 transition-colors">
+                {currentCategory?.name || categorySlug?.replace('-', ' ')}
+              </Link>
+              {subcategorySlug && (
+                <>
+                  <span>/</span>
+                  <span className="text-gray-900 font-medium">
+                    {currentSubcategory?.name || subcategorySlug.replace('-', ' ')}
+                  </span>
+                </>
               )}
+            </nav>
+
+            <h1 className="text-3xl font-bold text-gray-900 capitalize">
+              {subcategorySlug 
+                ? (currentSubcategory?.name || subcategorySlug.replace('-', ' '))
+                : (currentCategory?.name || categorySlug?.replace('-', ' '))
+              } Products
             </h1>
             <p className="text-gray-600 mt-1">
-              {sortedProducts.length} of {categoryFilteredProducts.length} products
+              {sortedProducts.length} of {categoryFilteredProducts.length} products found
               {subcategorySlug && (
-                <span className="ml-2 text-sm bg-red-100 text-red-700 px-2 py-1 rounded">
-                  {currentSubcategory?.name || subcategorySlug.replace('-', ' ')}
+                <span className="ml-2 text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+                  in {currentSubcategory?.name || subcategorySlug.replace('-', ' ')}
                 </span>
               )}
             </p>

@@ -106,13 +106,13 @@ export default function Home() {
                     }}
                   >
                     <div className="aspect-square overflow-hidden relative">
-                      <div className={`relative h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br ${categoryGradients[category.slug as keyof typeof categoryGradients] || 'from-gray-100 to-gray-200'}`}>
+                      <div className="relative h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-gray-100 to-gray-200">
                         {/* Decorative Elements - Hidden on mobile for cleaner look */}
                         <div className="hidden sm:block absolute top-3 sm:top-4 right-3 sm:right-4 w-4 sm:w-6 md:w-8 h-4 sm:h-6 md:h-8 bg-white/20 rounded-full blur-sm"></div>
                         <div className="hidden sm:block absolute bottom-3 sm:bottom-4 left-3 sm:left-4 w-3 sm:w-4 md:w-6 h-3 sm:h-4 md:h-6 bg-white/30 rounded-full blur-sm"></div>
 
                         <img
-                          src={categoryImages[category.slug as keyof typeof categoryImages] || category.imageUrl}
+                          src={category.imageUrl}
                           alt={category.name}
                           className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-300 sm:duration-500 md:duration-700 shadow-md sm:shadow-lg md:shadow-xl"
                         />

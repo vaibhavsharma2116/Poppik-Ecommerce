@@ -51,9 +51,9 @@ export default function CategoryMenu({ categories, subcategories }: CategoryMenu
                   <DropdownMenuItem key={subcategory.id} asChild>
                     <Link 
                       href={`/category/${category.slug}/${subcategory.slug}`}
-                      className="w-full"
+                      className="w-full flex items-center justify-between hover:bg-gray-50 px-2 py-1"
                     >
-                      {subcategory.name}
+                      <span>{subcategory.name}</span>
                     </Link>
                   </DropdownMenuItem>
                 ))}

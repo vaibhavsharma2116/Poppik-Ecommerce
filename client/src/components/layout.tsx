@@ -568,6 +568,13 @@ export default function Layout({ children }: LayoutProps) {
                                       style={{
                                         animationDelay: `${index * 50}ms`
                                       }}
+                                      onClick={() => {
+                                        console.log('🎯 Subcategory clicked:', {
+                                          category: category.slug,
+                                          subcategory: subcategory.slug,
+                                          url: `/category/${category.slug}/${subcategory.slug}`
+                                        });
+                                      }}
                                     >
                                       <div className="flex items-center space-x-3">
                                         <div className="flex-shrink-0">

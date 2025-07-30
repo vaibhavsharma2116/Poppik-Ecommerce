@@ -28,7 +28,20 @@ const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production'
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
+  console.log('Creating uploads directory:', uploadsDir);
   fs.mkdirSync(uploadsDir, { recursive: true });
+} else {
+  console.log('Uploads directory exists:', uploadsDir);
+}
+
+// Check if uploads directory is writable
+try {
+  const testFile = path.join(uploadsDir, 'test-write.txt');
+  fs.writeFileSync(testFile, 'test');
+  fs.unlinkSync(testFile);
+  console.log('Uploads directory is writable');
+} catch (error) {
+  console.error('Uploads directory is not writable:', error);
 }
 
 // Configure multer for disk storage
@@ -456,16 +469,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Image upload API
   app.post("/api/upload/image", upload.single("image"), async (req, res) => {
     try {
+      console.log('Image upload request received');
+      console.log('File info:', req.file ? {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      } : 'No file');
+
       if (!req.file) {
+        console.error('No image file provided in request');
         return res.status(400).json({ error: "No image file provided" });
       }
 
-      // Return the file URL
+      // Validate file type
+      if (!req.file.mimetype.startsWith('image/')) {
+        console.error('Invalid file type:', req.file.mimetype);
+        return res.status(400).json({ error: "File must be an image" });
+      }
+
+      // Return the full file URL
       const imageUrl = `/api/images/${req.file.filename}`;
-      res.json({ imageUrl });
+      console.log('Image uploaded successfully:', imageUrl);
+      console.log('File saved to:', req.file.path);
+      res.json({ imageUrl, success: true });
     } catch (error) {
       console.error("Image upload error:", error);
-      res.status(500).json({ error: "Failed to upload image" });
+      res.status(500).json({ 
+        error: "Failed to upload image", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
@@ -531,19 +564,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Partial match
         if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) return true;
 
-        // Special category mappings
+        // Special category mappings with more comprehensive mapping
         const categoryMappings: Record<string, string[]> = {
-          'skincare': ['skin', 'face', 'facial'],
-          'haircare': ['hair'],
-          'makeup': ['cosmetics', 'beauty'],
-          'bodycare': ['body'],
-          'eyecare': ['eye', 'eyes'],
-          'eye-drama': ['eye', 'eyes', 'eyecare'],
-          'beauty': ['makeup', 'cosmetics', 'skincare'],
+          'skincare': ['skin', 'face', 'facial', 'skincare', 'skin care'],
+          'haircare': ['hair', 'haircare', 'hair care'],
+          'makeup': ['cosmetics', 'beauty', 'makeup', 'make up'],
+          'bodycare': ['body', 'bodycare', 'body care'],
+          'eyecare': ['eye', 'eyes', 'eyecare', 'eye care'],
+          'eye-drama': ['eye', 'eyes', 'eyecare', 'eye care', 'eye drama'],
+          'beauty': ['makeup', 'cosmetics', 'skincare', 'beauty'],
         };
 
         const mappedCategories = categoryMappings[searchCategory] || [];
-        return mappedCategories.some(mapped => productCategory.includes(mapped));
+        return mappedCategories.some(mapped => 
+          productCategory.includes(mapped) || mapped.includes(productCategory)
+        );
       });
 
       res.json(filteredProducts);
@@ -559,6 +594,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
                searchCategory.includes(productCategory) ||
                (searchCategory.includes('eye') && productCategory.includes('makeup')) ||
                (searchCategory.includes('beauty') && ['skincare', 'makeup'].some(cat => productCategory.includes(cat)));
+      });
+
+      res.json(filteredSampleProducts);
+    }
+  });
+
+  // Add specific route for subcategory products
+  app.get("/api/products/category/:category/:subcategory", async (req, res) => {
+    try {
+      const { category, subcategory } = req.params;
+
+      // Get all products first
+      const allProducts = await storage.getProducts();
+
+      // Filter products by both category and subcategory
+      const filteredProducts = allProducts.filter(product => {
+        if (!product.category) return false;
+
+        const productCategory = product.category.toLowerCase();
+        const searchCategory = category.toLowerCase();
+        const searchSubcategory = subcategory.toLowerCase().replace(/-/g, ' ');
+
+        // Check category match
+        let categoryMatches = false;
+        if (productCategory === searchCategory) categoryMatches = true;
+        if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) categoryMatches = true;
+
+        // Special category mappings
+        const categoryMappings: Record<string, string[]> = {
+          'skincare': ['skin', 'face', 'facial', 'skincare'],
+          'haircare': ['hair', 'haircare'],
+          'makeup': ['cosmetics', 'beauty', 'makeup'],
+          'bodycare': ['body', 'bodycare'],
+          'eyecare': ['eye', 'eyes', 'eyecare'],
+          'eye-drama': ['eye', 'eyes', 'eyecare'],
+          'beauty': ['makeup', 'cosmetics', 'skincare', 'beauty'],
+        };
+
+        const mappedCategories = categoryMappings[searchCategory] || [];
+        if (mappedCategories.some(mapped => productCategory.includes(mapped))) {
+          categoryMatches = true;
+        }
+
+        if (!categoryMatches) return false;
+
+        // Check subcategory match
+        if (!product.subcategory) return false;
+
+        const productSubcategory = typeof product.subcategory === 'string' 
+          ? product.subcategory.toLowerCase() 
+          : product.subcategory.name?.toLowerCase() || '';
+
+        console.log('🔍 Subcategory Matching:', {
+          productName: product.name,
+          productSubcategory,
+          searchSubcategory,
+          subcategorySlug: subcategory.toLowerCase(),
+          originalSubcategoryParam: subcategory
+        });
+
+        // Direct exact matches
+        if (productSubcategory === searchSubcategory) return true;
+        if (productSubcategory === subcategory.toLowerCase()) return true;
+        
+        // Slug format matches
+        if (productSubcategory.replace(/\s+/g, '-') === subcategory.toLowerCase()) return true;
+        if (productSubcategory === subcategory.toLowerCase().replace(/-/g, ' ')) return true;
+
+        // Handle both directions of slug conversion
+        const productSubcategorySlug = productSubcategory.replace(/\s+/g, '-');
+        const searchSubcategoryFromSlug = subcategory.toLowerCase().replace(/-/g, ' ');
+        
+        if (productSubcategorySlug === subcategory.toLowerCase()) return true;
+        if (productSubcategory === searchSubcategoryFromSlug) return true;
+
+        // Partial matches
+        if (productSubcategory.includes(searchSubcategory)) return true;
+        if (searchSubcategory.includes(productSubcategory)) return true;
+
+        // Special subcategory mappings with more comprehensive mapping
+        const subcategoryMappings: Record<string, string[]> = {
+          'face-serums': ['face serum', 'face serums', 'serums', 'serum', 'facial serum'],
+          'face serums': ['face serum', 'face-serums', 'serums', 'serum', 'facial serum'],
+          'hair-serums': ['hair serum', 'hair serums', 'serums', 'serum', 'hair treatment'],
+          'hair serums': ['hair serum', 'hair-serums', 'serums', 'serum', 'hair treatment'],
+          'moisturizers': ['moisturizer', 'cream', 'lotion', 'face cream', 'moisturizing cream'],
+          'cleansers': ['cleanser', 'face wash', 'wash', 'facial cleanser', 'cleansing'],
+          'eye-makeup': ['eye makeup', 'eye', 'mascara', 'eyeshadow', 'eyeliner', 'eye shadow'],
+          'eye makeup': ['eye-makeup', 'eye', 'mascara', 'eyeshadow', 'eyeliner', 'eye shadow'],
+          'lipsticks': ['lipstick', 'lip', 'lips', 'lip color', 'lip stick'],
+          'foundations': ['foundation', 'base', 'base makeup', 'foundation makeup'],
+          'body-lotions': ['body lotion', 'body lotions', 'lotion', 'body cream', 'body moisturizer'],
+          'body lotions': ['body-lotions', 'body lotion', 'lotion', 'body cream', 'body moisturizer'],
+          'shampoos': ['shampoo', 'hair wash', 'hair shampoo', 'cleansing shampoo'],
+          'conditioners': ['conditioner', 'hair conditioner', 'conditioning treatment'],
+          'hair-oils': ['hair oil', 'hair oils', 'oil', 'hair treatment oil'],
+          'hair oils': ['hair-oils', 'hair oil', 'oil', 'hair treatment oil'],
+          'toners': ['toner', 'facial toner', 'skin toner', 'face toner'],
+          'face-masks': ['face mask', 'face masks', 'mask', 'facial mask', 'treatment mask'],
+          'face masks': ['face-masks', 'face mask', 'mask', 'facial mask', 'treatment mask']
+        };
+
+        // Check direct mapping
+        const mappedSubcategories = subcategoryMappings[searchSubcategory] || 
+                                   subcategoryMappings[subcategory.toLowerCase()] || [];
+        const isDirectMatch = mappedSubcategories.some(mapped => 
+          productSubcategory.includes(mapped) || mapped.includes(productSubcategory)
+        );
+
+        if (isDirectMatch) return true;
+
+        // Check reverse mapping - if product subcategory is a key, check if search term is in its values
+        for (const [key, values] of Object.entries(subcategoryMappings)) {
+          if (values.includes(productSubcategory) && 
+              (key === searchSubcategory || key === subcategory.toLowerCase())) {
+            return true;
+          }
+        }
+
+        return false;
+      });
+
+      res.json(filteredProducts);
+    } catch (error) {
+      console.log("Database unavailable, using sample product data with subcategory filter");
+      const sampleProducts = generateSampleProducts();
+      const { category, subcategory } = req.params;
+      const searchCategory = category.toLowerCase();
+      const searchSubcategory = subcategory.toLowerCase().replace(/-/g, ' ');
+
+      const filteredSampleProducts = sampleProducts.filter(product => {
+        const productCategory = product.category.toLowerCase();
+        const productSubcategory = (product.subcategory || '').toLowerCase();
+
+        // Check category
+        let categoryMatches = productCategory.includes(searchCategory) || 
+               searchCategory.includes(productCategory) ||
+               (searchCategory.includes('eye') && productCategory.includes('makeup')) ||
+               (searchCategory.includes('beauty') && ['skincare', 'makeup'].some(cat => productCategory.includes(cat)));
+
+        // Check subcategory
+        let subcategoryMatches = productSubcategory.includes(searchSubcategory) ||
+                                searchSubcategory.includes(productSubcategory) ||
+                                productSubcategory.replace(/\s+/g, '-') === subcategory.toLowerCase();
+
+        return categoryMatches && subcategoryMatches;
       });
 
       res.json(filteredSampleProducts);
@@ -679,22 +860,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate required fields
       const { name, description, imageUrl } = req.body;
-      if (!name || !description || !imageUrl) {
+      if (!name || !description) {
         return res.status(400).json({ 
-          error: "Missing required fields: name, description, and imageUrl are required" 
+          error: "Missing required fields: name and description are required" 
         });
       }
 
-      // Generate slug from name
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      // Generate slug from name if not provided
+      const slug = req.body.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
       const categoryData = {
-        ...req.body,
-        slug,
+        name: name.trim(),
+        slug: slug,
+        description: description.trim(),
+        imageUrl: imageUrl || null,
         status: req.body.status || 'Active',
-        productCount: req.body.productCount || 0
+        productCount: 0
       };
 
+      console.log("Creating category with processed data:", categoryData);
       const category = await storage.createCategory(categoryData);
       res.status(201).json(category);
     } catch (error) {
@@ -785,10 +969,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/subcategories", async (req, res) => {
     try {
-      const subcategory = await storage.createSubcategory(req.body);
+      console.log("Received subcategory data:", req.body);
+
+      // Validate required fields
+      const { name, categoryId, description } = req.body;
+      if (!name || !categoryId) {
+        return res.status(400).json({ 
+          error: "Missing required fields: name and categoryId are required" 
+        });
+      }
+
+      // Generate slug from name if not provided
+      const slug = req.body.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      const subcategoryData = {
+        ...req.body,
+        slug,
+        status: req.body.status || 'Active',
+        productCount: req.body.productCount || 0
+      };
+
+      const subcategory = await storage.createSubcategory(subcategoryData);
+      console.log("Subcategory created successfully:", subcategory);
       res.status(201).json(subcategory);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create subcategory" });
+      console.error("Subcategory creation error:", error);
+      res.status(500).json({ 
+        error: "Failed to create subcategory", 
+        details: error.message 
+      });
     }
   });
 

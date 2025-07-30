@@ -24,14 +24,43 @@ export default function CategoryPage() {
   const categorySlug = pathParts[1]; // /category/skincare -> 'skincare'
   const subcategorySlug = pathParts[2]; // /category/skincare/face-serums -> 'face-serums'
 
-  // Fetch all products
+  // Fetch products based on category/subcategory
   const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: subcategorySlug 
+      ? [`/api/products/category/${categorySlug}/${subcategorySlug}`]
+      : [`/api/products/category/${categorySlug}`],
     queryFn: async () => {
-      const response = await fetch("/api/products");
-      if (!response.ok) throw new Error("Failed to fetch products");
-      return response.json();
+      const url = subcategorySlug 
+        ? `/api/products/category/${categorySlug}/${subcategorySlug}`
+        : `/api/products/category/${categorySlug}`;
+      
+      console.log('🔥 API Call Details:', {
+        url,
+        categorySlug,
+        subcategorySlug,
+        fullPath: location
+      });
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error('❌ API call failed:', response.status, response.statusText);
+        throw new Error("Failed to fetch products");
+      }
+      const data = await response.json();
+      
+      console.log('✅ Products received:', {
+        count: data.length,
+        for: subcategorySlug ? `${categorySlug}/${subcategorySlug}` : categorySlug,
+        products: data.map(p => ({ 
+          name: p.name, 
+          category: p.category, 
+          subcategory: p.subcategory 
+        }))
+      });
+      
+      return data;
     },
+    enabled: !!categorySlug,
   });
 
   // Fetch all categories for filter component
@@ -56,62 +85,10 @@ export default function CategoryPage() {
     enabled: !!categorySlug,
   });
 
-  // Filter products based on category and subcategory
+  // Products are already filtered by the API, so just use them directly
   const categoryFilteredProducts = useMemo(() => {
-    if (!allProducts.length) return [];
-
-    // First filter by category
-    let filtered = allProducts.filter(product => {
-      if (!product.category) return false;
-      
-      const productCategoryName = typeof product.category === 'string' 
-        ? product.category.toLowerCase() 
-        : product.category.name?.toLowerCase() || '';
-      
-      const searchCategory = categorySlug?.toLowerCase();
-      
-      // Direct match by slug or name
-      if (productCategoryName === searchCategory) return true;
-      if (productCategoryName.replace(/\s+/g, '-') === searchCategory) return true;
-      if (searchCategory?.replace(/-/g, ' ') === productCategoryName) return true;
-      
-      // Handle special category mappings
-      const categoryMappings: Record<string, string[]> = {
-        'skincare': ['skincare', 'skin care', 'skin-care'],
-        'haircare': ['haircare', 'hair care', 'hair-care'], 
-        'makeup': ['makeup', 'cosmetics', 'make-up'],
-        'bodycare': ['body care', 'bodycare', 'body-care'],
-        'eyecare': ['eye care', 'eyecare', 'eye-care'],
-        'beauty': ['beauty', 'makeup', 'cosmetics']
-      };
-      
-      const mappedCategories = categoryMappings[searchCategory || ''] || [];
-      return mappedCategories.some(mapped => 
-        productCategoryName.includes(mapped) || 
-        mapped.includes(productCategoryName)
-      );
-    });
-
-    // If subcategory is selected from URL path, further filter by subcategory
-    if (subcategorySlug) {
-      filtered = filtered.filter(product => {
-        if (!product.subcategory) return false;
-        
-        const productSubcategoryName = typeof product.subcategory === 'string'
-          ? product.subcategory.toLowerCase()
-          : product.subcategory.name?.toLowerCase() || '';
-          
-        const searchSubcategory = subcategorySlug.replace(/-/g, ' ').toLowerCase();
-        
-        return productSubcategoryName === searchSubcategory ||
-               productSubcategoryName.replace(/\s+/g, '-') === subcategorySlug.toLowerCase() ||
-               productSubcategoryName.includes(searchSubcategory) ||
-               searchSubcategory.includes(productSubcategoryName);
-      });
-    }
-
-    return filtered;
-  }, [allProducts, categorySlug, subcategorySlug]);
+    return allProducts || [];
+  }, [allProducts]);
 
   // Handle filter changes - now working with category/subcategory filtered products
   const handleFilterChange = (filtered: Product[], filters: any) => {

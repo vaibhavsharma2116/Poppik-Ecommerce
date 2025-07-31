@@ -36,6 +36,7 @@ import AdminContactSubmissions from "@/pages/admin/contact-submissions";
 import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from 'react';
+import AdminShades from "./pages/admin/shades";
 
 const AdminReports = lazy(() => import("./pages/admin/reports"));
 
@@ -54,6 +55,7 @@ function Router() {
             <Route path="/sliders" component={AdminSliders} />
             <Route path="/settings" component={AdminSettings} />
             <Route path="/profile" component={AdminProfile} />
+            <Route path="/shades" component={AdminShades} />
             <Route path="/change-password" component={AdminChangePassword} />
              <Route path="/contact-submissions" component={AdminContactSubmissions} />
             <Route path="/reports">

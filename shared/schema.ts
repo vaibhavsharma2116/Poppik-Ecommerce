@@ -77,12 +77,8 @@ export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
-export type InsertCategory = z.infer<typeof insertCategorySchema>;
-export type Category = typeof categories.$inferSelect;
-export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
-export type Subcategory = typeof subcategories.$inferSelect;
+export type InsertProduct = typeof products.$inferInsert;
 
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
@@ -134,13 +130,15 @@ export const orderNotificationsTable = pgTable("order_notifications", {
 export const insertOrderNotificationSchema = createInsertSchema(orderNotificationsTable);
 export const selectOrderNotificationSchema = createSelectSchema(orderNotificationsTable);
 
+import { sql } from "drizzle-orm";
+
 export const sliders = pgTable("sliders", {
   id: serial("id").primaryKey(),
   imageUrl: text("image_url").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const contactSubmissions = pgTable("contact_submissions", {
@@ -155,3 +153,17 @@ export const contactSubmissions = pgTable("contact_submissions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   respondedAt: timestamp("responded_at"),
 });
+
+export const shades = pgTable("shades", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  colorCode: text("color_code").notNull(),
+  value: text("value").notNull().unique(),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type Shade = typeof shades.$inferSelect;
+export type InsertShade = typeof shades.$inferInsert;

@@ -3061,6 +3061,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Shades API
+  app.get("/api/shades", async (req, res) => {
+    try {
+      const activeShades = await storage.getActiveShades();
+      res.json(activeShades);
+    } catch (error) {
+      console.log("Database unavailable, using sample shade data");
+      // Default shades data
+      const defaultShades = [
+        { id: 1, name: "Fair to Light", colorCode: "#F7E7CE", value: "fair-light", isActive: true, sortOrder: 1 },
+        { id: 2, name: "Light to Medium", colorCode: "#F5D5AE", value: "light-medium", isActive: true, sortOrder: 2 },
+        { id: 3, name: "Medium", colorCode: "#E8B895", value: "medium", isActive: true, sortOrder: 3 },
+        { id: 4, name: "Medium to Deep", colorCode: "#D69E2E", value: "medium-deep", isActive: true, sortOrder: 4 },
+        { id: 5, name: "Deep", colorCode: "#B7791F", value: "deep", isActive: true, sortOrder: 5 },
+        { id: 6, name: "Very Deep", colorCode: "#975A16", value: "very-deep", isActive: true, sortOrder: 6 },
+        { id: 7, name: "Porcelain", colorCode: "#FFF8F0", value: "porcelain", isActive: true, sortOrder: 7 },
+        { id: 8, name: "Ivory", colorCode: "#FFFFF0", value: "ivory", isActive: true, sortOrder: 8 },
+        { id: 9, name: "Beige", colorCode: "#F5F5DC", value: "beige", isActive: true, sortOrder: 9 },
+        { id: 10, name: "Sand", colorCode: "#F4A460", value: "sand", isActive: true, sortOrder: 10 },
+        { id: 11, name: "Honey", colorCode: "#FFB347", value: "honey", isActive: true, sortOrder: 11 },
+        { id: 12, name: "Caramel", colorCode: "#AF6F09", value: "caramel", isActive: true, sortOrder: 12 },
+        { id: 13, name: "Cocoa", colorCode: "#7B3F00", value: "cocoa", isActive: true, sortOrder: 13 },
+        { id: 14, name: "Espresso", colorCode: "#3C2415", value: "espresso", isActive: true, sortOrder: 14 }
+      ];
+      res.json(defaultShades);
+    }
+  });
+
+  // Admin shade management routes
+  app.get("/api/admin/shades", async (req, res) => {
+    try {
+      const allShades = await storage.getShades();
+      res.json(allShades);
+    } catch (error) {
+      console.error("Error fetching shades:", error);
+      res.status(500).json({ error: "Failed to fetch shades" });
+    }
+  });
+
+  app.post("/api/admin/shades", async (req, res) => {
+    try {
+      const { name, colorCode, value, isActive, sortOrder } = req.body;
+
+      if (!name || !colorCode || !value) {
+        return res.status(400).json({ error: "Name, color code, and value are required" });
+      }
+
+      const shadeData = {
+        name: name.trim(),
+        colorCode: colorCode.trim(),
+        value: value.trim().toLowerCase().replace(/\s+/g, '-'),
+        isActive: Boolean(isActive ?? true),
+        sortOrder: Number(sortOrder) || 0
+      };
+
+      const shade = await storage.createShade(shadeData);
+      res.status(201).json(shade);
+    } catch (error) {
+      console.error("Error creating shade:", error);
+      res.status(500).json({ error: "Failed to create shade" });
+    }
+  });
+
+  app.put("/api/admin/shades/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedShade = await storage.updateShade(parseInt(id), req.body);
+      if (!updatedShade) {
+        return res.status(404).json({ error: "Shade not found" });
+      }
+      res.json(updatedShade);
+    } catch (error) {
+      console.error("Error updating shade:", error);
+      res.status(500).json({ error: "Failed to update shade" });
+    }
+  });
+
+  app.delete("/api/admin/shades/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteShade(parseInt(id));
+      if (!success) {
+        return res.status(404).json({ error: "Shade not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting shade:", error);
+      res.status(500).json({ error: "Failed to delete shade" });
+    }
+  });
+
   // Slider management routes
   app.get('/api/admin/sliders', async (req, res) => {
     try {

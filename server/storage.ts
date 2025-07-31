@@ -7,14 +7,17 @@ import {
   subcategories,
   users,
   contactSubmissions,
+  shades,
   type Product, 
   type Category, 
   type Subcategory,
   type User,
+  type Shade,
   type InsertProduct, 
   type InsertCategory, 
   type InsertSubcategory,
-  type InsertUser
+  type InsertUser,
+  type InsertShade
 } from "@shared/schema";
 import dotenv from "dotenv";
 
@@ -79,6 +82,14 @@ export interface IStorage {
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
   updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
   deleteSubcategory(id: number): Promise<boolean>;
+
+  // Shades
+  getShade(id: number): Promise<Shade | undefined>;
+  getShades(): Promise<Shade[]>;
+  getActiveShades(): Promise<Shade[]>;
+  createShade(shade: InsertShade): Promise<Shade>;
+  updateShade(id: number, shade: Partial<InsertShade>): Promise<Shade | undefined>;
+  deleteShade(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -449,6 +460,41 @@ export class DatabaseStorage implements IStorage {
   async deleteContactSubmission(id: number): Promise<boolean> {
     const db = await getDb();
     const result = await db.delete(contactSubmissions).where(eq(contactSubmissions.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Shades
+  async getShade(id: number): Promise<Shade | undefined> {
+    const db = await getDb();
+    const result = await db.select().from(shades).where(eq(shades.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getShades(): Promise<Shade[]> {
+    const db = await getDb();
+    return await db.select().from(shades).orderBy(shades.sortOrder);
+  }
+
+  async getActiveShades(): Promise<Shade[]> {
+    const db = await getDb();
+    return await db.select().from(shades).where(eq(shades.isActive, true)).orderBy(shades.sortOrder);
+  }
+
+  async createShade(shadeData: InsertShade): Promise<Shade> {
+    const db = await getDb();
+    const result = await db.insert(shades).values(shadeData).returning();
+    return result[0];
+  }
+
+  async updateShade(id: number, shadeData: Partial<InsertShade>): Promise<Shade | undefined> {
+    const db = await getDb();
+    const result = await db.update(shades).set(shadeData).where(eq(shades.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteShade(id: number): Promise<boolean> {
+    const db = await getDb();
+    const result = await db.delete(shades).where(eq(shades.id, id)).returning();
     return result.length > 0;
   }
 }

@@ -37,6 +37,7 @@ import AdminSearchCommand from "./admin-search-command";
 import { cn } from "@/lib/utils";
 import { Images } from 'lucide-react';
 import { Mail } from "lucide-react";
+import { Palette } from "lucide-react";
 
 const sidebarItems = [
   {
@@ -70,6 +71,12 @@ const sidebarItems = [
     href: "/customers",
     icon: Users,
     badge: "1.2k",
+  },
+  {
+    title: "Shades",
+    href: "/shades",
+    icon: Palette,
+    badge: null,
   },
   {
     title: "Sliders",

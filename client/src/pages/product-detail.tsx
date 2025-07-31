@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import { ChevronRight, Star, ShoppingCart, Heart } from "lucide-react";
+import { ChevronRight, Star, ShoppingCart, Heart, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +12,20 @@ import ProductCard from "@/components/product-card";
 import type { Product } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
+interface Shade {
+  id: number;
+  name: string;
+  colorCode: string;
+  value: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export default function ProductDetail() {
   const [, params] = useRoute("/product/:slug");
   const productSlug = params?.slug || "";
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [showAllShades, setShowAllShades] = useState(false);
   const { toast } = useToast();
 
   const { data: product, isLoading } = useQuery<Product>({
@@ -26,6 +36,10 @@ export default function ProductDetail() {
   const { data: relatedProducts } = useQuery<Product[]>({
     queryKey: [`/api/products/category/${product?.category}`],
     enabled: !!product?.category,
+  });
+
+  const { data: shades = [] } = useQuery<Shade[]>({
+    queryKey: ['/api/shades'],
   });
 
   useEffect(() => {
@@ -253,26 +267,64 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Variants */}
-              {(product.variants?.colors || product.variants?.shades) && (
-                <div className="space-y-3 mb-6">
-                  <label className="text-gray-700 font-bold text-lg">
-                    {product.variants.colors ? 'Color:' : 'Shade:'}
-                  </label>
-                  <Select>
-                    <SelectTrigger className="w-full rounded-xl border-2 border-gray-200 focus:border-purple-400 bg-white/80">
-                      <SelectValue placeholder={`Select ${product.variants.colors ? 'color' : 'shade'}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(product.variants.colors || product.variants.shades || []).map((variant) => (
-                        <SelectItem key={variant} value={variant}>
-                          {variant}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Shades Selection - Always show for beauty products */}
+              <div className="space-y-4 mb-6">
+                <label className="text-gray-700 font-bold text-lg">
+                  Select Shade:
+                </label>
+                <div className="grid grid-cols-4 gap-3">
+                  {(() => {
+                    const shadesToShow = showAllShades ? shades : shades.slice(0, 4);
+                    
+                    return shadesToShow.map((shade) => (
+                      <div key={shade.value} className="flex flex-col items-center group cursor-pointer">
+                        <div 
+                          className="w-12 h-12 rounded-full border-3 border-gray-300 hover:border-purple-400 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl"
+                          style={{ backgroundColor: shade.colorCode }}
+                          title={shade.name}
+                        ></div>
+                        <span className="text-xs text-gray-600 mt-2 text-center leading-tight group-hover:text-purple-600 transition-colors">
+                          {shade.name.split(' ')[0]}
+                        </span>
+                      </div>
+                    ));
+                  })()}
                 </div>
-              )}
+                
+                {/* View All Button */}
+                {!showAllShades && shades.length > 4 && (
+                  <div className="text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAllShades(true)}
+                      className="border-2 border-purple-200 hover:border-purple-400 rounded-xl px-6 py-2 font-semibold text-purple-600 hover:text-purple-700 transition-all duration-200"
+                    >
+                      <ChevronDown className="w-4 h-4 mr-2" />
+                      View All Shades ({shades.length})
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Show Less Button */}
+                {showAllShades && shades.length > 4 && (
+                  <div className="text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAllShades(false)}
+                      className="border-2 border-purple-200 hover:border-purple-400 rounded-xl px-6 py-2 font-semibold text-purple-600 hover:text-purple-700 transition-all duration-200"
+                    >
+                      <ChevronUp className="w-4 h-4 mr-2" />
+                      Show Less
+                    </Button>
+                  </div>
+                )}
+                
+                <p className="text-sm text-gray-500 mt-3">
+                  💡 Click on a shade to select it. Not sure about your shade? Our beauty experts can help you find the perfect match!
+                </p>
+              </div>
 
               {/* Price */}
               <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">

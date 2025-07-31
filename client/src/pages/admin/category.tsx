@@ -41,23 +41,29 @@ export default function AdminCategories() {
   const queryClient = useQueryClient();
 
   // Fetch categories
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await fetch('/api/categories');
       if (!response.ok) throw new Error('Failed to fetch categories');
       return response.json();
-    }
+    },
+    retry: 3,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false
   });
 
   // Fetch subcategories
-  const { data: subcategories = [], isLoading: subcategoriesLoading } = useQuery({
+  const { data: subcategories = [], isLoading: subcategoriesLoading, error: subcategoriesError } = useQuery({
     queryKey: ['subcategories'],
     queryFn: async () => {
       const response = await fetch('/api/subcategories');
       if (!response.ok) throw new Error('Failed to fetch subcategories');
       return response.json();
-    }
+    },
+    retry: 3,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false
   });
 
   // Category mutations
@@ -337,11 +343,27 @@ export default function AdminCategories() {
     { label: "Total Products", value: categories.reduce((sum: number, cat: Category) => sum + cat.productCount, 0).toString(), icon: TrendingUp, color: "from-orange-500 to-red-500" }
   ];
 
-  if (categoriesLoading || subcategoriesLoading) {
+  if ((categoriesLoading && categories.length === 0) || (subcategoriesLoading && subcategories.length === 0)) {
     return (
       <div className="flex-1 space-y-6 p-8 pt-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">Loading categories...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (categoriesError || subcategoriesError) {
+    return (
+      <div className="flex-1 space-y-6 p-8 pt-6">
+        <div className="flex flex-col items-center justify-center h-64 space-y-4">
+          <div className="text-lg text-red-600">Error loading categories</div>
+          <Button onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            queryClient.invalidateQueries({ queryKey: ['subcategories'] });
+          }}>
+            Retry
+          </Button>
         </div>
       </div>
     );

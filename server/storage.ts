@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, asc } from "drizzle-orm";
 import { Pool } from "pg";
 import { 
   products, 
@@ -90,6 +90,7 @@ export interface IStorage {
   createShade(shade: InsertShade): Promise<Shade>;
   updateShade(id: number, shade: Partial<InsertShade>): Promise<Shade | undefined>;
   deleteShade(id: number): Promise<boolean>;
+  getProductShades(productId: number): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -144,23 +145,23 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByCategory(category: string): Promise<Product[]> {
     const db = await getDb();
-    
+
     // First try exact match
     let result = await db.select().from(products).where(eq(products.category, category));
-    
+
     // If no exact match found, try case-insensitive partial matching
     if (result.length === 0) {
       const allProducts = await db.select().from(products);
       const searchCategory = category.toLowerCase();
-      
+
       result = allProducts.filter(product => {
         if (!product.category) return false;
-        
+
         const productCategory = product.category.toLowerCase();
-        
+
         // Partial match
         if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) return true;
-        
+
         // Special category mappings
         const categoryMappings: Record<string, string[]> = {
           'skincare': ['skin', 'face', 'facial'],
@@ -171,12 +172,12 @@ export class DatabaseStorage implements IStorage {
           'eye-drama': ['eye', 'eyes', 'eyecare'],
           'beauty': ['makeup', 'cosmetics', 'skincare'],
         };
-        
+
         const mappedCategories = categoryMappings[searchCategory] || [];
         return mappedCategories.some(mapped => productCategory.includes(mapped));
       });
     }
-    
+
     return result;
   }
 
@@ -323,12 +324,37 @@ export class DatabaseStorage implements IStorage {
     try {
       const db = await getDb();
       console.log("Creating category with data:", category);
+
+      // Validate required fields
+      if (!category.name || !category.description || !category.slug) {
+        throw new Error("Missing required fields: name, description, and slug are required");
+      }
+
+      // Check if slug already exists
+      const existingCategory = await db.select().from(categories).where(eq(categories.slug, category.slug)).limit(1);
+      if (existingCategory.length > 0) {
+        throw new Error(`Category with slug '${category.slug}' already exists`);
+      }
+
       const result = await db.insert(categories).values(category).returning();
+
+      if (!result || result.length === 0) {
+        throw new Error("Failed to insert category into database");
+      }
+
       console.log("Category created successfully:", result[0]);
       return result[0];
     } catch (error) {
       console.error("Error creating category:", error);
-      throw error;
+
+      // Provide more specific error messages
+      if (error.message.includes('unique constraint')) {
+        throw new Error("A category with this name or slug already exists");
+      } else if (error.message.includes('not null constraint')) {
+        throw new Error("Missing required category information");
+      } else {
+        throw new Error(error.message || "Failed to create category");
+      }
     }
   }
 
@@ -414,7 +440,7 @@ export class DatabaseStorage implements IStorage {
 
   async createContactSubmission(submissionData: any): Promise<any> {
     const db = await getDb();
-    
+
     const contactData = {
       firstName: submissionData.firstName,
       lastName: submissionData.lastName,
@@ -443,7 +469,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateContactSubmissionStatus(id: number, status: string, respondedAt?: Date): Promise<any> {
     const db = await getDb();
-    
+
     const updateData: any = { status };
     if (respondedAt) {
       updateData.respondedAt = respondedAt;
@@ -453,7 +479,7 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(contactSubmissions.id, id))
       .returning();
-    
+
     return result[0] || null;
   }
 
@@ -516,6 +542,118 @@ export class DatabaseStorage implements IStorage {
     const db = await getDb();
     const result = await db.delete(shades).where(eq(shades.id, id)).returning();
     return result.length > 0;
+  }
+
+  // Shade management methods
+  async getShades(): Promise<any[]> {
+    try {
+      const db = await getDb();
+      const result = await db.select().from(shades).orderBy(asc(shades.sortOrder));
+      return result;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
+  }
+
+  async getActiveShades(): Promise<any[]> {
+    try {
+      const db = await getDb();
+      const result = await db.select().from(shades)
+        .where(eq(shades.isActive, true))
+        .orderBy(asc(shades.sortOrder));
+      return result;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
+  }
+
+  async createShade(shadeData: any): Promise<any> {
+    try {
+      const db = await getDb();
+      const [shade] = await db.insert(shades).values(shadeData).returning();
+      return shade;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
+  }
+
+  async updateShade(id: number, shadeData: any): Promise<any> {
+    try {
+      const db = await getDb();
+      const [shade] = await db.update(shades)
+        .set({ ...shadeData, updatedAt: new Date().toISOString() })
+        .where(eq(shades.id, id))
+        .returning();
+      return shade;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
+  }
+
+  async deleteShade(id: number): Promise<boolean> {
+    try {
+      const db = await getDb();
+      const result = await db.delete(shades).where(eq(shades.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
+  }
+
+  // Get shades for a specific product based on its category/subcategory or individual assignment
+  async getProductShades(productId: number): Promise<any[]> {
+    try {
+      const db = await getDb();
+
+      // Get product details
+      const product = await this.getProduct(productId);
+      if (!product) return [];
+
+      // Get all active shades
+      const allShades = await this.getActiveShades();
+
+      // Get all categories and subcategories for faster lookup
+      const allCategories = await this.getCategories();
+      const allSubcategories = await this.getSubcategories();
+
+      // Filter shades based on product's category/subcategory
+      const productShades = allShades.filter(shade => {
+        // Check if shade has specific product IDs assigned
+        if (shade.productIds && Array.isArray(shade.productIds)) {
+          if (shade.productIds.includes(productId)) return true;
+        }
+
+        // Check category match
+        if (shade.categoryIds && Array.isArray(shade.categoryIds)) {
+          const hasMatchingCategory = shade.categoryIds.some((catId: number) => {
+            const category = allCategories.find(cat => cat.id === catId);
+            return category && category.name.toLowerCase() === product.category.toLowerCase();
+          });
+          if (hasMatchingCategory) return true;
+        }
+
+        // Check subcategory match
+        if (shade.subcategoryIds && Array.isArray(shade.subcategoryIds) && product.subcategory) {
+          const hasMatchingSubcategory = shade.subcategoryIds.some((subId: number) => {
+            const subcategory = allSubcategories.find(sub => sub.id === subId);
+            return subcategory && subcategory.name.toLowerCase() === product.subcategory.toLowerCase();
+          });
+          if (hasMatchingSubcategory) return true;
+        }
+
+        return false;
+      });
+
+      return productShades;
+    } catch (error) {
+      console.error("Error getting product shades:", error);
+      return [];
+    }
   }
 }
 

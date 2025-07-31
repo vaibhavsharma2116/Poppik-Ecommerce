@@ -664,29 +664,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Received category data:", req.body);
 
+      // Set content type to ensure JSON response
+      res.setHeader('Content-Type', 'application/json');
+
       // Validate required fields
-      const { name, description, imageUrl } = req.body;
-      if (!name || !description || !imageUrl) {
+      const { name, description } = req.body;
+      if (!name || !description) {
         return res.status(400).json({ 
-          error: "Missing required fields: name, description, and imageUrl are required" 
+          error: "Missing required fields: name and description are required" 
+        });
+      }
+
+      if (name.trim().length === 0 || description.trim().length === 0) {
+        return res.status(400).json({ 
+          error: "Name and description cannot be empty" 
         });
       }
 
       // Generate slug from name
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      // Set default imageUrl if not provided
+      const imageUrl = req.body.imageUrl || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400';
 
       const categoryData = {
-        ...req.body,
+        name: name.trim(),
         slug,
+        description: description.trim(),
+        imageUrl,
         status: req.body.status || 'Active',
-        productCount: req.body.productCount || 0
+        productCount: parseInt(req.body.productCount) || 0
       };
 
+      console.log("Creating category with processed data:", categoryData);
+
       const category = await storage.createCategory(categoryData);
+      console.log("Category created successfully:", category);
+      
       res.status(201).json(category);
     } catch (error) {
       console.error("Category creation error:", error);
-      res.status(500).json({ error: "Failed to create category", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to create category", 
+        details: error.message || "Unknown error",
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   });
 
@@ -3091,6 +3113,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting slider:', error);
       res.status(500).json({ error: 'Failed to delete slider' });
+    }
+  });
+
+  // Get shades for a specific product
+  app.get("/api/products/:productId/shades", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const shades = await storage.getProductShades(parseInt(productId));
+      res.json(shades);
+    } catch (error) {
+      console.error("Error fetching product shades:", error);
+      res.status(500).json({ error: "Failed to fetch product shades" });
     }
   });
 

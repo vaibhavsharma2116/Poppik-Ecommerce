@@ -152,3 +152,6 @@ CREATE TABLE "sliders" (
 );
 
 ALTER TABLE "users" ADD COLUMN "role" varchar(20) NOT NULL DEFAULT 'user';
+
+ELECT * FROM public.shades
+ORDER BY id ASC 

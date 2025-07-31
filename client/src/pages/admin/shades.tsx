@@ -30,6 +30,7 @@ interface Shade {
   sortOrder: number;
   categoryIds?: number[];
   subcategoryIds?: number[];
+  productIds?: number[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -68,7 +69,8 @@ export default function AdminShades() {
     isActive: true,
     sortOrder: 0,
     categoryIds: [] as number[],
-    subcategoryIds: [] as number[]
+    subcategoryIds: [] as number[],
+    productIds: [] as number[]
   });
 
   const { toast } = useToast();
@@ -183,7 +185,8 @@ export default function AdminShades() {
       isActive: true,
       sortOrder: 0,
       categoryIds: [],
-      subcategoryIds: []
+      subcategoryIds: [],
+      productIds: []
     });
     setSelectedShade(null);
   };
@@ -202,7 +205,8 @@ export default function AdminShades() {
       isActive: shade.isActive,
       sortOrder: shade.sortOrder,
       categoryIds: shade.categoryIds || [],
-      subcategoryIds: shade.subcategoryIds || []
+      subcategoryIds: shade.subcategoryIds || [],
+      productIds: shade.productIds || []
     });
     setIsEditModalOpen(true);
   };
@@ -306,6 +310,15 @@ export default function AdminShades() {
       : [...formData.subcategoryIds, id];
     
     setFormData(prev => ({ ...prev, subcategoryIds: newSubcategoryIds }));
+  };
+
+  const handleProductChange = (productId: string) => {
+    const id = parseInt(productId);
+    const newProductIds = formData.productIds.includes(id)
+      ? formData.productIds.filter(pId => pId !== id)
+      : [...formData.productIds, id];
+    
+    setFormData(prev => ({ ...prev, productIds: newProductIds }));
   };
 
   if (isLoading) {
@@ -604,33 +617,107 @@ export default function AdminShades() {
               </div>
             )}
 
-            {/* Products Preview */}
-            {(formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0) && (
-              <div className="space-y-4">
-                <Label>Products that will use this shade ({getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length} products)</Label>
-                <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-                  {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3">
-                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).slice(0, 8).map(product => (
-                        <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
-                          <img 
-                            src={product.imageUrl} 
-                            alt={product.name}
-                            className="w-10 h-10 rounded object-cover"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{product.name}</p>
-                            <p className="text-xs text-gray-500">{product.category} • ₹{product.price}</p>
+            {/* Individual Products Selection */}
+            <div className="space-y-4">
+              <Label>Individual Products (Optional)</Label>
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <p className="text-sm text-gray-600 mb-3">Select specific products that should have this shade option (overrides category-based selection)</p>
+                {formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    {(() => {
+                      // Filter products based on selected categories and subcategories
+                      const filteredProducts = products.filter(product => {
+                        // Check if product matches selected categories
+                        const categoryMatch = formData.categoryIds.length === 0 || formData.categoryIds.some(catId => {
+                          const category = categories.find(c => c.id === catId);
+                          return category?.name.toLowerCase() === product.category.toLowerCase();
+                        });
+                        
+                        // Check if product matches selected subcategories
+                        const subcategoryMatch = formData.subcategoryIds.length === 0 || formData.subcategoryIds.some(subId => {
+                          const subcategory = subcategories.find(s => s.id === subId);
+                          return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
+                        });
+                        
+                        return categoryMatch && subcategoryMatch;
+                      });
+
+                      return filteredProducts.length > 0 ? (
+                        filteredProducts.map(product => (
+                          <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border hover:bg-gray-50">
+                            <input
+                              type="checkbox"
+                              id={`prod-${product.id}`}
+                              checked={formData.productIds.includes(product.id)}
+                              onChange={() => handleProductChange(product.id.toString())}
+                              className="rounded border-gray-300"
+                            />
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-8 h-8 rounded object-cover"
+                            />
+                            <div className="flex-1">
+                              <Label htmlFor={`prod-${product.id}`} className="text-sm font-medium cursor-pointer">{product.name}</Label>
+                              <p className="text-xs text-gray-500">{product.category} • ₹{product.price}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 8 && (
-                        <p className="text-sm text-gray-500 text-center">...and {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length - 8} more products</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">No products found for selected categories</p>
-                  )}
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">No products found for selected categories/subcategories</p>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Please select categories or subcategories first to see filtered products</p>
+                  </div>
+                )}
+                {formData.productIds.length > 0 && (
+                  <p className="text-sm text-blue-600 mt-2">{formData.productIds.length} products selected individually</p>
+                )}
+              </div>
+            </div>
+
+            {/* Products Preview */}
+            {(formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0 || formData.productIds.length > 0) && (
+              <div className="space-y-4">
+                <Label>Products that will use this shade</Label>
+                <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                  {(() => {
+                    const categoryProducts = getFilteredProducts(formData.categoryIds, formData.subcategoryIds);
+                    const individualProducts = products.filter(p => formData.productIds.includes(p.id));
+                    const allProducts = [...categoryProducts, ...individualProducts.filter(p => !categoryProducts.some(cp => cp.id === p.id))];
+                    
+                    return allProducts.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3">
+                        {allProducts.slice(0, 8).map(product => (
+                          <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-10 h-10 rounded object-cover"
+                            />
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{product.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {product.category} • ₹{product.price}
+                                {formData.productIds.includes(product.id) && (
+                                  <span className="ml-2 text-blue-600">• Individual</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {allProducts.length > 8 && (
+                          <p className="text-sm text-gray-500 text-center">...and {allProducts.length - 8} more products ({allProducts.length} total)</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-4">No products selected</p>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -769,33 +856,107 @@ export default function AdminShades() {
               </div>
             )}
 
-            {/* Current form products preview */}
-            {(formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0) && (
-              <div className="space-y-4">
-                <Label>Products that will use this shade ({getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length} products)</Label>
-                <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-                  {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3">
-                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).slice(0, 8).map(product => (
-                        <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
-                          <img 
-                            src={product.imageUrl} 
-                            alt={product.name}
-                            className="w-10 h-10 rounded object-cover"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{product.name}</p>
-                            <p className="text-xs text-gray-500">{product.category} • ₹{product.price}</p>
+            {/* Individual Products Selection */}
+            <div className="space-y-4">
+              <Label>Individual Products (Optional)</Label>
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <p className="text-sm text-gray-600 mb-3">Select specific products that should have this shade option (overrides category-based selection)</p>
+                {formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    {(() => {
+                      // Filter products based on selected categories and subcategories
+                      const filteredProducts = products.filter(product => {
+                        // Check if product matches selected categories
+                        const categoryMatch = formData.categoryIds.length === 0 || formData.categoryIds.some(catId => {
+                          const category = categories.find(c => c.id === catId);
+                          return category?.name.toLowerCase() === product.category.toLowerCase();
+                        });
+                        
+                        // Check if product matches selected subcategories
+                        const subcategoryMatch = formData.subcategoryIds.length === 0 || formData.subcategoryIds.some(subId => {
+                          const subcategory = subcategories.find(s => s.id === subId);
+                          return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
+                        });
+                        
+                        return categoryMatch && subcategoryMatch;
+                      });
+
+                      return filteredProducts.length > 0 ? (
+                        filteredProducts.map(product => (
+                          <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border hover:bg-gray-50">
+                            <input
+                              type="checkbox"
+                              id={`edit-prod-${product.id}`}
+                              checked={formData.productIds.includes(product.id)}
+                              onChange={() => handleProductChange(product.id.toString())}
+                              className="rounded border-gray-300"
+                            />
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-8 h-8 rounded object-cover"
+                            />
+                            <div className="flex-1">
+                              <Label htmlFor={`edit-prod-${product.id}`} className="text-sm font-medium cursor-pointer">{product.name}</Label>
+                              <p className="text-xs text-gray-500">{product.category} • ₹{product.price}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 8 && (
-                        <p className="text-sm text-gray-500 text-center">...and {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length - 8} more products</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">No products found for selected categories</p>
-                  )}
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">No products found for selected categories/subcategories</p>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Please select categories or subcategories first to see filtered products</p>
+                  </div>
+                )}
+                {formData.productIds.length > 0 && (
+                  <p className="text-sm text-blue-600 mt-2">{formData.productIds.length} products selected individually</p>
+                )}
+              </div>
+            </div>
+
+            {/* Current form products preview */}
+            {(formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0 || formData.productIds.length > 0) && (
+              <div className="space-y-4">
+                <Label>Products that will use this shade</Label>
+                <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                  {(() => {
+                    const categoryProducts = getFilteredProducts(formData.categoryIds, formData.subcategoryIds);
+                    const individualProducts = products.filter(p => formData.productIds.includes(p.id));
+                    const allProducts = [...categoryProducts, ...individualProducts.filter(p => !categoryProducts.some(cp => cp.id === p.id))];
+                    
+                    return allProducts.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3">
+                        {allProducts.slice(0, 8).map(product => (
+                          <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-10 h-10 rounded object-cover"
+                            />
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{product.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {product.category} • ₹{product.price}
+                                {formData.productIds.includes(product.id) && (
+                                  <span className="ml-2 text-blue-600">• Individual</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {allProducts.length > 8 && (
+                          <p className="text-sm text-gray-500 text-center">...and {allProducts.length - 8} more products ({allProducts.length} total)</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-4">No products selected</p>
+                    );
+                  })()}
                 </div>
               </div>
             )}

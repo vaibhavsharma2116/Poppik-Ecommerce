@@ -19,6 +19,7 @@ interface Shade {
   value: string;
   isActive: boolean;
   sortOrder: number;
+  imageUrl?: string;
 }
 
 export default function ProductDetail() {
@@ -26,6 +27,7 @@ export default function ProductDetail() {
   const productSlug = params?.slug || "";
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [showAllShades, setShowAllShades] = useState(false);
+  const [selectedShade, setSelectedShade] = useState<Shade | null>(null);
   const { toast } = useToast();
 
   const { data: product, isLoading } = useQuery<Product>({
@@ -42,30 +44,19 @@ export default function ProductDetail() {
   const categories = [{ id: 1, name: 'skincare' }, { id: 2, name: 'haircare' }];
   const subcategories = [{ id: 3, name: 'face wash' }, { id: 4, name: 'shampoo' }];
 
-  // Fetch shades based on product category
+  // Fetch shades specifically assigned to this product
   const { data: shades = [] } = useQuery({
-    queryKey: ['/api/shades', { categoryId: product?.category }],
+    queryKey: [`/api/products/${product?.id}/shades`],
     queryFn: async () => {
-      const categoryObj = categories.find(cat => cat.name === product?.category);
-      const subcategoryObj = subcategories.find(sub => sub.name === product?.subcategory);
-
-      let url = '/api/shades';
-      const params = new URLSearchParams();
-
-      if (subcategoryObj) {
-        params.append('subcategoryId', subcategoryObj.id.toString());
-      } else if (categoryObj) {
-        params.append('categoryId', categoryObj.id.toString());
+      if (!product?.id) return [];
+      
+      const response = await fetch(`/api/products/${product.id}/shades`);
+      if (!response.ok) {
+        return [];
       }
-
-      if (params.toString()) {
-        url += '?' + params.toString();
-      }
-
-      const response = await fetch(url);
       return response.json();
     },
-    enabled: !!product,
+    enabled: !!product?.id,
   });
 
   useEffect(() => {
@@ -165,6 +156,14 @@ export default function ProductDetail() {
     });
   };
 
+  const handleShadeSelect = (shade: Shade) => {
+    setSelectedShade(shade);
+    toast({
+      title: "Shade Selected",
+      description: `You selected ${shade.name}`,
+    });
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -248,9 +247,9 @@ export default function ProductDetail() {
                 </Badge>
               )}
               <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="w-full h-auto rounded-3xl transition-transform duration-500 group-hover:scale-105"
+                src={selectedShade?.imageUrl || product.imageUrl}
+                alt={selectedShade ? `${product.name} - ${selectedShade.name}` : product.name}
+                className="w-full h-auto rounded-3xl transition-all duration-500 group-hover:scale-105"
               />
             </div>
           </div>
@@ -293,23 +292,40 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Shades Selection - Always show for beauty products */}
-              <div className="space-y-4 mb-6">
-                <label className="text-gray-700 font-bold text-lg">
-                  Select Shade:
-                </label>
+              {/* Shades Selection - Only show if product has shades */}
+              {shades.length > 0 && (
+                <div className="space-y-4 mb-6">
+                  <label className="text-gray-700 font-bold text-lg">
+                    Select Shade: {selectedShade && (
+                      <span className="text-purple-600 font-normal">
+                        {selectedShade.name}
+                      </span>
+                    )}
+                  </label>
                 <div className="grid grid-cols-4 gap-3">
                   {(() => {
                     const shadesToShow = showAllShades ? shades : shades.slice(0, 4);
 
                     return shadesToShow.map((shade) => (
-                      <div key={shade.value} className="flex flex-col items-center group cursor-pointer">
+                      <div 
+                        key={shade.value} 
+                        className="flex flex-col items-center group cursor-pointer"
+                        onClick={() => handleShadeSelect(shade)}
+                      >
                         <div 
-                          className="w-12 h-12 rounded-full border-3 border-gray-300 hover:border-purple-400 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl"
+                          className={`w-12 h-12 rounded-full border-3 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl ${
+                            selectedShade?.id === shade.id 
+                              ? 'border-purple-500 ring-2 ring-purple-300 ring-offset-2' 
+                              : 'border-gray-300 hover:border-purple-400'
+                          }`}
                           style={{ backgroundColor: shade.colorCode }}
                           title={shade.name}
                         ></div>
-                        <span className="text-xs text-gray-600 mt-2 text-center leading-tight group-hover:text-purple-600 transition-colors">
+                        <span className={`text-xs mt-2 text-center leading-tight transition-colors ${
+                          selectedShade?.id === shade.id 
+                            ? 'text-purple-700 font-semibold' 
+                            : 'text-gray-600 group-hover:text-purple-600'
+                        }`}>
                           {shade.name.split(' ')[0]}
                         </span>
                       </div>
@@ -348,9 +364,10 @@ export default function ProductDetail() {
                 )}
 
                 <p className="text-sm text-gray-500 mt-3">
-                  💡 Click on a shade to select it. Not sure about your shade? Our beauty experts can help you find the perfect match!
-                </p>
-              </div>
+                    💡 Click on a shade to select it. Not sure about your shade? Our beauty experts can help you find the perfect match!
+                  </p>
+                </div>
+              )}
 
               {/* Price */}
               <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">

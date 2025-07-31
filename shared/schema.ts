@@ -163,6 +163,7 @@ export const shades = pgTable("shades", {
   sortOrder: integer("sortOrder").default(0).notNull(),
   categoryIds: jsonb("categoryIds"),
   subcategoryIds: jsonb("subcategoryIds"),
+  productIds: jsonb("productIds"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`),
 });

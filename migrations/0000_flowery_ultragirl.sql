@@ -65,7 +65,19 @@ CREATE TABLE "categories" (
 	"product_count" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "categories_slug_unique" UNIQUE("slug")
 );
-
+CREATE TABLE "shades" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"colorCode" text NOT NULL,
+	"value" text NOT NULL,
+	"isActive" boolean DEFAULT true NOT NULL,
+	"sortOrder" integer DEFAULT 0 NOT NULL,
+	"categoryIds" jsonb,
+	"subcategoryIds" jsonb,
+	"createdAt" timestamp DEFAULT now() NOT NULL,
+	"updatedAt" text DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT "shades_value_unique" UNIQUE("value")
+);
 CREATE TABLE "products" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,

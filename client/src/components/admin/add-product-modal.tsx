@@ -17,6 +17,8 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [shades, setShades] = useState<any[]>([]);
+  const [selectedShades, setSelectedShades] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -161,6 +163,23 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
 
       const createdProduct = await response.json();
 
+      // Assign selected shades to the product
+      if (selectedShades.length > 0) {
+        try {
+          await fetch(`/api/admin/products/${createdProduct.id}/shades`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ shadeIds: selectedShades }),
+          });
+        } catch (shadeError) {
+          console.error('Error assigning shades:', shadeError);
+          // Product is created, but shade assignment failed
+          alert('Product created successfully, but failed to assign shades. You can assign them later.');
+        }
+      }
+
       // Call onAddProduct to update the parent component's state
       await onAddProduct(createdProduct);
 
@@ -199,16 +218,18 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
     });
     setSelectedImage(null);
     setImagePreview('');
+    setSelectedShades([]);
   };
 
-  // Fetch categories and subcategories when component mounts
+  // Fetch categories, subcategories, and shades when component mounts
   useEffect(() => {
-    const fetchCategoriesAndSubcategories = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const [categoriesRes, subcategoriesRes] = await Promise.all([
+        const [categoriesRes, subcategoriesRes, shadesRes] = await Promise.all([
           fetch('/api/categories'),
-          fetch('/api/subcategories')
+          fetch('/api/subcategories'),
+          fetch('/api/admin/shades')
         ]);
 
         if (categoriesRes.ok) {
@@ -220,15 +241,20 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
           const subcategoriesData = await subcategoriesRes.json();
           setSubcategories(subcategoriesData);
         }
+
+        if (shadesRes.ok) {
+          const shadesData = await shadesRes.json();
+          setShades(shadesData.filter((shade: any) => shade.isActive));
+        }
       } catch (error) {
-        console.error('Error fetching categories/subcategories:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     if (open) {
-      fetchCategoriesAndSubcategories();
+      fetchData();
     }
   }, [open]);
 
@@ -437,6 +463,44 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
               onChange={(e) => handleInputChange('tags', e.target.value)}
               placeholder="organic, cruelty-free, vegan"
             />
+          </div>
+
+          {/* Shade Selection */}
+          <div className="space-y-4">
+            <Label>Available Shades (Optional)</Label>
+            <p className="text-sm text-gray-600">Select shades that this product is available in:</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-40 overflow-y-auto border rounded-lg p-3">
+              {shades.map((shade) => (
+                <div key={shade.id} className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id={`shade-${shade.id}`}
+                    checked={selectedShades.includes(shade.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedShades(prev => [...prev, shade.id]);
+                      } else {
+                        setSelectedShades(prev => prev.filter(id => id !== shade.id));
+                      }
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  <div 
+                    className="w-6 h-6 rounded-full border-2 border-gray-300"
+                    style={{ backgroundColor: shade.colorCode }}
+                    title={shade.name}
+                  ></div>
+                  <Label htmlFor={`shade-${shade.id}`} className="text-sm cursor-pointer flex-1">
+                    {shade.name}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {selectedShades.length > 0 && (
+              <p className="text-sm text-green-600">
+                {selectedShades.length} shade{selectedShades.length > 1 ? 's' : ''} selected
+              </p>
+            )}
           </div>
 
           {/* Product Flags */}

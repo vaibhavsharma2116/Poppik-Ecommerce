@@ -480,6 +480,26 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(shades).where(eq(shades.isActive, true)).orderBy(shades.sortOrder);
   }
 
+  async getShadesByCategory(categoryId: number): Promise<Shade[]> {
+    const db = await getDb();
+    return await db.select().from(shades)
+      .where(and(
+        eq(shades.isActive, true),
+        sql`json_extract(${shades.categoryIds}, '$') LIKE '%${categoryId}%'`
+      ))
+      .orderBy(shades.sortOrder);
+  }
+
+  async getShadesBySubcategory(subcategoryId: number): Promise<Shade[]> {
+    const db = await getDb();
+    return await db.select().from(shades)
+      .where(and(
+        eq(shades.isActive, true),
+        sql`json_extract(${shades.subcategoryIds}, '$') LIKE '%${subcategoryId}%'`
+      ))
+      .orderBy(shades.sortOrder);
+  }
+
   async createShade(shadeData: InsertShade): Promise<Shade> {
     const db = await getDb();
     const result = await db.insert(shades).values(shadeData).returning();

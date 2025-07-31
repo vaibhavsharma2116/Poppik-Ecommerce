@@ -38,8 +38,34 @@ export default function ProductDetail() {
     enabled: !!product?.category,
   });
 
-  const { data: shades = [] } = useQuery<Shade[]>({
-    queryKey: ['/api/shades'],
+  // Mock category and subcategory data (replace with actual data fetching)
+  const categories = [{ id: 1, name: 'skincare' }, { id: 2, name: 'haircare' }];
+  const subcategories = [{ id: 3, name: 'face wash' }, { id: 4, name: 'shampoo' }];
+
+  // Fetch shades based on product category
+  const { data: shades = [] } = useQuery({
+    queryKey: ['/api/shades', { categoryId: product?.category }],
+    queryFn: async () => {
+      const categoryObj = categories.find(cat => cat.name === product?.category);
+      const subcategoryObj = subcategories.find(sub => sub.name === product?.subcategory);
+
+      let url = '/api/shades';
+      const params = new URLSearchParams();
+
+      if (subcategoryObj) {
+        params.append('subcategoryId', subcategoryObj.id.toString());
+      } else if (categoryObj) {
+        params.append('categoryId', categoryObj.id.toString());
+      }
+
+      if (params.toString()) {
+        url += '?' + params.toString();
+      }
+
+      const response = await fetch(url);
+      return response.json();
+    },
+    enabled: !!product,
   });
 
   useEffect(() => {
@@ -275,7 +301,7 @@ export default function ProductDetail() {
                 <div className="grid grid-cols-4 gap-3">
                   {(() => {
                     const shadesToShow = showAllShades ? shades : shades.slice(0, 4);
-                    
+
                     return shadesToShow.map((shade) => (
                       <div key={shade.value} className="flex flex-col items-center group cursor-pointer">
                         <div 
@@ -290,7 +316,7 @@ export default function ProductDetail() {
                     ));
                   })()}
                 </div>
-                
+
                 {/* View All Button */}
                 {!showAllShades && shades.length > 4 && (
                   <div className="text-center">
@@ -305,7 +331,7 @@ export default function ProductDetail() {
                     </Button>
                   </div>
                 )}
-                
+
                 {/* Show Less Button */}
                 {showAllShades && shades.length > 4 && (
                   <div className="text-center">
@@ -320,7 +346,7 @@ export default function ProductDetail() {
                     </Button>
                   </div>
                 )}
-                
+
                 <p className="text-sm text-gray-500 mt-3">
                   💡 Click on a shade to select it. Not sure about your shade? Our beauty experts can help you find the perfect match!
                 </p>

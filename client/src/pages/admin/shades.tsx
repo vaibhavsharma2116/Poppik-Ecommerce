@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
@@ -16,7 +17,8 @@ import {
   Palette,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  Package
 } from "lucide-react";
 
 interface Shade {
@@ -26,8 +28,32 @@ interface Shade {
   value: string;
   isActive: boolean;
   sortOrder: number;
+  categoryIds?: number[];
+  subcategoryIds?: number[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface Subcategory {
+  id: number;
+  name: string;
+  slug: string;
+  categoryId: number;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  subcategory?: string;
+  imageUrl: string;
+  price: number;
 }
 
 export default function AdminShades() {
@@ -40,11 +66,42 @@ export default function AdminShades() {
     colorCode: '#F7E7CE',
     value: '',
     isActive: true,
-    sortOrder: 0
+    sortOrder: 0,
+    categoryIds: [] as number[],
+    subcategoryIds: [] as number[]
   });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch categories and subcategories
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
+    },
+  });
+
+  const { data: subcategories = [] } = useQuery<Subcategory[]>({
+    queryKey: ['/api/subcategories'],
+    queryFn: async () => {
+      const response = await fetch('/api/subcategories');
+      if (!response.ok) throw new Error('Failed to fetch subcategories');
+      return response.json();
+    },
+  });
+
+  // Fetch products
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
+    queryFn: async () => {
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Failed to fetch products');
+      return response.json();
+    },
+  });
 
   // Fetch shades
   const { data: shades = [], isLoading } = useQuery<Shade[]>({
@@ -124,7 +181,9 @@ export default function AdminShades() {
       colorCode: '#F7E7CE',
       value: '',
       isActive: true,
-      sortOrder: 0
+      sortOrder: 0,
+      categoryIds: [],
+      subcategoryIds: []
     });
     setSelectedShade(null);
   };
@@ -141,7 +200,9 @@ export default function AdminShades() {
       colorCode: shade.colorCode,
       value: shade.value,
       isActive: shade.isActive,
-      sortOrder: shade.sortOrder
+      sortOrder: shade.sortOrder,
+      categoryIds: shade.categoryIds || [],
+      subcategoryIds: shade.subcategoryIds || []
     });
     setIsEditModalOpen(true);
   };
@@ -176,6 +237,77 @@ export default function AdminShades() {
     });
   };
 
+  // Get subcategories for selected categories
+  const getAvailableSubcategories = (selectedCategoryIds: number[]) => {
+    return subcategories.filter(sub => selectedCategoryIds.includes(sub.categoryId));
+  };
+
+  // Get products for shade's categories/subcategories
+  const getShadeProducts = (shade: Shade) => {
+    if (!shade.categoryIds?.length && !shade.subcategoryIds?.length) return [];
+    
+    return products.filter(product => {
+      const categoryMatch = shade.categoryIds?.some(catId => {
+        const category = categories.find(c => c.id === catId);
+        return category?.name.toLowerCase() === product.category.toLowerCase();
+      });
+      
+      const subcategoryMatch = shade.subcategoryIds?.some(subId => {
+        const subcategory = subcategories.find(s => s.id === subId);
+        return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
+      });
+      
+      return categoryMatch || subcategoryMatch;
+    });
+  };
+
+  // Get filtered products based on current form selection
+  const getFilteredProducts = (selectedCategoryIds: number[], selectedSubcategoryIds: number[]) => {
+    if (!selectedCategoryIds.length && !selectedSubcategoryIds.length) return [];
+    
+    return products.filter(product => {
+      const categoryMatch = selectedCategoryIds.some(catId => {
+        const category = categories.find(c => c.id === catId);
+        return category?.name.toLowerCase() === product.category.toLowerCase();
+      });
+      
+      const subcategoryMatch = selectedSubcategoryIds.some(subId => {
+        const subcategory = subcategories.find(s => s.id === subId);
+        return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
+      });
+      
+      return categoryMatch || subcategoryMatch;
+    });
+  };
+
+  const handleCategoryChange = (categoryId: string) => {
+    const id = parseInt(categoryId);
+    const newCategoryIds = formData.categoryIds.includes(id) 
+      ? formData.categoryIds.filter(cId => cId !== id)
+      : [...formData.categoryIds, id];
+    
+    // Remove subcategories that don't belong to selected categories
+    const validSubcategoryIds = formData.subcategoryIds.filter(subId => {
+      const subcategory = subcategories.find(s => s.id === subId);
+      return subcategory && newCategoryIds.includes(subcategory.categoryId);
+    });
+    
+    setFormData(prev => ({ 
+      ...prev, 
+      categoryIds: newCategoryIds,
+      subcategoryIds: validSubcategoryIds
+    }));
+  };
+
+  const handleSubcategoryChange = (subcategoryId: string) => {
+    const id = parseInt(subcategoryId);
+    const newSubcategoryIds = formData.subcategoryIds.includes(id)
+      ? formData.subcategoryIds.filter(sId => sId !== id)
+      : [...formData.subcategoryIds, id];
+    
+    setFormData(prev => ({ ...prev, subcategoryIds: newSubcategoryIds }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -195,7 +327,7 @@ export default function AdminShades() {
           <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
             Shade Management
           </h2>
-          <p className="text-slate-600 mt-1">Manage product shade colors and options</p>
+          <p className="text-slate-600 mt-1">Manage product shade colors and their category associations</p>
         </div>
         <Button onClick={handleAdd} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
           <Plus className="h-4 w-4 mr-2" />
@@ -204,7 +336,7 @@ export default function AdminShades() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -246,13 +378,27 @@ export default function AdminShades() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total Products</p>
+                <p className="text-2xl font-bold text-slate-900">{products.length}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500">
+                <Package className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Shades Table */}
       <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
         <CardHeader>
           <CardTitle>All Shades</CardTitle>
-          <CardDescription>Manage your product shade colors</CardDescription>
+          <CardDescription>Manage your product shade colors and their category associations</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -261,68 +407,92 @@ export default function AdminShades() {
                 <TableHead className="text-slate-800 font-semibold py-4">Preview</TableHead>
                 <TableHead className="text-slate-800 font-semibold py-4">Name</TableHead>
                 <TableHead className="text-slate-800 font-semibold py-4">Color Code</TableHead>
-                <TableHead className="text-slate-800 font-semibold py-4">Value</TableHead>
+                <TableHead className="text-slate-800 font-semibold py-4">Categories</TableHead>
+                <TableHead className="text-slate-800 font-semibold py-4">Products</TableHead>
                 <TableHead className="text-slate-800 font-semibold py-4">Status</TableHead>
-                <TableHead className="text-slate-800 font-semibold py-4">Sort Order</TableHead>
                 <TableHead className="text-slate-800 font-semibold py-4 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shades.map((shade) => (
-                <TableRow key={shade.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-all duration-200">
-                  <TableCell className="py-4">
-                    <div 
-                      className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
-                      style={{ backgroundColor: shade.colorCode }}
-                      title={`${shade.name} - ${shade.colorCode}`}
-                    ></div>
-                  </TableCell>
-                  <TableCell className="py-4 font-medium">{shade.name}</TableCell>
-                  <TableCell className="py-4">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">{shade.colorCode}</code>
-                  </TableCell>
-                  <TableCell className="py-4 text-gray-600">{shade.value}</TableCell>
-                  <TableCell className="py-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleActive(shade)}
-                      className="p-1"
-                    >
-                      <Badge 
-                        variant={shade.isActive ? "default" : "secondary"}
-                        className={shade.isActive 
-                          ? "bg-green-100 text-green-800 border border-green-200" 
-                          : "bg-gray-100 text-gray-800 border border-gray-200"
-                        }
-                      >
-                        {shade.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </Button>
-                  </TableCell>
-                  <TableCell className="py-4">{shade.sortOrder}</TableCell>
-                  <TableCell className="text-right py-4">
-                    <div className="flex justify-end space-x-2">
-                      <Button 
-                        variant="ghost" 
+              {shades.map((shade) => {
+                const shadeProducts = getShadeProducts(shade);
+                const shadeCategories = categories.filter(cat => shade.categoryIds?.includes(cat.id));
+                const shadeSubcategories = subcategories.filter(sub => shade.subcategoryIds?.includes(sub.id));
+                
+                return (
+                  <TableRow key={shade.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-all duration-200">
+                    <TableCell className="py-4">
+                      <div 
+                        className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
+                        style={{ backgroundColor: shade.colorCode }}
+                        title={`${shade.name} - ${shade.colorCode}`}
+                      ></div>
+                    </TableCell>
+                    <TableCell className="py-4 font-medium">{shade.name}</TableCell>
+                    <TableCell className="py-4">
+                      <code className="bg-gray-100 px-2 py-1 rounded text-sm">{shade.colorCode}</code>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <div className="space-y-1">
+                        {shadeCategories.map(cat => (
+                          <Badge key={cat.id} variant="outline" className="mr-1">
+                            {cat.name}
+                          </Badge>
+                        ))}
+                        {shadeSubcategories.map(sub => (
+                          <Badge key={sub.id} variant="secondary" className="mr-1">
+                            {sub.name}
+                          </Badge>
+                        ))}
+                        {!shadeCategories.length && !shadeSubcategories.length && (
+                          <span className="text-gray-400 text-sm">No categories</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <span className="text-sm font-medium">{shadeProducts.length} products</span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <Button
+                        variant="ghost"
                         size="sm"
-                        className="h-9 w-9 p-0 rounded-lg transition-all hover:bg-emerald-50 hover:text-emerald-600"
-                        onClick={() => handleEdit(shade)}
+                        onClick={() => handleToggleActive(shade)}
+                        className="p-1"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Badge 
+                          variant={shade.isActive ? "default" : "secondary"}
+                          className={shade.isActive 
+                            ? "bg-green-100 text-green-800 border border-green-200" 
+                            : "bg-gray-100 text-gray-800 border border-gray-200"
+                          }
+                        >
+                          {shade.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="h-9 w-9 p-0 rounded-lg transition-all hover:bg-red-50 hover:text-red-600"
-                        onClick={() => handleDelete(shade)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell className="text-right py-4">
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="h-9 w-9 p-0 rounded-lg transition-all hover:bg-emerald-50 hover:text-emerald-600"
+                          onClick={() => handleEdit(shade)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="h-9 w-9 p-0 rounded-lg transition-all hover:bg-red-50 hover:text-red-600"
+                          onClick={() => handleDelete(shade)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -330,27 +500,40 @@ export default function AdminShades() {
 
       {/* Add Shade Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-purple-600" />
               Add New Shade
             </DialogTitle>
             <DialogDescription>
-              Create a new shade color option for products
+              Create a new shade color option and assign it to categories
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="add-name">Shade Name *</Label>
-              <Input
-                id="add-name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Fair to Light"
-                required
-              />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="add-name">Shade Name *</Label>
+                <Input
+                  id="add-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Fair to Light"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="add-sort">Sort Order</Label>
+                <Input
+                  id="add-sort"
+                  type="number"
+                  value={formData.sortOrder}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -383,16 +566,74 @@ export default function AdminShades() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="add-sort">Sort Order</Label>
-              <Input
-                id="add-sort"
-                type="number"
-                value={formData.sortOrder}
-                onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
-                placeholder="0"
-              />
+            <div className="space-y-4">
+              <Label>Categories</Label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
+                {categories.map(category => (
+                  <div key={category.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`cat-${category.id}`}
+                      checked={formData.categoryIds.includes(category.id)}
+                      onChange={() => handleCategoryChange(category.id.toString())}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor={`cat-${category.id}`} className="text-sm">{category.name}</Label>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {formData.categoryIds.length > 0 && (
+              <div className="space-y-4">
+                <Label>Subcategories</Label>
+                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
+                  {getAvailableSubcategories(formData.categoryIds).map(subcategory => (
+                    <div key={subcategory.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`sub-${subcategory.id}`}
+                        checked={formData.subcategoryIds.includes(subcategory.id)}
+                        onChange={() => handleSubcategoryChange(subcategory.id.toString())}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor={`sub-${subcategory.id}`} className="text-sm">{subcategory.name}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Products Preview */}
+            {(formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0) && (
+              <div className="space-y-4">
+                <Label>Products that will use this shade ({getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length} products)</Label>
+                <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                  {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3">
+                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).slice(0, 8).map(product => (
+                        <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-10 h-10 rounded object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{product.name}</p>
+                            <p className="text-xs text-gray-500">{product.category} • ₹{product.price}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 8 && (
+                        <p className="text-sm text-gray-500 text-center">...and {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length - 8} more products</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">No products found for selected categories</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center space-x-2">
               <input
@@ -424,27 +665,40 @@ export default function AdminShades() {
 
       {/* Edit Shade Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="h-5 w-5 text-emerald-600" />
               Edit Shade
             </DialogTitle>
             <DialogDescription>
-              Update shade information
+              Update shade information and category assignments
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Shade Name *</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Fair to Light"
-                required
-              />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Shade Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Fair to Light"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-sort">Sort Order</Label>
+                <Input
+                  id="edit-sort"
+                  type="number"
+                  value={formData.sortOrder}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -477,16 +731,74 @@ export default function AdminShades() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-sort">Sort Order</Label>
-              <Input
-                id="edit-sort"
-                type="number"
-                value={formData.sortOrder}
-                onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
-                placeholder="0"
-              />
+            <div className="space-y-4">
+              <Label>Categories</Label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
+                {categories.map(category => (
+                  <div key={category.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`edit-cat-${category.id}`}
+                      checked={formData.categoryIds.includes(category.id)}
+                      onChange={() => handleCategoryChange(category.id.toString())}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor={`edit-cat-${category.id}`} className="text-sm">{category.name}</Label>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {formData.categoryIds.length > 0 && (
+              <div className="space-y-4">
+                <Label>Subcategories</Label>
+                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
+                  {getAvailableSubcategories(formData.categoryIds).map(subcategory => (
+                    <div key={subcategory.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`edit-sub-${subcategory.id}`}
+                        checked={formData.subcategoryIds.includes(subcategory.id)}
+                        onChange={() => handleSubcategoryChange(subcategory.id.toString())}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor={`edit-sub-${subcategory.id}`} className="text-sm">{subcategory.name}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Current form products preview */}
+            {(formData.categoryIds.length > 0 || formData.subcategoryIds.length > 0) && (
+              <div className="space-y-4">
+                <Label>Products that will use this shade ({getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length} products)</Label>
+                <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                  {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3">
+                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).slice(0, 8).map(product => (
+                        <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border">
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-10 h-10 rounded object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{product.name}</p>
+                            <p className="text-xs text-gray-500">{product.category} • ₹{product.price}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length > 8 && (
+                        <p className="text-sm text-gray-500 text-center">...and {getFilteredProducts(formData.categoryIds, formData.subcategoryIds).length - 8} more products</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">No products found for selected categories</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center space-x-2">
               <input
@@ -498,6 +810,35 @@ export default function AdminShades() {
               />
               <Label htmlFor="edit-active" className="text-sm">Active</Label>
             </div>
+
+            {/* Show currently saved products for this shade */}
+            {selectedShade && (
+              <div className="space-y-2">
+                <Label>Currently Associated Products ({getShadeProducts(selectedShade).length})</Label>
+                <div className="max-h-32 overflow-y-auto border rounded-lg p-3 bg-blue-50">
+                  {getShadeProducts(selectedShade).length > 0 ? (
+                    <div className="grid grid-cols-1 gap-2">
+                      {getShadeProducts(selectedShade).slice(0, 5).map(product => (
+                        <div key={product.id} className="flex items-center space-x-2 text-sm">
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-8 h-8 rounded object-cover"
+                          />
+                          <span className="flex-1">{product.name}</span>
+                          <span className="text-gray-500">₹{product.price}</span>
+                        </div>
+                      ))}
+                      {getShadeProducts(selectedShade).length > 5 && (
+                        <p className="text-sm text-gray-500">...and {getShadeProducts(selectedShade).length - 5} more</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No products currently associated</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -529,15 +870,26 @@ export default function AdminShades() {
             </DialogDescription>
           </DialogHeader>
           {selectedShade && (
-            <div className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg border border-red-200">
-              <div 
-                className="w-8 h-8 rounded-full border-2 border-gray-300"
-                style={{ backgroundColor: selectedShade.colorCode }}
-              ></div>
-              <div>
-                <p className="font-medium text-slate-900">{selectedShade.name}</p>
-                <p className="text-sm text-slate-600">{selectedShade.colorCode}</p>
+            <div>
+              <div className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg border border-red-200 mb-4">
+                <div 
+                  className="w-8 h-8 rounded-full border-2 border-gray-300"
+                  style={{ backgroundColor: selectedShade.colorCode }}
+                ></div>
+                <div>
+                  <p className="font-medium text-slate-900">{selectedShade.name}</p>
+                  <p className="text-sm text-slate-600">{selectedShade.colorCode}</p>
+                </div>
               </div>
+              
+              {getShadeProducts(selectedShade).length > 0 && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ This shade is used by {getShadeProducts(selectedShade).length} product(s). 
+                    Consider updating those products before deleting this shade.
+                  </p>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>

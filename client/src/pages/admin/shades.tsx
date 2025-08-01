@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,7 @@ interface Shade {
   categoryIds?: number[];
   subcategoryIds?: number[];
   productIds?: number[];
+  imageUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -70,7 +70,8 @@ export default function AdminShades() {
     sortOrder: 0,
     categoryIds: [] as number[],
     subcategoryIds: [] as number[],
-    productIds: [] as number[]
+    productIds: [] as number[],
+    imageFile: null as File | null
   });
 
   const { toast } = useToast();
@@ -136,13 +137,20 @@ export default function AdminShades() {
   // Update shade mutation
   const updateShadeMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      console.log("Updating shade:", data);
       const response = await fetch(`/api/admin/shades/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to update shade');
-      return response.json();
+
+      const result = await response.json();
+      console.log("Update response:", result);
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update shade');
+      }
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/shades'] });
@@ -152,8 +160,13 @@ export default function AdminShades() {
       toast({ title: "Success", description: "Shade updated successfully" });
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
+      console.error("Update error:", error);
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update shade", 
+        variant: "destructive" 
+      });
+    },
   });
 
   // Delete shade mutation
@@ -186,7 +199,8 @@ export default function AdminShades() {
       sortOrder: 0,
       categoryIds: [],
       subcategoryIds: [],
-      productIds: []
+      productIds: [],
+      imageFile: null
     });
     setSelectedShade(null);
   };
@@ -206,7 +220,8 @@ export default function AdminShades() {
       sortOrder: shade.sortOrder,
       categoryIds: shade.categoryIds || [],
       subcategoryIds: shade.subcategoryIds || [],
-      productIds: shade.productIds || []
+      productIds: shade.productIds || [],
+      imageFile: null
     });
     setIsEditModalOpen(true);
   };
@@ -216,21 +231,51 @@ export default function AdminShades() {
     setIsDeleteModalOpen(true);
   };
 
-  const handleSubmit = (isEdit: boolean) => {
+  const handleSubmit = async (isEdit: boolean) => {
     if (!formData.name || !formData.colorCode) {
       toast({ title: "Error", description: "Name and color code are required", variant: "destructive" });
       return;
     }
 
     const value = formData.value || formData.name.toLowerCase().replace(/\s+/g, '-');
+    let imageUrl = null;
+
+    // Handle image upload if there's a file
+    if (formData.imageFile) {
+      const imageFormData = new FormData();
+      imageFormData.append('image', formData.imageFile);
+
+      try {
+        const uploadResponse = await fetch('/api/admin/upload-image', {
+          method: 'POST',
+          body: imageFormData,
+        });
+
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json();
+          imageUrl = uploadResult.imageUrl;
+        } else {
+          toast({ title: "Warning", description: "Image upload failed, shade will be created without image", variant: "destructive" });
+        }
+      } catch (error) {
+        console.error('Image upload error:', error);
+        toast({ title: "Warning", description: "Image upload failed, shade will be created without image", variant: "destructive" });
+      }
+    }
+
+    const shadeData = { 
+      ...formData, 
+      value,
+      imageUrl: imageUrl || (isEdit && selectedShade ? selectedShade.imageUrl : null)
+    };
 
     if (isEdit && selectedShade) {
       updateShadeMutation.mutate({ 
         id: selectedShade.id, 
-        data: { ...formData, value } 
+        data: shadeData
       });
     } else {
-      createShadeMutation.mutate({ ...formData, value });
+      createShadeMutation.mutate(shadeData);
     }
   };
 
@@ -249,18 +294,18 @@ export default function AdminShades() {
   // Get products for shade's categories/subcategories
   const getShadeProducts = (shade: Shade) => {
     if (!shade.categoryIds?.length && !shade.subcategoryIds?.length) return [];
-    
+
     return products.filter(product => {
       const categoryMatch = shade.categoryIds?.some(catId => {
         const category = categories.find(c => c.id === catId);
         return category?.name.toLowerCase() === product.category.toLowerCase();
       });
-      
+
       const subcategoryMatch = shade.subcategoryIds?.some(subId => {
         const subcategory = subcategories.find(s => s.id === subId);
         return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
       });
-      
+
       return categoryMatch || subcategoryMatch;
     });
   };
@@ -268,18 +313,18 @@ export default function AdminShades() {
   // Get filtered products based on current form selection
   const getFilteredProducts = (selectedCategoryIds: number[], selectedSubcategoryIds: number[]) => {
     if (!selectedCategoryIds.length && !selectedSubcategoryIds.length) return [];
-    
+
     return products.filter(product => {
       const categoryMatch = selectedCategoryIds.some(catId => {
         const category = categories.find(c => c.id === catId);
         return category?.name.toLowerCase() === product.category.toLowerCase();
       });
-      
+
       const subcategoryMatch = selectedSubcategoryIds.some(subId => {
         const subcategory = subcategories.find(s => s.id === subId);
         return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
       });
-      
+
       return categoryMatch || subcategoryMatch;
     });
   };
@@ -289,13 +334,13 @@ export default function AdminShades() {
     const newCategoryIds = formData.categoryIds.includes(id) 
       ? formData.categoryIds.filter(cId => cId !== id)
       : [...formData.categoryIds, id];
-    
+
     // Remove subcategories that don't belong to selected categories
     const validSubcategoryIds = formData.subcategoryIds.filter(subId => {
       const subcategory = subcategories.find(s => s.id === subId);
       return subcategory && newCategoryIds.includes(subcategory.categoryId);
     });
-    
+
     setFormData(prev => ({ 
       ...prev, 
       categoryIds: newCategoryIds,
@@ -308,7 +353,7 @@ export default function AdminShades() {
     const newSubcategoryIds = formData.subcategoryIds.includes(id)
       ? formData.subcategoryIds.filter(sId => sId !== id)
       : [...formData.subcategoryIds, id];
-    
+
     setFormData(prev => ({ ...prev, subcategoryIds: newSubcategoryIds }));
   };
 
@@ -317,7 +362,7 @@ export default function AdminShades() {
     const newProductIds = formData.productIds.includes(id)
       ? formData.productIds.filter(pId => pId !== id)
       : [...formData.productIds, id];
-    
+
     setFormData(prev => ({ ...prev, productIds: newProductIds }));
   };
 
@@ -431,15 +476,25 @@ export default function AdminShades() {
                 const shadeProducts = getShadeProducts(shade);
                 const shadeCategories = categories.filter(cat => shade.categoryIds?.includes(cat.id));
                 const shadeSubcategories = subcategories.filter(sub => shade.subcategoryIds?.includes(sub.id));
-                
+
                 return (
                   <TableRow key={shade.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-all duration-200">
                     <TableCell className="py-4">
-                      <div 
-                        className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
-                        style={{ backgroundColor: shade.colorCode }}
-                        title={`${shade.name} - ${shade.colorCode}`}
-                      ></div>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
+                          style={{ backgroundColor: shade.colorCode }}
+                          title={`${shade.name} - ${shade.colorCode}`}
+                        ></div>
+                        {shade.imageUrl && (
+                          <img 
+                            src={shade.imageUrl} 
+                            alt={shade.name}
+                            className="w-8 h-8 rounded object-cover border-2 border-gray-300"
+                            title="Actual shade image"
+                          />
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 font-medium">{shade.name}</TableCell>
                     <TableCell className="py-4">
@@ -570,6 +625,42 @@ export default function AdminShades() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="add-image">Shade Image (Optional)</Label>
+              <div className="flex gap-3 items-center">
+                <Input
+                  id="add-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData(prev => ({ ...prev, imageFile: file }));
+                    }
+                  }}
+                  className="flex-1"
+                />
+                {formData.imageFile && (
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={URL.createObjectURL(formData.imageFile)} 
+                      alt="Preview" 
+                      className="w-10 h-10 rounded object-cover border"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, imageFile: null }))}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-gray-500">Upload an image to show the actual shade color</p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="add-value">Value (auto-generated if empty)</Label>
               <Input
                 id="add-value"
@@ -632,13 +723,13 @@ export default function AdminShades() {
                           const category = categories.find(c => c.id === catId);
                           return category?.name.toLowerCase() === product.category.toLowerCase();
                         });
-                        
+
                         // Check if product matches selected subcategories
                         const subcategoryMatch = formData.subcategoryIds.length === 0 || formData.subcategoryIds.some(subId => {
                           const subcategory = subcategories.find(s => s.id === subId);
                           return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
                         });
-                        
+
                         return categoryMatch && subcategoryMatch;
                       });
 
@@ -689,7 +780,7 @@ export default function AdminShades() {
                     const categoryProducts = getFilteredProducts(formData.categoryIds, formData.subcategoryIds);
                     const individualProducts = products.filter(p => formData.productIds.includes(p.id));
                     const allProducts = [...categoryProducts, ...individualProducts.filter(p => !categoryProducts.some(cp => cp.id === p.id))];
-                    
+
                     return allProducts.length > 0 ? (
                       <div className="grid grid-cols-1 gap-3">
                         {allProducts.slice(0, 8).map(product => (
@@ -809,6 +900,46 @@ export default function AdminShades() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="edit-image">Shade Image</Label>
+              <div className="flex gap-3 items-center">
+                <Input
+                  id="edit-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData(prev => ({ ...prev, imageFile: file }));
+                    }
+                  }}
+                  className="flex-1"
+                />
+                {(formData.imageFile || selectedShade?.imageUrl) && (
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : selectedShade?.imageUrl} 
+                      alt="Preview" 
+                      className="w-10 h-10 rounded object-cover border"
+                    />
+                    {formData.imageFile && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, imageFile: null }))}
+                      >
+                        Remove New
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-gray-500">
+                {selectedShade?.imageUrl ? 'Upload a new image to replace the current one' : 'Upload an image to show the actual shade color'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="edit-value">Value</Label>
               <Input
                 id="edit-value"
@@ -871,13 +1002,13 @@ export default function AdminShades() {
                           const category = categories.find(c => c.id === catId);
                           return category?.name.toLowerCase() === product.category.toLowerCase();
                         });
-                        
+
                         // Check if product matches selected subcategories
                         const subcategoryMatch = formData.subcategoryIds.length === 0 || formData.subcategoryIds.some(subId => {
                           const subcategory = subcategories.find(s => s.id === subId);
                           return subcategory?.name.toLowerCase() === product.subcategory?.toLowerCase();
                         });
-                        
+
                         return categoryMatch && subcategoryMatch;
                       });
 
@@ -928,7 +1059,7 @@ export default function AdminShades() {
                     const categoryProducts = getFilteredProducts(formData.categoryIds, formData.subcategoryIds);
                     const individualProducts = products.filter(p => formData.productIds.includes(p.id));
                     const allProducts = [...categoryProducts, ...individualProducts.filter(p => !categoryProducts.some(cp => cp.id === p.id))];
-                    
+
                     return allProducts.length > 0 ? (
                       <div className="grid grid-cols-1 gap-3">
                         {allProducts.slice(0, 8).map(product => (
@@ -1042,7 +1173,7 @@ export default function AdminShades() {
                   <p className="text-sm text-slate-600">{selectedShade.colorCode}</p>
                 </div>
               </div>
-              
+
               {getShadeProducts(selectedShade).length > 0 && (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">

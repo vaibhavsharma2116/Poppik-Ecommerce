@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import type { Category, Subcategory, Product } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
-
+import logo from "@assets/logo.png";
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -202,9 +202,14 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/">
-              <h1 className="text-2xl font-bold text-white cursor-pointer hover:text-yellow-300 transition-colors duration-300 drop-shadow-lg">
-                Poppik
-              </h1>
+              <div className="flex items-center cursor-pointer hover:scale-105 transition-transform duration-300">
+                <img 
+  src={logo} 
+  alt="POPPIK Logo" 
+   style={{ width: 'auto', height: '120px' ,marginTop: '20px' }}
+  
+/>
+              </div>
             </Link>
 
             {/* Desktop Search */}
@@ -647,7 +652,13 @@ export default function Layout({ children }: LayoutProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Company Info */}
             <div>
-              <h3 className="text-xl font-bold mb-4">Poppik</h3>
+              <div className="mb-4">
+                <img 
+                  src="/attached_assets/logo_1754036379278.png" 
+                  alt="Poppik" 
+                  className="h-8 w-auto"
+                />
+              </div>
               <p className="text-gray-400 mb-4">
                 Your trusted partner for natural, effective beauty and wellness products.
               </p>

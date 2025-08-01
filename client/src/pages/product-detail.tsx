@@ -66,6 +66,8 @@ export default function ProductDetail() {
     }
   }, [product]);
 
+  // Don't auto-select any shade, let user choose manually
+
   const toggleWishlist = () => {
     if (!product) return;
 
@@ -129,30 +131,44 @@ export default function ProductDetail() {
       return;
     }
 
+    // Allow adding to cart without selecting a shade (None option available)
+
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const existingItem = cart.find((cartItem: any) => cartItem.id === product.id);
+    
+    // Create unique item ID based on product and shade
+    const itemKey = selectedShade ? `${product.id}-${selectedShade.id}` : `${product.id}`;
+    const existingItem = cart.find((cartItem: any) => cartItem.itemKey === itemKey);
 
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
-      cart.push({
+      const cartItem = {
         id: product.id,
+        itemKey,
         name: product.name,
         price: `₹${product.price}`,
         originalPrice: product.originalPrice ? `₹${product.originalPrice}` : undefined,
-        image: product.imageUrl,
+        image: selectedShade?.imageUrl || product.imageUrl,
         quantity: 1,
-        inStock: true
-      });
+        inStock: true,
+        selectedShade: selectedShade ? {
+          id: selectedShade.id,
+          name: selectedShade.name,
+          colorCode: selectedShade.colorCode,
+          imageUrl: selectedShade.imageUrl
+        } : null
+      };
+      cart.push(cartItem);
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
     localStorage.setItem("cartCount", cart.reduce((total: number, item: any) => total + item.quantity, 0).toString());
     window.dispatchEvent(new Event("cartUpdated"));
 
+    const shadeText = selectedShade ? ` in ${selectedShade.name} shade` : '';
     toast({
       title: "Added to Cart",
-      description: `${product.name} has been added to your cart`,
+      description: `${product.name}${shadeText} has been added to your cart`,
     });
   };
 
@@ -250,7 +266,24 @@ export default function ProductDetail() {
                 src={selectedShade?.imageUrl || product.imageUrl}
                 alt={selectedShade ? `${product.name} - ${selectedShade.name}` : product.name}
                 className="w-full h-auto rounded-3xl transition-all duration-500 group-hover:scale-105"
+                style={{
+                  transition: 'opacity 0.3s ease-in-out'
+                }}
+                onLoad={(e) => {
+                  // Smooth transition effect when image loads
+                  e.currentTarget.style.opacity = '1';
+                }}
+                onLoadStart={(e) => {
+                  e.currentTarget.style.opacity = '0.7';
+                }}
               />
+              {!selectedShade && shades.length > 0 && (
+                <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg">
+                  <p className="text-sm font-medium text-center">
+                    💡 Select a shade to see the product in that color
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -296,15 +329,50 @@ export default function ProductDetail() {
               {shades.length > 0 && (
                 <div className="space-y-4 mb-6">
                   <label className="text-gray-700 font-bold text-lg">
-                    Select Shade: {selectedShade && (
+                    Select Shade: {selectedShade ? (
                       <span className="text-purple-600 font-normal">
                         {selectedShade.name}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 font-normal">
+                        No shade selected
                       </span>
                     )}
                   </label>
                 <div className="grid grid-cols-4 gap-3">
+                  {/* None/No Shade Option */}
+                  <div 
+                    className="flex flex-col items-center group cursor-pointer"
+                    onClick={() => setSelectedShade(null)}
+                  >
+                    <div className="relative">
+                      {!selectedShade && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center z-10">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      )}
+                      <div 
+                        className={`w-12 h-12 rounded-full border-3 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl flex items-center justify-center ${
+                          !selectedShade
+                            ? 'border-purple-500 ring-2 ring-purple-300 ring-offset-2 scale-105 bg-gray-100' 
+                            : 'border-gray-300 hover:border-purple-400 bg-gray-50'
+                        }`}
+                        title="No specific shade"
+                      >
+                        <span className="text-xs font-bold text-gray-600">None</span>
+                      </div>
+                    </div>
+                    <span className={`text-xs mt-2 text-center leading-tight transition-colors ${
+                      !selectedShade
+                        ? 'text-purple-700 font-semibold' 
+                        : 'text-gray-600 group-hover:text-purple-600'
+                    }`}>
+                      No Shade
+                    </span>
+                  </div>
+
                   {(() => {
-                    const shadesToShow = showAllShades ? shades : shades.slice(0, 4);
+                    const shadesToShow = showAllShades ? shades : shades.slice(0, 3);
 
                     return shadesToShow.map((shade) => (
                       <div 
@@ -312,15 +380,22 @@ export default function ProductDetail() {
                         className="flex flex-col items-center group cursor-pointer"
                         onClick={() => handleShadeSelect(shade)}
                       >
-                        <div 
-                          className={`w-12 h-12 rounded-full border-3 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl ${
-                            selectedShade?.id === shade.id 
-                              ? 'border-purple-500 ring-2 ring-purple-300 ring-offset-2' 
-                              : 'border-gray-300 hover:border-purple-400'
-                          }`}
-                          style={{ backgroundColor: shade.colorCode }}
-                          title={shade.name}
-                        ></div>
+                        <div className="relative">
+                          {selectedShade?.id === shade.id && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center z-10">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                          )}
+                          <div 
+                            className={`w-12 h-12 rounded-full border-3 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl ${
+                              selectedShade?.id === shade.id 
+                                ? 'border-purple-500 ring-2 ring-purple-300 ring-offset-2 scale-105' 
+                                : 'border-gray-300 hover:border-purple-400'
+                            }`}
+                            style={{ backgroundColor: shade.colorCode }}
+                            title={shade.name}
+                          ></div>
+                        </div>
                         <span className={`text-xs mt-2 text-center leading-tight transition-colors ${
                           selectedShade?.id === shade.id 
                             ? 'text-purple-700 font-semibold' 
@@ -334,7 +409,7 @@ export default function ProductDetail() {
                 </div>
 
                 {/* View All Button */}
-                {!showAllShades && shades.length > 4 && (
+                {!showAllShades && shades.length > 3 && (
                   <div className="text-center">
                     <Button
                       variant="outline"
@@ -349,7 +424,7 @@ export default function ProductDetail() {
                 )}
 
                 {/* Show Less Button */}
-                {showAllShades && shades.length > 4 && (
+                {showAllShades && shades.length > 3 && (
                   <div className="text-center">
                     <Button
                       variant="outline"

@@ -278,6 +278,15 @@ export default function ProductCard({ product, className = "", viewMode = 'grid'
             />
             <div className={`absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
             <div className={`absolute inset-0 bg-gradient-to-r from-pink-500/10 to-purple-500/10 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
+            
+            {/* Shade indicator if product has shades */}
+            {(product.variants?.colors || product.variants?.shades) && (
+              <div className="absolute bottom-2 left-2 flex space-x-1">
+                {[1,2,3].map((i) => (
+                  <div key={i} className="w-2 h-2 rounded-full bg-white/70 border border-gray-300"></div>
+                ))}
+              </div>
+            )}
           </div>
         </Link>
       </div>

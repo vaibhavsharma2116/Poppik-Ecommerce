@@ -583,13 +583,29 @@ export class DatabaseStorage implements IStorage {
   async updateShade(id: number, shadeData: any): Promise<any> {
     try {
       const db = await getDb();
-      const [shade] = await db.update(shades)
-        .set({ ...shadeData, updatedAt: new Date().toISOString() })
+      
+      // Add updatedAt timestamp as Date object
+      const updateData = {
+        ...shadeData,
+        updatedAt: new Date()
+      };
+      
+      console.log("Updating shade in database:", { id, updateData });
+      
+      const result = await db.update(shades)
+        .set(updateData)
         .where(eq(shades.id, id))
         .returning();
-      return shade;
+      
+      if (!result || result.length === 0) {
+        console.log("No shade found with ID:", id);
+        return null;
+      }
+      
+      console.log("Shade updated successfully in database:", result[0]);
+      return result[0];
     } catch (error) {
-      console.error("Database connection failed:", error);
+      console.error("Database error updating shade:", error);
       throw error;
     }
   }

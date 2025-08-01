@@ -157,15 +157,16 @@ export const contactSubmissions = pgTable("contact_submissions", {
 export const shades = pgTable("shades", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  colorCode: text("colorCode").notNull(),
+  colorCode: text("color_code").notNull(),
   value: text("value").notNull().unique(),
-  isActive: boolean("isActive").default(true).notNull(),
-  sortOrder: integer("sortOrder").default(0).notNull(),
-  categoryIds: jsonb("categoryIds"),
-  subcategoryIds: jsonb("subcategoryIds"),
-  productIds: jsonb("productIds"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: text("updatedAt").default(sql`CURRENT_TIMESTAMP`),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  categoryIds: jsonb("category_ids"),
+  subcategoryIds: jsonb("subcategory_ids"),
+  productIds: jsonb("product_ids"),
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export type Shade = typeof shades.$inferSelect;

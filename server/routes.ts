@@ -456,6 +456,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin image upload specifically for shades
+  app.post("/api/admin/upload-image", upload.single("image"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+
+      // Return the file URL
+      const imageUrl = `/api/images/${req.file.filename}`;
+      res.json({ 
+        success: true,
+        imageUrl,
+        message: "Image uploaded successfully"
+      });
+    } catch (error) {
+      console.error("Admin image upload error:", error);
+      res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
+
   // Products API
   app.get("/api/products", async (req, res) => {
     try {
@@ -2966,43 +2986,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/shades", async (req, res) => {
     try {
-      const { name, colorCode, value, isActive, sortOrder, categoryIds, subcategoryIds } = req.body;
+      console.log("Creating shade with data:", req.body);
+      
+      const { name, colorCode, value, isActive, sortOrder, categoryIds, subcategoryIds, productIds, imageUrl } = req.body;
 
+      // Validation
       if (!name || !colorCode) {
         return res.status(400).json({ error: "Name and color code are required" });
       }
 
-      const generatedValue = value || name.trim().toLowerCase().replace(/\s+/g, '-');
+      if (name.trim().length === 0) {
+        return res.status(400).json({ error: "Name cannot be empty" });
+      }
+
+      if (!colorCode.match(/^#[0-9A-Fa-f]{6}$/)) {
+        return res.status(400).json({ error: "Invalid color code format. Use hex format like #FF0000" });
+      }
+
+      const generatedValue = value && value.trim() ? value.trim() : name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
       const shadeData = {
         name: name.trim(),
-        colorCode: colorCode.trim(),
+        colorCode: colorCode.trim().toUpperCase(),
         value: generatedValue,
         isActive: Boolean(isActive ?? true),
         sortOrder: Number(sortOrder) || 0,
         categoryIds: Array.isArray(categoryIds) ? categoryIds : [],
-        subcategoryIds: Array.isArray(subcategoryIds) ? subcategoryIds : []
+        subcategoryIds: Array.isArray(subcategoryIds) ? subcategoryIds : [],
+        productIds: Array.isArray(productIds) ? productIds : [],
+        imageUrl: imageUrl || null
       };
 
+      console.log("Processed shade data:", shadeData);
+
       const shade = await storage.createShade(shadeData);
+      console.log("Shade created successfully:", shade);
+      
       res.status(201).json(shade);
     } catch (error) {
       console.error("Error creating shade:", error);
-      res.status(500).json({ error: "Failed to create shade" });
+      
+      let errorMessage = "Failed to create shade";
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      if (error.message && error.message.includes('unique constraint')) {
+        errorMessage = "A shade with this value already exists. Please choose a different name or value.";
+      }
+      
+      res.status(500).json({ 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   });
 
   app.put("/api/admin/shades/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const updatedShade = await storage.updateShade(parseInt(id), req.body);
+      console.log("Updating shade with ID:", id);
+      console.log("Update data:", req.body);
+      
+      const { name, colorCode, value, isActive, sortOrder, categoryIds, subcategoryIds, productIds, imageUrl } = req.body;
+
+      // Validation
+      if (name && name.trim().length === 0) {
+        return res.status(400).json({ error: "Name cannot be empty" });
+      }
+
+      if (colorCode && !colorCode.match(/^#[0-9A-Fa-f]{6}$/)) {
+        return res.status(400).json({ error: "Invalid color code format. Use hex format like #FF0000" });
+      }
+
+      // Process the update data
+      const updateData: any = {};
+      
+      if (name !== undefined) updateData.name = name.trim();
+      if (colorCode !== undefined) updateData.colorCode = colorCode.trim().toUpperCase();
+      if (value !== undefined) updateData.value = value.trim() || name?.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+      if (sortOrder !== undefined) updateData.sortOrder = Number(sortOrder) || 0;
+      if (categoryIds !== undefined) updateData.categoryIds = Array.isArray(categoryIds) ? categoryIds : [];
+      if (subcategoryIds !== undefined) updateData.subcategoryIds = Array.isArray(subcategoryIds) ? subcategoryIds : [];
+      if (productIds !== undefined) updateData.productIds = Array.isArray(productIds) ? productIds : [];
+      if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null;
+
+      console.log("Processed update data:", updateData);
+
+      const updatedShade = await storage.updateShade(parseInt(id), updateData);
       if (!updatedShade) {
         return res.status(404).json({ error: "Shade not found" });
       }
+      
+      console.log("Shade updated successfully:", updatedShade);
       res.json(updatedShade);
     } catch (error) {
       console.error("Error updating shade:", error);
-      res.status(500).json({ error: "Failed to update shade" });
+      
+      let errorMessage = "Failed to update shade";
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      if (error.message && error.message.includes('unique constraint')) {
+        errorMessage = "A shade with this value already exists. Please choose a different name or value.";
+      }
+      
+      res.status(500).json({ 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   });
 

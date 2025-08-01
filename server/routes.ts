@@ -10,7 +10,7 @@ import jwt from "jsonwebtoken";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc, and, gte, lte, like, isNull, asc, or, sql } from "drizzle-orm";
 import { Pool } from "pg";
-import { ordersTable, orderItemsTable, users, sliders } from "../shared/schema";
+import { ordersTable, orderItemsTable, users, sliders, reviews } from "../shared/schema";
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/my_pgdb",
@@ -514,7 +514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getNewLaunchProducts();
       res.json(products);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch new launch products" });
+      console.log("Database unavailable, using sample new launch products");
+      const sampleProducts = generateSampleProducts();
+      res.json(sampleProducts.filter(p => p.newLaunch));
     }
   });
 
@@ -3219,6 +3221,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching product shades:", error);
       res.status(500).json({ error: "Failed to fetch product shades" });
+    }
+  });
+
+  // Review Management APIs
+  
+  // Get reviews for a product
+  app.get("/api/products/:productId/reviews", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const productReviews = await storage.getProductReviews(parseInt(productId));
+      res.json(productReviews);
+    } catch (error) {
+      console.error("Error fetching product reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  // Check if user can review a product
+  app.get("/api/products/:productId/can-review", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const userId = req.query.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication required" });
+      }
+
+      const result = await storage.checkUserCanReview(parseInt(userId as string), parseInt(productId));
+      res.json(result);
+    } catch (error) {
+      console.error("Error checking review eligibility:", error);
+      res.status(500).json({ error: "Failed to check review eligibility" });
+    }
+  });
+
+  // Create a new review
+  app.post("/api/products/:productId/reviews", upload.single("image"), async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const { userId, rating, reviewText, orderId } = req.body;
+
+      // Authentication check
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication required" });
+      }
+
+      // Validation
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+
+      // Check if user can review this product
+      const canReviewCheck = await storage.checkUserCanReview(parseInt(userId), parseInt(productId));
+      if (!canReviewCheck.canReview) {
+        return res.status(403).json({ error: canReviewCheck.message });
+      }
+
+      // Handle image upload
+      let imageUrl = null;
+      if (req.file) {
+        imageUrl = `/api/images/${req.file.filename}`;
+      }
+
+      // Create review
+      const reviewData = {
+        userId: parseInt(userId),
+        productId: parseInt(productId),
+        orderId: parseInt(orderId) || canReviewCheck.orderId!,
+        rating: parseInt(rating),
+        reviewText: reviewText || null,
+        imageUrl,
+        isVerified: true
+      };
+
+      const review = await storage.createReview(reviewData);
+      
+      res.status(201).json({
+        message: "Review submitted successfully",
+        review
+      });
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(500).json({ error: "Failed to submit review" });
+    }
+  });
+
+  // Get user's reviews
+  app.get("/api/users/:userId/reviews", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const userReviews = await storage.getUserReviews(parseInt(userId));
+      res.json(userReviews);
+    } catch (error) {
+      console.error("Error fetching user reviews:", error);
+      res.status(500).json({ error: "Failed to fetch user reviews" });
+    }
+  });
+
+  // Delete a review
+  app.delete("/api/reviews/:reviewId", async (req, res) => {
+    try {
+      const { reviewId } = req.params;
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication required" });
+      }
+
+      const success = await storage.deleteReview(parseInt(reviewId), parseInt(userId));
+      if (!success) {
+        return res.status(404).json({ error: "Review not found or unauthorized" });
+      }
+
+      res.json({ message: "Review deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      res.status(500).json({ error: "Failed to delete review" });
     }
   });
 

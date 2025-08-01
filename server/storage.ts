@@ -1,5 +1,6 @@
+
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, sql, and, asc } from "drizzle-orm";
+import { eq, sql, and, asc, desc } from "drizzle-orm";
 import { Pool } from "pg";
 import { 
   products, 
@@ -8,16 +9,21 @@ import {
   users,
   contactSubmissions,
   shades,
+  reviews,
+  ordersTable,
+  orderItemsTable,
   type Product, 
   type Category, 
   type Subcategory,
   type User,
   type Shade,
+  type Review,
   type InsertProduct, 
   type InsertCategory, 
   type InsertSubcategory,
   type InsertUser,
-  type InsertShade
+  type InsertShade,
+  type InsertReview
 } from "@shared/schema";
 import dotenv from "dotenv";
 
@@ -91,9 +97,35 @@ export interface IStorage {
   updateShade(id: number, shade: Partial<InsertShade>): Promise<Shade | undefined>;
   deleteShade(id: number): Promise<boolean>;
   getProductShades(productId: number): Promise<any[]>;
+
+   // Review Management Functions
+  createReview(reviewData: InsertReview): Promise<Review>;
+  getProductReviews(productId: number): Promise<Review[]>;
+  getUserReviews(userId: number): Promise<Review[]>;
+  checkUserCanReview(userId: number, productId: number): Promise<{ canReview: boolean; orderId?: number; message: string }>;
+  deleteReview(reviewId: number, userId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
+  private db: ReturnType<typeof drizzle>;
+
+  constructor() {
+    // Initialize the database connection in the constructor
+    this.initializeDb();
+  }
+
+  private async initializeDb() {
+    if (!this.db) {
+      try {
+        this.db = drizzle(pool);
+        console.log("Database connected successfully (PostgreSQL) - inside DatabaseStorage");
+      } catch (error) {
+        console.error("Database connection failed:", error);
+        throw error;
+      }
+    }
+  }
+
   // Users
   async getUser(id: number): Promise<User | undefined> {
     const db = await getDb();
@@ -489,7 +521,7 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Shades
+  // Shades - Consolidated methods (removed duplicates)
   async getShade(id: number): Promise<Shade | undefined> {
     const db = await getDb();
     const result = await db.select().from(shades).where(eq(shades.id, id)).limit(1);
@@ -497,13 +529,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getShades(): Promise<Shade[]> {
-    const db = await getDb();
-    return await db.select().from(shades).orderBy(shades.sortOrder);
+    try {
+      const db = await getDb();
+      const result = await db.select().from(shades).orderBy(asc(shades.sortOrder));
+      return result;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
   }
 
   async getActiveShades(): Promise<Shade[]> {
-    const db = await getDb();
-    return await db.select().from(shades).where(eq(shades.isActive, true)).orderBy(shades.sortOrder);
+    try {
+      const db = await getDb();
+      const result = await db.select().from(shades)
+        .where(eq(shades.isActive, true))
+        .orderBy(asc(shades.sortOrder));
+      return result;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
   }
 
   async getShadesByCategory(categoryId: number): Promise<Shade[]> {
@@ -527,49 +573,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createShade(shadeData: InsertShade): Promise<Shade> {
-    const db = await getDb();
-    const result = await db.insert(shades).values(shadeData).returning();
-    return result[0];
-  }
-
-  async updateShade(id: number, shadeData: Partial<InsertShade>): Promise<Shade | undefined> {
-    const db = await getDb();
-    const result = await db.update(shades).set(shadeData).where(eq(shades.id, id)).returning();
-    return result[0];
-  }
-
-  async deleteShade(id: number): Promise<boolean> {
-    const db = await getDb();
-    const result = await db.delete(shades).where(eq(shades.id, id)).returning();
-    return result.length > 0;
-  }
-
-  // Shade management methods
-  async getShades(): Promise<any[]> {
-    try {
-      const db = await getDb();
-      const result = await db.select().from(shades).orderBy(asc(shades.sortOrder));
-      return result;
-    } catch (error) {
-      console.error("Database connection failed:", error);
-      throw error;
-    }
-  }
-
-  async getActiveShades(): Promise<any[]> {
-    try {
-      const db = await getDb();
-      const result = await db.select().from(shades)
-        .where(eq(shades.isActive, true))
-        .orderBy(asc(shades.sortOrder));
-      return result;
-    } catch (error) {
-      console.error("Database connection failed:", error);
-      throw error;
-    }
-  }
-
-  async createShade(shadeData: any): Promise<any> {
     try {
       const db = await getDb();
       const [shade] = await db.insert(shades).values(shadeData).returning();
@@ -580,28 +583,28 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateShade(id: number, shadeData: any): Promise<any> {
+  async updateShade(id: number, shadeData: Partial<InsertShade>): Promise<Shade | undefined> {
     try {
       const db = await getDb();
-      
+
       // Add updatedAt timestamp as Date object
       const updateData = {
         ...shadeData,
         updatedAt: new Date()
       };
-      
+
       console.log("Updating shade in database:", { id, updateData });
-      
+
       const result = await db.update(shades)
         .set(updateData)
         .where(eq(shades.id, id))
         .returning();
-      
+
       if (!result || result.length === 0) {
         console.log("No shade found with ID:", id);
-        return null;
+        return undefined;
       }
-      
+
       console.log("Shade updated successfully in database:", result[0]);
       return result[0];
     } catch (error) {
@@ -670,6 +673,135 @@ export class DatabaseStorage implements IStorage {
       console.error("Error getting product shades:", error);
       return [];
     }
+  }
+
+  // Helper function to check if shade has references
+  async checkShadeReferences(shadeId: number): Promise<boolean> {
+    // This would check if the shade is used in any products
+    // For now, return false to allow deletion
+    return false;
+  }
+
+  // Review Management Functions
+  async createReview(reviewData: InsertReview): Promise<Review> {
+    const db = await getDb();
+    const [review] = await db.insert(reviews).values(reviewData).returning();
+    console.log("Review created:", review);
+    return review;
+  }
+
+  async getProductReviews(productId: number): Promise<Review[]> {
+    const db = await getDb();
+    const productReviews = await db
+      .select({
+        id: reviews.id,
+        userId: reviews.userId,
+        productId: reviews.productId,
+        orderId: reviews.orderId,
+        rating: reviews.rating,
+        reviewText: reviews.reviewText,
+        imageUrl: reviews.imageUrl,
+        isVerified: reviews.isVerified,
+        createdAt: reviews.createdAt,
+        userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
+        userEmail: users.email,
+      })
+      .from(reviews)
+      .innerJoin(users, eq(reviews.userId, users.id))
+      .where(eq(reviews.productId, productId))
+      .orderBy(desc(reviews.createdAt));
+
+    return productReviews;
+  }
+
+  async getUserReviews(userId: number): Promise<Review[]> {
+    const db = await getDb();
+    const userReviews = await db
+      .select({
+        id: reviews.id,
+        userId: reviews.userId,
+        productId: reviews.productId,
+        orderId: reviews.orderId,
+        rating: reviews.rating,
+        reviewText: reviews.reviewText,
+        imageUrl: reviews.imageUrl,
+        isVerified: reviews.isVerified,
+        createdAt: reviews.createdAt,
+        productName: products.name,
+        productImage: products.imageUrl,
+      })
+      .from(reviews)
+      .innerJoin(products, eq(reviews.productId, products.id))
+      .where(eq(reviews.userId, userId))
+      .orderBy(desc(reviews.createdAt));
+
+    return userReviews;
+  }
+
+  async checkUserCanReview(userId: number, productId: number): Promise<{ canReview: boolean; orderId?: number; message: string }> {
+    const db = await getDb();
+    // Check if user has purchased this product
+    const userOrders = await db
+      .select({
+        orderId: ordersTable.id,
+        orderStatus: ordersTable.status,
+      })
+      .from(ordersTable)
+      .innerJoin(orderItemsTable, eq(ordersTable.id, orderItemsTable.orderId))
+      .where(
+        and(
+          eq(ordersTable.userId, userId),
+          eq(orderItemsTable.productId, productId),
+          eq(ordersTable.status, 'delivered')
+        )
+      );
+
+    if (userOrders.length === 0) {
+      return {
+        canReview: false,
+        message: "You can only review products that you have purchased and received."
+      };
+    }
+
+    // Check if user has already reviewed this product
+    const existingReview = await db
+      .select()
+      .from(reviews)
+      .where(
+        and(
+          eq(reviews.userId, userId),
+          eq(reviews.productId, productId)
+        )
+      )
+      .limit(1);
+
+    if (existingReview.length > 0) {
+      return {
+        canReview: false,
+        message: "You have already reviewed this product."
+      };
+    }
+
+    return {
+      canReview: true,
+      orderId: userOrders[0].orderId,
+      message: "You can review this product."
+    };
+  }
+
+  async deleteReview(reviewId: number, userId: number): Promise<boolean> {
+    const db = await getDb();
+    const result = await db
+      .delete(reviews)
+      .where(
+        and(
+          eq(reviews.id, reviewId),
+          eq(reviews.userId, userId)
+        )
+      )
+      .returning();
+
+    return result.length > 0;
   }
 }
 

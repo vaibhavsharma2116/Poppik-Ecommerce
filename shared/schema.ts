@@ -171,3 +171,19 @@ export const shades = pgTable("shades", {
 
 export type Shade = typeof shades.$inferSelect;
 export type InsertShade = typeof shades.$inferInsert;
+
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  productId: integer("product_id").notNull().references(() => products.id),
+  orderId: integer("order_id").notNull().references(() => ordersTable.id),
+  rating: integer("rating").notNull(),
+  reviewText: text("review_text"),
+  imageUrl: text("image_url"),
+  isVerified: boolean("is_verified").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = typeof reviews.$inferInsert;

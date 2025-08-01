@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import { ChevronRight, Star, ShoppingCart, Heart, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronRight, Star, ShoppingCart, Heart, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ProductCard from "@/components/product-card";
 import type { Product } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+
+interface Review {
+  id: number;
+  userId: number;
+  productId: number;
+  orderId: number;
+  rating: number;
+  reviewText?: string;
+  imageUrl?: string;
+  isVerified: boolean;
+  createdAt: string;
+  userName?: string;
+  userEmail?: string;
+}
 
 interface Shade {
   id: number;
@@ -28,6 +42,13 @@ export default function ProductDetail() {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [showAllShades, setShowAllShades] = useState(false);
   const [selectedShade, setSelectedShade] = useState<Shade | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [canReview, setCanReview] = useState<{ canReview: boolean; orderId?: number; message: string }>({ canReview: false, message: "" });
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewImage, setReviewImage] = useState<File | null>(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
   const { toast } = useToast();
 
   const { data: product, isLoading } = useQuery<Product>({
@@ -58,6 +79,52 @@ export default function ProductDetail() {
     },
     enabled: !!product?.id,
   });
+
+  // Fetch product reviews
+  const { data: productReviews = [], refetch: refetchReviews } = useQuery({
+    queryKey: [`/api/products/${product?.id}/reviews`],
+    queryFn: async () => {
+      if (!product?.id) return [];
+      
+      const response = await fetch(`/api/products/${product.id}/reviews`);
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: !!product?.id,
+  });
+
+  // Check if user can review this product
+  const { data: reviewEligibility } = useQuery({
+    queryKey: [`/api/products/${product?.id}/can-review`],
+    queryFn: async () => {
+      if (!product?.id) return { canReview: false, message: "" };
+      
+      const user = localStorage.getItem("user");
+      if (!user) return { canReview: false, message: "Please login to review" };
+      
+      const userData = JSON.parse(user);
+      const response = await fetch(`/api/products/${product.id}/can-review?userId=${userData.id}`);
+      if (!response.ok) {
+        return { canReview: false, message: "Unable to check review eligibility" };
+      }
+      return response.json();
+    },
+    enabled: !!product?.id,
+  });
+
+  useEffect(() => {
+    if (productReviews) {
+      setReviews(productReviews);
+    }
+  }, [productReviews]);
+
+  useEffect(() => {
+    if (reviewEligibility) {
+      setCanReview(reviewEligibility);
+    }
+  }, [reviewEligibility]);
 
   useEffect(() => {
     if (product) {
@@ -178,6 +245,91 @@ export default function ProductDetail() {
       title: "Shade Selected",
       description: `You selected ${shade.name}`,
     });
+  };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!product) return;
+    
+    const user = localStorage.getItem("user");
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to submit a review",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (reviewRating === 0) {
+      toast({
+        title: "Rating Required",
+        description: "Please select a rating",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmittingReview(true);
+
+    try {
+      const userData = JSON.parse(user);
+      const formData = new FormData();
+      
+      formData.append('userId', userData.id.toString());
+      formData.append('rating', reviewRating.toString());
+      formData.append('orderId', canReview.orderId?.toString() || '');
+      
+      if (reviewText.trim()) {
+        formData.append('reviewText', reviewText.trim());
+      }
+      
+      if (reviewImage) {
+        formData.append('image', reviewImage);
+      }
+
+      const response = await fetch(`/api/products/${product.id}/reviews`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Review Submitted",
+          description: "Thank you for your review!",
+        });
+        
+        // Reset form
+        setReviewRating(0);
+        setReviewText("");
+        setReviewImage(null);
+        setShowReviewForm(false);
+        
+        // Refresh reviews
+        refetchReviews();
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to submit review",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit review",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleStarClick = (rating: number) => {
+    setReviewRating(rating);
   };
 
   const renderStars = (rating: number) => {
@@ -632,6 +784,108 @@ export default function ProductDetail() {
             <p className="text-gray-600 text-sm sm:text-lg font-medium">What our customers are saying</p>
           </div>
 
+          {/* Review Form for Eligible Users */}
+          {canReview.canReview && (
+            <div className="mb-8">
+              {!showReviewForm ? (
+                <div className="text-center">
+                  <Button 
+                    onClick={() => setShowReviewForm(true)}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-xl font-semibold"
+                  >
+                    Write a Review
+                  </Button>
+                </div>
+              ) : (
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-purple-100/50 mb-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Write Your Review</h3>
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    {/* Rating Stars */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Rating *
+                      </label>
+                      <div className="flex space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => handleStarClick(star)}
+                            className={`w-8 h-8 ${
+                              star <= reviewRating
+                                ? "text-yellow-400 fill-yellow-400"
+                                : "text-gray-300"
+                            } hover:text-yellow-400 transition-colors`}
+                          >
+                            <Star className="w-full h-full" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Review Text */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Your Review (Optional)
+                      </label>
+                      <textarea
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Share your experience with this product..."
+                      />
+                    </div>
+
+                    {/* Image Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Add Photo (Optional)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setReviewImage(e.target.files?.[0] || null)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Submit Buttons */}
+                    <div className="flex space-x-3">
+                      <Button
+                        type="submit"
+                        disabled={submittingReview || reviewRating === 0}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg font-semibold disabled:opacity-50"
+                      >
+                        {submittingReview ? "Submitting..." : "Submit Review"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowReviewForm(false);
+                          setReviewRating(0);
+                          setReviewText("");
+                          setReviewImage(null);
+                        }}
+                        className="px-6 py-2 rounded-lg font-semibold"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Message for users who cannot review */}
+          {!canReview.canReview && canReview.message && (
+            <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 mb-8 text-center">
+              <p className="text-gray-600">{canReview.message}</p>
+            </div>
+          )}
+
           {/* Reviews Summary */}
           <div className="bg-gradient-to-br from-yellow-50/80 to-orange-50/80 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-yellow-200/50">
             <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
@@ -642,165 +896,95 @@ export default function ProductDetail() {
                   </div>
                   <span className="text-3xl font-bold text-gray-900">{product.rating}</span>
                 </div>
-                <p className="text-gray-600 font-medium">Based on {product.reviewCount.toLocaleString()} reviews</p>
+                <p className="text-gray-600 font-medium">Based on {reviews.length > 0 ? reviews.length : product.reviewCount.toLocaleString()} reviews</p>
               </div>
               <div className="space-y-2 w-full md:w-64">
-                {[5, 4, 3, 2, 1].map((stars) => (
-                  <div key={stars} className="flex items-center space-x-2">
-                    <span className="text-sm font-medium w-8">{stars}★</span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-yellow-400 to-orange-400 h-2 rounded-full"
-                        style={{ 
-                          width: `${stars === 5 ? 70 : stars === 4 ? 20 : stars === 3 ? 7 : stars === 2 ? 2 : 1}%` 
-                        }}
-                      ></div>
+                {[5, 4, 3, 2, 1].map((stars) => {
+                  const totalReviews = reviews.length || 1; // Prevent division by zero
+                  const starCount = reviews.filter(review => review.rating === stars).length;
+                  const percentage = Math.round((starCount / totalReviews) * 100);
+                  
+                  return (
+                    <div key={stars} className="flex items-center space-x-2">
+                      <span className="text-sm font-medium w-8">{stars}★</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-yellow-400 to-orange-400 h-2 rounded-full transition-all duration-300"
+                          style={{ 
+                            width: `${percentage}%` 
+                          }}
+                        ></div>
+                      </div>
+                      <span className="text-sm text-gray-500 w-8">
+                        {percentage}%
+                      </span>
                     </div>
-                    <span className="text-sm text-gray-500 w-8">
-                      {stars === 5 ? '70%' : stars === 4 ? '20%' : stars === 3 ? '7%' : stars === 2 ? '2%' : '1%'}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* Individual Reviews */}
+          {/* Dynamic Reviews */}
           <div className="space-y-6">
-            {/* Review 1 */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  P
-                </div>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-900">Priya Sharma</h4>
-                      <p className="text-sm text-gray-500">Verified Purchase • 2 weeks ago</p>
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div key={review.id} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      {review.userName ? review.userName.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    <div className="flex">
-                      {renderStars(5)}
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-gray-900">
+                            {review.userName || 'Anonymous User'}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            Verified Purchase • {new Date(review.createdAt).toLocaleDateString('en-IN', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex">
+                          {renderStars(review.rating)}
+                        </div>
+                      </div>
+                      {review.reviewText && (
+                        <p className="text-gray-700 leading-relaxed">
+                          "{review.reviewText}"
+                        </p>
+                      )}
+                      {review.imageUrl && (
+                        <div className="mt-3">
+                          <img 
+                            src={review.imageUrl} 
+                            alt="Review" 
+                            className="max-w-xs rounded-lg shadow-md"
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span className="flex items-center">
+                          <CheckCircle className="w-4 h-4 mr-1 text-green-500" />
+                          Verified Purchase
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">
-                    "Amazing product! I've been using this for a month now and can see visible improvements in my skin. The texture is perfect and it absorbs quickly without leaving any sticky residue. Highly recommended!"
-                  </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (23)</button>
-                    <button className="hover:text-pink-600 transition-colors">Reply</button>
-                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <Star className="w-10 h-10 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-xl font-medium">No reviews yet</p>
+                <p className="text-gray-400">Be the first to review this product!</p>
               </div>
-            </div>
-
-            {/* Review 2 */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  A
-                </div>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-900">Anita Desai</h4>
-                      <p className="text-sm text-gray-500">Verified Purchase • 1 month ago</p>
-                    </div>
-                    <div className="flex">
-                      {renderStars(5)}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed">
-                    "Love this! Perfect for my sensitive skin. No irritation at all and the results are fantastic. The packaging is also very hygienic and travel-friendly."
-                  </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (18)</button>
-                    <button className="hover:text-pink-600 transition-colors">Reply</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Review 3 */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  R
-                </div>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-900">Riya Patel</h4>
-                      <p className="text-sm text-gray-500">Verified Purchase • 3 weeks ago</p>
-                    </div>
-                    <div className="flex">
-                      {renderStars(4)}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed">
-                    "Good product overall. Takes some time to show results but definitely worth it. The customer service is also excellent. Will definitely repurchase!"
-                  </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (12)</button>
-                    <button className="hover:text-pink-600 transition-colors">Reply</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Review 4 */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  S
-                </div>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-900">Sneha Gupta</h4>
-                      <p className="text-sm text-gray-500">Verified Purchase • 1 week ago</p>
-                    </div>
-                    <div className="flex">
-                      {renderStars(5)}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed">
-                    "Excellent quality! Fast delivery and great packaging. This has become part of my daily skincare routine. My skin feels so much softer and looks brighter."
-                  </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (31)</button>
-                    <button className="hover:text-pink-600 transition-colors">Reply</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Review 5 */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100/50">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  M
-                </div>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-900">Meera Singh</h4>
-                      <p className="text-sm text-gray-500">Verified Purchase • 5 days ago</p>
-                    </div>
-                    <div className="flex">
-                      {renderStars(4)}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed">
-                    "Really impressed with the quality. Been using it for just a few days but already noticing improvements. The texture is lightweight and non-greasy. Perfect for oily skin like mine."
-                  </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <button className="hover:text-pink-600 transition-colors">👍 Helpful (8)</button>
-                    <button className="hover:text-pink-600 transition-colors">Reply</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Load More Reviews Button */}

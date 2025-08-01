@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
-import { ArrowRight, Star, Sparkles, TrendingUp, Heart, ShoppingCart, Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import ProductCard from "@/components/product-card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Star, Heart, ShoppingCart, Eye, ArrowRight, Sparkles, Zap, Shield, Truck } from "lucide-react";
+import { Link } from "wouter";
 import HeroBanner from "@/components/hero-banner";
+import ProductCard from "@/components/product-card";
+import Timer from "@/components/timer";
+import { Filter } from "lucide-react";
 import DynamicFilter from "@/components/dynamic-filter";
 import type { Product, Category } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -53,8 +54,15 @@ export default function Home() {
 
   return (
     <div>
-      {/* Hero Banner Section */}
+      {/* Hero Section */}
       <HeroBanner />
+
+      {/* Timer Section */}
+      <Timer 
+        targetDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)} // 7 days from now
+        title="Flash Sale Ending Soon!"
+        subtitle="Get your favorite beauty products at unbeatable prices"
+      />
 
       {/* Enhanced Categories Section */}
       <section className="py-24 bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden">
@@ -356,7 +364,7 @@ export default function Home() {
                 ))}
               </div>
 
-            
+
 
               {/* Show message if no new launch products */}
               {allProducts?.filter(product => product.newLaunch).length === 0 && (

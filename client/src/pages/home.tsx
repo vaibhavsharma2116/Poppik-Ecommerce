@@ -120,7 +120,7 @@ export default function Home() {
                         <div className="hidden sm:block absolute bottom-3 sm:bottom-4 left-3 sm:left-4 w-3 sm:w-4 md:w-6 h-3 sm:h-4 md:h-6 bg-white/30 rounded-full blur-sm"></div>
 
                         <img
-                          src={categoryImages[category.slug as keyof typeof categoryImages] || category.imageUrl}
+                          src={category.imageUrl || categoryImages[category.slug as keyof typeof categoryImages] || "https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400"}
                           alt={category.name}
                           className="w-full h-full object-cover rounded-xl sm:rounded-2xl group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-300 sm:duration-500 md:duration-700 shadow-md sm:shadow-lg md:shadow-xl"
                         />

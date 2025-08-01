@@ -56,8 +56,8 @@ export default function Timer({
           <CardContent className="p-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-2xl p-6 mb-3 shadow-lg">
-                  <div className="text-3xl md:text-4xl font-bold">
+                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-full w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center mb-3 shadow-lg mx-auto">
+                  <div className="text-2xl md:text-3xl lg:text-4xl font-bold">
                     {timeLeft.days.toString().padStart(2, '0')}
                   </div>
                 </div>
@@ -65,8 +65,8 @@ export default function Timer({
               </div>
               
               <div className="text-center">
-                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-2xl p-6 mb-3 shadow-lg">
-                  <div className="text-3xl md:text-4xl font-bold">
+                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-full w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center mb-3 shadow-lg mx-auto">
+                  <div className="text-2xl md:text-3xl lg:text-4xl font-bold">
                     {timeLeft.hours.toString().padStart(2, '0')}
                   </div>
                 </div>
@@ -74,8 +74,8 @@ export default function Timer({
               </div>
               
               <div className="text-center">
-                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-2xl p-6 mb-3 shadow-lg">
-                  <div className="text-3xl md:text-4xl font-bold">
+                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-full w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center mb-3 shadow-lg mx-auto">
+                  <div className="text-2xl md:text-3xl lg:text-4xl font-bold">
                     {timeLeft.minutes.toString().padStart(2, '0')}
                   </div>
                 </div>
@@ -83,8 +83,8 @@ export default function Timer({
               </div>
               
               <div className="text-center">
-                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-2xl p-6 mb-3 shadow-lg">
-                  <div className="text-3xl md:text-4xl font-bold animate-pulse">
+                <div className="bg-gradient-to-br from-red-500 to-pink-600 text-white rounded-full w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center mb-3 shadow-lg mx-auto animate-pulse">
+                  <div className="text-2xl md:text-3xl lg:text-4xl font-bold">
                     {timeLeft.seconds.toString().padStart(2, '0')}
                   </div>
                 </div>

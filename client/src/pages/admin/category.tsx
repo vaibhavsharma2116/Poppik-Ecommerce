@@ -72,10 +72,7 @@ export default function AdminCategories() {
       const response = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...category,
-          imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400'
-        })
+        body: JSON.stringify(category)
       });
       if (!response.ok) throw new Error('Failed to create category');
       return response.json();
@@ -84,6 +81,8 @@ export default function AdminCategories() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsAddCategoryModalOpen(false);
       setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
+      setSelectedImage(null);
+      setImagePreview('');
     }
   });
 
@@ -102,6 +101,8 @@ export default function AdminCategories() {
       setIsEditModalOpen(false);
       setEditingCategory(null);
       setCategoryFormData({ name: '', slug: '', description: '', status: 'Active' });
+      setSelectedImage(null);
+      setImagePreview('');
     }
   });
 
@@ -208,7 +209,8 @@ export default function AdminCategories() {
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+        const result = e.target?.result as string;
+        setImagePreview(result);
       };
       reader.readAsDataURL(file);
     }
@@ -232,7 +234,12 @@ export default function AdminCategories() {
       }
 
       const data = await response.json();
-      return data.imageUrl;
+      const uploadedUrl = data.imageUrl;
+      
+      // Update the preview to show the uploaded image
+      setImagePreview(uploadedUrl);
+      
+      return uploadedUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
       return null;
@@ -252,6 +259,9 @@ export default function AdminCategories() {
         if (uploadedImageUrl) {
           imageUrl = uploadedImageUrl;
         }
+      } else if (imagePreview && !imagePreview.startsWith('data:')) {
+        // If we have an image preview that's not a data URL, use it
+        imageUrl = imagePreview;
       }
 
       createCategoryMutation.mutate({
@@ -305,13 +315,16 @@ export default function AdminCategories() {
     try {
       const slug = categoryFormData.slug || categoryFormData.name.toLowerCase().replace(/\s+/g, '-');
       
-      // Upload new image if selected, otherwise keep existing
+      // Upload new image if selected, otherwise keep existing or use preview
       let imageUrl = editingCategory.imageUrl;
       if (selectedImage) {
         const uploadedImageUrl = await uploadImage();
         if (uploadedImageUrl) {
           imageUrl = uploadedImageUrl;
         }
+      } else if (imagePreview && !imagePreview.startsWith('data:') && imagePreview !== editingCategory.imageUrl) {
+        // If we have a new image preview that's not a data URL and different from existing, use it
+        imageUrl = imagePreview;
       }
 
       updateCategoryMutation.mutate({

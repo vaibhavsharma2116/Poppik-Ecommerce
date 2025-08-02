@@ -1825,7 +1825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email: customer.email,
       phone: customer.phone,
       orders: Math.floor(Math.random() * 10) + 1,
-      spent: `₹${(Math.random() * 5000 + 500).toFixed(2)}`,
+      spent: `₹${(Math.random() * 8080 + 500).toFixed(2)}`,
       status: Math.random() > 0.7 ? 'VIP' : Math.random() > 0.4 ? 'Active' : 'New',
       joinedDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       firstName: customer.firstName,

@@ -3341,6 +3341,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product Images API Routes
+  
+  // Get images for a product
+  app.get("/api/products/:productId/images", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const images = await storage.getProductImages(parseInt(productId));
+      res.json(images);
+    } catch (error) {
+      console.error("Error fetching product images:", error);
+      res.status(500).json({ error: "Failed to fetch product images" });
+    }
+  });
+
+  // Add image to product
+  app.post("/api/products/:productId/images", upload.single("image"), async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const { altText, isPrimary, sortOrder } = req.body;
+
+      if (!req.file) {
+        return res.status(400).json({ error: "Image file is required" });
+      }
+
+      const imageUrl = `/api/images/${req.file.filename}`;
+
+      const imageData = {
+        productId: parseInt(productId),
+        imageUrl,
+        altText: altText || null,
+        isPrimary: isPrimary === 'true' || isPrimary === true,
+        sortOrder: parseInt(sortOrder) || 0
+      };
+
+      const newImage = await storage.addProductImage(imageData);
+      if (!newImage) {
+        return res.status(500).json({ error: "Failed to add product image" });
+      }
+
+      res.status(201).json(newImage);
+    } catch (error) {
+      console.error("Error adding product image:", error);
+      res.status(500).json({ error: "Failed to add product image" });
+    }
+  });
+
+  // Update product image
+  app.put("/api/products/:productId/images/:imageId", async (req, res) => {
+    try {
+      const { imageId } = req.params;
+      const { altText, isPrimary, sortOrder } = req.body;
+
+      const updateData: any = {};
+      if (altText !== undefined) updateData.altText = altText;
+      if (isPrimary !== undefined) updateData.isPrimary = isPrimary;
+      if (sortOrder !== undefined) updateData.sortOrder = parseInt(sortOrder);
+
+      const updatedImage = await storage.updateProductImage(parseInt(imageId), updateData);
+      if (!updatedImage) {
+        return res.status(404).json({ error: "Product image not found" });
+      }
+
+      res.json(updatedImage);
+    } catch (error) {
+      console.error("Error updating product image:", error);
+      res.status(500).json({ error: "Failed to update product image" });
+    }
+  });
+
+  // Delete product image
+  app.delete("/api/products/:productId/images/:imageId", async (req, res) => {
+    try {
+      const { imageId } = req.params;
+
+      const success = await storage.deleteProductImage(parseInt(imageId));
+      if (!success) {
+        return res.status(404).json({ error: "Product image not found" });
+      }
+
+      res.json({ message: "Product image deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product image:", error);
+      res.status(500).json({ error: "Failed to delete product image" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

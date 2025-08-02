@@ -265,7 +265,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Right Icons */}
             <div className="flex items-center space-x-4">
               {/* Mobile Search */}
-              <div className="md:hidden flex items-center space-x-2">
+              <div className="md:hidden flex items-center space-x-2 mt-4">
                 <div className="relative">
                   <Button
                     variant="ghost"

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProductCard from "@/components/product-card";
+import ProductImageGallery from "@/components/product-image-gallery";
 import type { Product } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -405,38 +406,26 @@ export default function ProductDetail() {
 
         {/* Product Details */}
         <div className="grid product-detail-grid lg:grid-cols-2 gap-6 sm:gap-12 mb-8 sm:mb-16">
-          {/* Product Image */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-400/20 to-purple-400/20 rounded-xl sm:rounded-3xl blur-xl sm:blur-2xl group-hover:blur-2xl sm:group-hover:blur-3xl transition-all duration-500"></div>
-            <div className="relative bg-white rounded-xl sm:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden border border-white/20">
-              {product.saleOffer && (
-                <Badge className="absolute top-6 left-6 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold z-10 shadow-lg">
-                  {product.saleOffer}
-                </Badge>
-              )}
-              <img
-                src={selectedShade?.imageUrl || product.imageUrl}
-                alt={selectedShade ? `${product.name} - ${selectedShade.name}` : product.name}
-                className="w-full h-auto rounded-3xl transition-all duration-500 group-hover:scale-105"
-                style={{
-                  transition: 'opacity 0.3s ease-in-out'
-                }}
-                onLoad={(e) => {
-                  // Smooth transition effect when image loads
-                  e.currentTarget.style.opacity = '1';
-                }}
-                onLoadStart={(e) => {
-                  e.currentTarget.style.opacity = '0.7';
-                }}
-              />
-              {!selectedShade && shades.length > 0 && (
-                <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg">
-                  <p className="text-sm font-medium text-center">
-                    💡 Select a shade to see the product in that color
-                  </p>
-                </div>
-              )}
-            </div>
+          {/* Product Image Gallery */}
+          <div className="relative">
+            {product.saleOffer && (
+              <Badge className="absolute top-6 left-6 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold z-10 shadow-lg">
+                {product.saleOffer}
+              </Badge>
+            )}
+            <ProductImageGallery
+              productId={product.id}
+              fallbackImage={product.imageUrl}
+              productName={product.name}
+              selectedShade={selectedShade}
+            />
+            {!selectedShade && shades.length > 0 && (
+              <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg pointer-events-none">
+                <p className="text-sm font-medium text-center">
+                  💡 Select a shade to see the product in that color
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Product Info */}

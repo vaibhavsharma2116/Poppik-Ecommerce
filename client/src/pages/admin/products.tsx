@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AddProductModal from "@/components/admin/add-product-modal";
 import DynamicFilter from "@/components/dynamic-filter";
+import ProductImagesManager from "@/components/admin/product-images-manager.tsx";
 import { 
   Plus, 
   Search, 
@@ -1053,15 +1054,31 @@ export default function AdminProducts() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-imageUrl">Image URL</Label>
+                <Label htmlFor="edit-imageUrl">Primary Image URL</Label>
                 <Input
                   id="edit-imageUrl"
                   value={editFormData.imageUrl}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-                  placeholder="Product image URL"
+                  placeholder="Product primary image URL"
                 />
+                <p className="text-sm text-gray-500">
+                  This will be used as the fallback primary image. Use the Image Manager below for better organization.
+                </p>
               </div>
             </div>
+
+            {/* Product Images Manager */}
+            {selectedProduct && (
+              <div className="mt-6">
+                <ProductImagesManager 
+                  productId={selectedProduct.id} 
+                  onImagesChange={() => {
+                    // Optionally refresh product data
+                    fetchData();
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>

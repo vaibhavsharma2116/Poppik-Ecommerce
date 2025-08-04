@@ -3,9 +3,9 @@ import { Leaf, FlaskConical, Heart, Users, Award, Sparkles } from "lucide-react"
 
 export default function About() {
   const stats = [
-    // { label: "Happy Customers", value: "5M+", icon: Users },
-    // { label: "Products", value: "100+", icon: Sparkles },
-    // { label: "Average Rating", value: "4.7★", icon: Award },
+    { label: "Happy Customers", value: "5M+", icon: Users },
+    { label: "Products", value: "100+", icon: Sparkles },
+    { label: "Average Rating", value: "4.7★", icon: Award },
   ];
 
   const values = [

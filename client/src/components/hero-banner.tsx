@@ -12,14 +12,6 @@ interface Slider {
   sortOrder: number;
 }
 
-const fetchSliders = async (): Promise<Slider[]> => {
-  const response = await fetch('/api/sliders');
-  if (!response.ok) {
-    throw new Error('Failed to fetch sliders');
-  }
-  return response.json();
-};
-
 interface HeroBannerProps {
   autoplay?: boolean;
   autoplayDelay?: number;
@@ -43,7 +35,13 @@ export default function HeroBanner({
   // Fetch sliders from API
   const { data: slidersData = [], isLoading, error } = useQuery<Slider[]>({
     queryKey: ['sliders'],
-    queryFn: fetchSliders,
+    queryFn: async () => {
+      const response = await fetch('/api/sliders');
+      if (!response.ok) {
+        throw new Error('Failed to fetch sliders');
+      }
+      return response.json();
+    },
   });
 
   // Filter only active sliders and sort by sortOrder
@@ -60,7 +58,7 @@ export default function HeroBanner({
   }, [api]);
 
   useEffect(() => {
-    if (!isPlaying || !api || slides.length === 0) return;
+    if (!isPlaying || !api) return;
 
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -77,7 +75,7 @@ export default function HeroBanner({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [api, isPlaying, autoplayDelay, slides.length]);
+  }, [api, isPlaying, autoplayDelay]);
 
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying);
@@ -108,7 +106,7 @@ export default function HeroBanner({
 
   if (isLoading) {
     return (
-      <div className="hero-slider-container">
+      <div className="w-full h-[500px] relative">
         <Skeleton className="w-full h-full" />
       </div>
     );
@@ -116,23 +114,16 @@ export default function HeroBanner({
 
   if (error) {
     return (
-      <div className="hero-slider-container bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="slider-title text-gray-800 mb-4">Welcome to Our Store</h1>
-          <p className="slider-subtitle text-gray-600">Discover amazing products</p>
-          <p className="text-red-500 text-sm mt-2">Failed to load slider: {(error as Error).message}</p>
-        </div>
+      <div className="w-full h-[500px] flex items-center justify-center bg-red-50">
+        <p className="text-red-500">Failed to load hero banner: {(error as Error).message}</p>
       </div>
     );
   }
 
   if (!slides.length) {
     return (
-      <div className="hero-slider-container bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="slider-title text-gray-800 mb-4">Welcome to Our Store</h1>
-          <p className="slider-subtitle text-gray-600">Discover amazing products</p>
-        </div>
+      <div className="w-full h-[500px] flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">No slides available</p>
       </div>
     );
   }
@@ -150,7 +141,7 @@ export default function HeroBanner({
         <CarouselContent>
           {slides.map((slide) => (
             <CarouselItem key={slide.id}>
-              <div className="hero-slider-container">
+              <div className="relative w-full h-[500px] overflow-hidden">
                 {showProgress && (
                   <div className="absolute top-0 left-0 w-full h-1 bg-gray-200 z-10">
                     <div 
@@ -164,22 +155,18 @@ export default function HeroBanner({
                 <img 
                   src={slide.imageUrl} 
                   alt={`Slide ${slide.id}`}
-                  className="hero-slider-image"
-                  loading="lazy"
+                  className="w-full h-full object-cover"
                 />
-</div>
+              </div>
             </CarouselItem>
           ))}
         </CarouselContent>
 
         {showControls && (
           <>
-            {/* Navigation Buttons */}
             <button
               onClick={prevSlide}
-              className="carousel-nav-button carousel-prev"
-              onMouseEnter={() => setIsPlaying(false)}
-              onMouseLeave={() => setIsPlaying(autoplay)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
               aria-label="Previous slide"
             >
               <ChevronLeft className="w-5 h-5 text-gray-800" />
@@ -187,9 +174,7 @@ export default function HeroBanner({
 
             <button
               onClick={nextSlide}
-              className="carousel-nav-button carousel-next"
-              onMouseEnter={() => setIsPlaying(false)}
-              onMouseLeave={() => setIsPlaying(autoplay)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
               aria-label="Next slide"
             >
               <ChevronRight className="w-5 h-5 text-gray-800" />
@@ -197,10 +182,9 @@ export default function HeroBanner({
           </>
         )}
 
-        {/* Play/Pause Button */}
         <button
           onClick={togglePlayPause}
-          className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all duration-200"
+          className="absolute bottom-4 right-4 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
           aria-label={isPlaying ? "Pause autoplay" : "Play autoplay"}
         >
           {isPlaying ? (
@@ -210,26 +194,38 @@ export default function HeroBanner({
           )}
         </button>
 
-        {/* Slide Counter */}
-        <div className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm font-medium">
+        {showIndicators && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+            <div className="flex space-x-3 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`relative w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === current ? 'bg-red-500 scale-125' : 'bg-white/60 hover:bg-white/80'
+                  }`}
+                  onClick={() => goToSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                  aria-current={index === current ? "true" : "false"}
+                >
+                  {index === current && (
+                    <div 
+                      className="absolute inset-0 bg-red-500 rounded-full transition-all duration-100"
+                      style={{ 
+                        clipPath: `inset(0 ${100 - progress}% 0 0)`,
+                      }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="absolute top-6 right-6 z-20 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm font-medium">
           {current + 1} / {slides.length}
         </div>
       </Carousel>
-
-      {/* Indicators */}
-      {showIndicators && (
-        <div className="slider-indicators">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`slider-indicator ${current === index ? 'active' : ''}`}
-              aria-label={`Go to slide ${index + 1}`}
-              aria-current={index === current ? "true" : "false"}
-            />
-          ))}
-        </div>
-      )}
     </section>
   );
 }

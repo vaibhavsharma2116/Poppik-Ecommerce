@@ -1,3 +1,4 @@
+
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, sql, and, asc, desc } from "drizzle-orm";
 import { Pool } from "pg";
@@ -11,21 +12,18 @@ import {
   reviews,
   ordersTable,
   orderItemsTable,
-  productImages,
   type Product, 
   type Category, 
   type Subcategory,
   type User,
   type Shade,
   type Review,
-  type ProductImage,
   type InsertProduct, 
   type InsertCategory, 
   type InsertSubcategory,
   type InsertUser,
   type InsertShade,
-  type InsertReview,
-  type InsertProductImage
+  type InsertReview
 } from "@shared/schema";
 import dotenv from "dotenv";
 
@@ -106,12 +104,6 @@ export interface IStorage {
   getUserReviews(userId: number): Promise<Review[]>;
   checkUserCanReview(userId: number, productId: number): Promise<{ canReview: boolean; orderId?: number; message: string }>;
   deleteReview(reviewId: number, userId: number): Promise<boolean>;
-
-  // Product Images Methods
-  getProductImages(productId: number): Promise<ProductImage[]>;
-  addProductImage(imageData: Omit<InsertProductImage, 'id' | 'createdAt'>): Promise<ProductImage | null>;
-  updateProductImage(imageId: number, updateData: Partial<Omit<ProductImage, 'id' | 'createdAt'>>): Promise<ProductImage | null>;
-  deleteProductImage(imageId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -798,110 +790,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteReview(reviewId: number, userId: number): Promise<boolean> {
-    try {
-      const db = await getDb();
+    const db = await getDb();
+    const result = await db
+      .delete(reviews)
+      .where(
+        and(
+          eq(reviews.id, reviewId),
+          eq(reviews.userId, userId)
+        )
+      )
+      .returning();
 
-      const [deletedReview] = await db
-        .delete(reviews)
-        .where(and(eq(reviews.id, reviewId), eq(reviews.userId, userId)))
-        .returning();
-
-      return !!deletedReview;
-    } catch (error) {
-      console.error("Error deleting review:", error);
-      return false;
-    }
-  }
-
-  // Product Images Methods
-  async getProductImages(productId: number): Promise<ProductImage[]> {
-    try {
-      const db = await getDb();
-
-      const images = await db
-        .select()
-        .from(productImages)
-        .where(eq(productImages.productId, productId))
-        .orderBy(asc(productImages.sortOrder), desc(productImages.isPrimary));
-
-      return images;
-    } catch (error) {
-      console.error("Error fetching product images:", error);
-      return [];
-    }
-  }
-
-  async addProductImage(imageData: Omit<InsertProductImage, 'id' | 'createdAt'>): Promise<ProductImage | null> {
-    try {
-      const db = await getDb();
-
-      // If this is set as primary, unset other primary images for this product
-      if (imageData.isPrimary) {
-        await db
-          .update(productImages)
-          .set({ isPrimary: false })
-          .where(eq(productImages.productId, imageData.productId));
-      }
-
-      const [newImage] = await db
-        .insert(productImages)
-        .values(imageData)
-        .returning();
-
-      return newImage;
-    } catch (error) {
-      console.error("Error adding product image:", error);
-      return null;
-    }
-  }
-
-  async updateProductImage(imageId: number, updateData: Partial<Omit<ProductImage, 'id' | 'createdAt'>>): Promise<ProductImage | null> {
-    try {
-      const db = await getDb();
-
-      // If this is set as primary, unset other primary images for this product
-      if (updateData.isPrimary) {
-        const image = await db
-          .select({ productId: productImages.productId })
-          .from(productImages)
-          .where(eq(productImages.id, imageId))
-          .limit(1);
-
-        if (image[0]) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.productId, image[0].productId));
-        }
-      }
-
-      const [updatedImage] = await db
-        .update(productImages)
-        .set(updateData)
-        .where(eq(productImages.id, imageId))
-        .returning();
-
-      return updatedImage;
-    } catch (error) {
-      console.error("Error updating product image:", error);
-      return null;
-    }
-  }
-
-  async deleteProductImage(imageId: number): Promise<boolean> {
-    try {
-      const db = await getDb();
-
-      const [deletedImage] = await db
-        .delete(productImages)
-        .where(eq(productImages.id, imageId))
-        .returning();
-
-      return !!deletedImage;
-    } catch (error) {
-      console.error("Error deleting product image:", error);
-      return false;
-    }
+    return result.length > 0;
   }
 }
 

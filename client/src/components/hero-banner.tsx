@@ -141,7 +141,7 @@ export default function HeroBanner({
         <CarouselContent>
           {slides.map((slide) => (
             <CarouselItem key={slide.id}>
-              <div className="relative w-full h-[500px] overflow-hidden">
+              <div className="mobile-slider-container relative w-full h-56 sm:h-64 md:h-80 lg:h-96 xl:h-[500px] overflow-hidden">
                 {showProgress && (
                   <div className="absolute top-0 left-0 w-full h-1 bg-gray-200 z-10">
                     <div 
@@ -155,7 +155,7 @@ export default function HeroBanner({
                 <img 
                   src={slide.imageUrl} 
                   alt={`Slide ${slide.id}`}
-                  className="w-full h-full object-cover"
+                  className="mobile-slider-image w-full h-full object-cover"
                 />
               </div>
             </CarouselItem>

@@ -205,11 +205,10 @@ export default function Layout({ children }: LayoutProps) {
             <Link href="/">
               <div className="flex items-center cursor-pointer hover:scale-105 transition-transform duration-300">
                 <img 
-  src={logo} 
-  alt="POPPIK Logo" 
-   style={{ width: 'auto', height: '120px' ,marginTop: '20px' }}
-
-/>
+                  src={logo} 
+                  alt="POPPIK Logo" 
+                  className="h-12 w-auto sm:h-14 md:h-16 lg:h-20 xl:h-24 object-contain"
+                />
               </div>
             </Link>
 
@@ -263,20 +262,7 @@ export default function Layout({ children }: LayoutProps) {
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center space-x-4">
-              {/* Mobile Search */}
-              <div className="md:hidden flex items-center space-x-2">
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsSearchCommandOpen(true)}
-                    className="text-white hover:text-yellow-300 hover:bg-white/20 transition-all duration-300"
-                  >
-                    <Search className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
+            <div className="flex items-center space-x-2 sm:space-x-4">
 
               {/* Wishlist Icon */}
               <Link href="/wishlist">
@@ -410,44 +396,68 @@ export default function Layout({ children }: LayoutProps) {
                       })}
                     </Accordion>
                   </div>
-                  <div className="flex flex-col space-y-4 pt-4 border-t">
+                  <div className="flex flex-col space-y-3 pt-4 border-t border-gray-200">
                 {user ? (
                   <>
                     <Link href="/profile">
-                      <Button variant="ghost" className="w-full justify-start">
-                        <User className="h-4 w-4 mr-2" />
-                        My Profile ({user.firstName})
+                      <Button variant="ghost" className="w-full justify-start py-3 px-4 hover:bg-gray-50 transition-colors">
+                        <User className="h-5 w-5 mr-3 text-gray-600" />
+                        <span className="text-gray-700">My Profile ({user.firstName})</span>
                       </Button>
                     </Link>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start text-red-600"
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </Button>
+                    <Link href="/wishlist">
+                      <Button variant="ghost" className="w-full justify-start py-3 px-4 hover:bg-gray-50 transition-colors">
+                        <Heart className="h-5 w-5 mr-3 text-gray-600" />
+                        <span className="text-gray-700">
+                          Wishlist {wishlistCount > 0 && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs ml-1">({wishlistCount})</span>}
+                        </span>
+                      </Button>
+                    </Link>
+                    <Link href="/cart">
+                      <Button variant="ghost" className="w-full justify-start py-3 px-4 hover:bg-gray-50 transition-colors">
+                        <ShoppingCart className="h-5 w-5 mr-3 text-gray-600" />
+                        <span className="text-gray-700">
+                          Cart {cartCount > 0 && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs ml-1">({cartCount})</span>}
+                        </span>
+                      </Button>
+                    </Link>
+                    <div className="border-t border-gray-200 pt-3 mt-3">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start py-3 px-4 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="h-5 w-5 mr-3" />
+                        <span>Logout</span>
+                      </Button>
+                    </div>
                   </>
                 ) : (
-                  <Link href="/auth/login">
-                    <Button variant="ghost" className="w-full justify-start">
-                      <User className="h-4 w-4 mr-2" />
-                      Login / Signup
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/auth/login">
+                      <Button variant="ghost" className="w-full justify-start py-3 px-4 hover:bg-gray-50 transition-colors">
+                        <User className="h-5 w-5 mr-3 text-gray-600" />
+                        <span className="text-gray-700">Login / Signup</span>
+                      </Button>
+                    </Link>
+                    <Link href="/wishlist">
+                      <Button variant="ghost" className="w-full justify-start py-3 px-4 hover:bg-gray-50 transition-colors">
+                        <Heart className="h-5 w-5 mr-3 text-gray-600" />
+                        <span className="text-gray-700">
+                          Wishlist {wishlistCount > 0 && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs ml-1">({wishlistCount})</span>}
+                        </span>
+                      </Button>
+                    </Link>
+                    <Link href="/cart">
+                      <Button variant="ghost" className="w-full justify-start py-3 px-4 hover:bg-gray-50 transition-colors">
+                        <ShoppingCart className="h-5 w-5 mr-3 text-gray-600" />
+                        <span className="text-gray-700">
+                          Cart {cartCount > 0 && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs ml-1">({cartCount})</span>}
+                        </span>
+                      </Button>
+                    </Link>
+                  </>
                 )}
-                <Link href="/wishlist">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Heart className="h-4 w-4 mr-2" />
-                    Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
-                  </Button>
-                </Link>
-                <Link href="/cart">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Cart
-                  </Button>
-                </Link>
               </div>
                 </SheetContent>
               </Sheet>
@@ -461,17 +471,17 @@ export default function Layout({ children }: LayoutProps) {
           />
 
           {/* Mobile Search Bar */}
-          <div className="md:hidden px-4 pb-4">
-            <div className="relative">
+          <div className="md:hidden px-2 pb-3">
+            <div className="relative max-w-xs mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
               <Input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={handleSearchInputChange}
                 onFocus={handleSearchInputFocus}
                 onBlur={handleSearchInputBlur}
-                className="w-full pl-10 pr-4 bg-white/90 backdrop-blur-sm border-white/50 placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-yellow-300 transition-all duration-300"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-white/90 backdrop-blur-sm border-white/50 placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-yellow-300 transition-all duration-300 rounded-full"
               />
 
               {/* Mobile Search Results Dropdown */}
@@ -706,7 +716,7 @@ export default function Layout({ children }: LayoutProps) {
                   <img 
   src={logo} 
   alt="POPPIK Logo" 
-   style={{ width: 'auto', height: '120px' }}
+   style={{ width: 'auto', height: '140px' }}
 
 />
               </div>

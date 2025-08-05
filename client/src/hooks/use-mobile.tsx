@@ -79,3 +79,96 @@ export function useScreenSize() {
 
   return screenSize
 }
+
+export function useDeviceType() {
+  const [deviceType, setDeviceType] = React.useState<'android' | 'ios' | 'desktop' | 'unknown'>('unknown')
+
+  React.useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase()
+    
+    if (/android/.test(userAgent)) {
+      setDeviceType('android')
+    } else if (/iphone|ipad|ipod/.test(userAgent)) {
+      setDeviceType('ios')
+    } else if (window.innerWidth >= TABLET_BREAKPOINT) {
+      setDeviceType('desktop')
+    } else {
+      setDeviceType('unknown')
+    }
+  }, [])
+
+  return deviceType
+}
+
+export function useAndroidVersion() {
+  const [androidVersion, setAndroidVersion] = React.useState<number | null>(null)
+
+  React.useEffect(() => {
+    const userAgent = navigator.userAgent
+    const match = userAgent.match(/Android (\d+(?:\.\d+)?)/)
+    
+    if (match) {
+      setAndroidVersion(parseFloat(match[1]))
+    }
+  }, [])
+
+  return androidVersion
+}
+
+export function useIOSVersion() {
+  const [iosVersion, setIOSVersion] = React.useState<number | null>(null)
+
+  React.useEffect(() => {
+    const userAgent = navigator.userAgent
+    const match = userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/)
+    
+    if (match) {
+      const major = parseInt(match[1], 10)
+      const minor = parseInt(match[2], 10)
+      setIOSVersion(parseFloat(`${major}.${minor}`))
+    }
+  }, [])
+
+  return iosVersion
+}
+
+export function useDeviceOrientation() {
+  const [orientation, setOrientation] = React.useState<'portrait' | 'landscape'>('portrait')
+
+  React.useEffect(() => {
+    const updateOrientation = () => {
+      setOrientation(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape')
+    }
+
+    const mql = window.matchMedia('(orientation: landscape)')
+    mql.addEventListener('change', updateOrientation)
+    updateOrientation()
+    
+    return () => mql.removeEventListener('change', updateOrientation)
+  }, [])
+
+  return orientation
+}
+
+export function useViewportHeight() {
+  const [vh, setVh] = React.useState(window.innerHeight)
+
+  React.useEffect(() => {
+    const updateVh = () => {
+      setVh(window.innerHeight)
+      // Set CSS custom property for viewport height
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`)
+    }
+
+    window.addEventListener('resize', updateVh)
+    window.addEventListener('orientationchange', updateVh)
+    updateVh()
+
+    return () => {
+      window.removeEventListener('resize', updateVh)
+      window.removeEventListener('orientationchange', updateVh)
+    }
+  }, [])
+
+  return vh
+}

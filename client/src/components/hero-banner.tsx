@@ -129,7 +129,7 @@ export default function HeroBanner({
   }
 
   return (
-    <section className="relative w-full" aria-label="Hero banner carousel">
+    <section className="relative w-full hero-banner-mobile" aria-label="Hero banner carousel">
       <Carousel
         setApi={setApi}
         className="w-full"
@@ -144,7 +144,7 @@ export default function HeroBanner({
               <div className="mobile-slider-container relative w-full h-56 sm:h-64 md:h-80 lg:h-96 xl:h-[500px] overflow-hidden">
                 {showProgress && (
                   <div className="absolute top-0 left-0 w-full h-1 bg-gray-200 z-10">
-                    <div 
+                    <div
                       className="h-full bg-red-500 transition-all duration-100 ease-linear"
                       style={{ width: `${progress}%` }}
                       aria-hidden="true"
@@ -152,8 +152,8 @@ export default function HeroBanner({
                   </div>
                 )}
 
-                <img 
-                  src={slide.imageUrl} 
+                <img
+                  src={slide.imageUrl}
                   alt={`Slide ${slide.id}`}
                   className="mobile-slider-image w-full h-full object-cover"
                 />
@@ -166,41 +166,41 @@ export default function HeroBanner({
           <>
             <button
               onClick={prevSlide}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-1 sm:p-2 shadow-md transition-all"
               aria-label="Previous slide"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-800" />
+              <ChevronLeft className="w-3 h-3 sm:w-5 sm:h-5 text-gray-800" />
             </button>
 
             <button
               onClick={nextSlide}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-1 sm:p-2 shadow-md transition-all"
               aria-label="Next slide"
             >
-              <ChevronRight className="w-5 h-5 text-gray-800" />
+              <ChevronRight className="w-3 h-3 sm:w-5 sm:h-5 text-gray-800" />
             </button>
           </>
         )}
 
         <button
           onClick={togglePlayPause}
-          className="absolute bottom-4 right-4 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition-all"
+          className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20 bg-white/90 hover:bg-white rounded-full p-1 sm:p-2 shadow-md transition-all"
           aria-label={isPlaying ? "Pause autoplay" : "Play autoplay"}
         >
           {isPlaying ? (
-            <Pause className="w-4 h-4 text-gray-800" />
+            <Pause className="w-3 h-3 sm:w-4 sm:h-4 text-gray-800" />
           ) : (
-            <Play className="w-4 h-4 text-gray-800" />
+            <Play className="w-3 h-3 sm:w-4 sm:h-4 text-gray-800" />
           )}
         </button>
 
         {showIndicators && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-            <div className="flex space-x-3 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+          <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20">
+            <div className="flex space-x-2 sm:space-x-3 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 sm:px-4 sm:py-2">
               {slides.map((_, index) => (
                 <button
                   key={index}
-                  className={`relative w-3 h-3 rounded-full transition-all duration-300 ${
+                  className={`relative w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                     index === current ? 'bg-red-500 scale-125' : 'bg-white/60 hover:bg-white/80'
                   }`}
                   onClick={() => goToSlide(index)}
@@ -208,9 +208,9 @@ export default function HeroBanner({
                   aria-current={index === current ? "true" : "false"}
                 >
                   {index === current && (
-                    <div 
+                    <div
                       className="absolute inset-0 bg-red-500 rounded-full transition-all duration-100"
-                      style={{ 
+                      style={{
                         clipPath: `inset(0 ${100 - progress}% 0 0)`,
                       }}
                       aria-hidden="true"
@@ -222,7 +222,7 @@ export default function HeroBanner({
           </div>
         )}
 
-        <div className="absolute top-6 right-6 z-20 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm font-medium">
+        <div className="absolute top-3 sm:top-6 right-3 sm:right-6 z-20 bg-white/20 backdrop-blur-sm rounded-full px-2 py-1 sm:px-3 sm:py-1 text-white text-xs sm:text-sm font-medium">
           {current + 1} / {slides.length}
         </div>
       </Carousel>

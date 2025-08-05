@@ -2,32 +2,23 @@ export interface Product {
   id: number;
   name: string;
   slug: string;
-  description: string;
   shortDescription: string;
+  description: string;
   price: number;
   originalPrice?: number;
-  category: string;
-  subcategory?: string;
   imageUrl: string;
-  rating: number;
+  additionalImages?: string[];
+  category: string;
+  rating: string;
   reviewCount: number;
   inStock: boolean;
-  featured: boolean;
-  bestseller: boolean;
-  newLaunch: boolean;
+  bestseller?: boolean;
+  newLaunch?: boolean;
   saleOffer?: string;
-  skinType?: string;
-  variants?: {
-    colors?: string[];
-    shades?: string[];
-    sizes?: string[];
-  };
-  ingredients?: string[];
-  benefits?: string[];
-  howToUse?: string;
   size?: string;
-  tags?: string[];
-  createdAt?: string;
+  ingredients?: string;
+  benefits?: string;
+  howToUse?: string;
 }
 
 export interface Category {

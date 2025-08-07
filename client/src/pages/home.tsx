@@ -12,7 +12,7 @@ import Timer from "@/components/timer";
 import { Filter } from "lucide-react";
 import DynamicFilter from "@/components/dynamic-filter";
 import type { Product, Category } from "@/lib/types";
-
+import loUntitled_design from "@assets/Untitled_design.png";
 // WhatsApp Integration Component
 function WhatsAppButton() {
   const handleWhatsAppClick = () => {
@@ -26,13 +26,15 @@ function WhatsAppButton() {
     <div className="fixed bottom-6 right-6 z-50">
       <button
         onClick={handleWhatsAppClick}
-        className="bg-pink-500 hover:bg-pink-600 text-white p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+        className="text-white p-2 rounded-full "
         title="Chat with us on WhatsApp"
       >
         <img
-          src="/attached_assets/Untitled_design.png"
+          src={loUntitled_design}
           alt="Boss Babe"
-          className="w-12 h-12 rounded-full object-cover"
+          className="w-16 h-16 rounded-full object-cover"
+          
+         
         />
       </button>
     </div>

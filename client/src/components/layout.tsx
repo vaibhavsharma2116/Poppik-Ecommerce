@@ -725,7 +725,7 @@ export default function Layout({ children }: LayoutProps) {
               </p>
               <div className="flex space-x-4">
                 <a 
-                  href="https://www.instagram.com/poppik_lifestyle/?utm_source=qr&igsh=M3BidG9jbmJtenZ4#" 
+                  href="https://www.instagram.com/poppikofficial/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-pink-500 transition-colors duration-300 transform hover:scale-110"
@@ -736,7 +736,7 @@ export default function Layout({ children }: LayoutProps) {
                   </svg>
                 </a>
                 <a 
-                  href="https://www.facebook.com/share/171A8J2C4V/" 
+                  href="https://www.facebook.com/people/Poppik/61579145279161/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-blue-500 transition-colors duration-300 transform hover:scale-110"
@@ -747,7 +747,7 @@ export default function Layout({ children }: LayoutProps) {
                   </svg>
                 </a>
                 <a 
-                  href="https://youtube.com/@poppiklifestyle?si=K2wfrZCH762vXg12" 
+                  href="https://www.youtube.com/@Poppikofficial" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-red-500 transition-colors duration-300 transform hover:scale-110"

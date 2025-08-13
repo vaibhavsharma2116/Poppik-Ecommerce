@@ -131,7 +131,7 @@ export default function Contact() {
                   <Mail className="h-6 w-6 text-pink-600 mt-1" />
                   <div>
                     <h3 className="font-medium text-gray-900">Email</h3>
-                    <p className="text-gray-600">operations@poppik.in</p>
+                    <p className="text-gray-600">info@poppik.in</p>
                   </div>
                 </div>
                 
@@ -139,7 +139,7 @@ export default function Contact() {
                   <Phone className="h-6 w-6 text-pink-600 mt-1" />
                   <div>
                     <h3 className="font-medium text-gray-900">Phone</h3>
-                    <p className="text-gray-600">+91 9867577565</p>
+                    <p className="text-gray-600">+91 8976261444</p>
                   </div>
                 </div>
                 
@@ -148,8 +148,7 @@ export default function Contact() {
                   <div>
                     <h3 className="font-medium text-gray-900">Address</h3>
                     <p className="text-gray-600">
-                       123, Kailash Business Park
-                           Belapur, Maharashtra
+                       213, Sky Lark Building, Plot no.63, Sector 11, CBD Belapur, Navi Mumbai - 400614, Maharashtra, India
                     </p>
                   </div>
                 </div>

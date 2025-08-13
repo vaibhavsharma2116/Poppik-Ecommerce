@@ -1,6 +1,6 @@
 
 import { Link } from "wouter";
-import { ArrowLeft, Shield, Eye, Share2, Lock, Cookie, UserCheck, Baby, RefreshCw, Mail } from "lucide-react";
+import { ArrowLeft, Shield, Eye, Share2, Lock, Cookie, UserCheck, Baby, RefreshCw, Mail, CreditCard, Truck, Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,56 +9,56 @@ export default function Privacy() {
     {
       icon: Eye,
       title: "Information We Collect",
-      content: "We collect information you provide directly to us, such as when you create an account, make a purchase, or contact us for support. This includes your name, email address, phone number, shipping address, and payment information.",
-      highlight: "Personal Data Collection"
-    },
-    {
-      icon: RefreshCw,
-      title: "How We Use Your Information",
-      content: "We use the information we collect to process orders, provide customer service, send promotional communications (with your consent), and improve our products and services.",
-      highlight: "Data Processing"
+      content: "Your personal information (name, contact number, address, etc.) is collected solely for processing and delivering orders. We collect information you provide directly to us when you create an account, make a purchase, or contact us for support.",
+      highlight: "Order Processing Only"
     },
     {
       icon: Share2,
-      title: "Information Sharing",
-      content: "We do not sell, trade, or rent your personal information to third parties. We may share your information with trusted service providers who assist us in operating our website and conducting our business.",
-      highlight: "No Selling of Data"
+      title: "Data Sharing",
+      content: "We do not share your data with third parties, except with your consent, for legal reasons, or with authorized service providers who comply with our Privacy Policy. Aggregated, non-personal data may be shared for analytics and reporting purposes.",
+      highlight: "No Third-Party Selling"
     },
     {
-      icon: Lock,
+      icon: Package,
+      title: "Product Usage",
+      content: "Products sold via www.poppik.in are for personal use only and must not be resold. If you have known allergies, please review product ingredients before use. We maintain strict quality standards for all products.",
+      highlight: "Personal Use Only"
+    },
+    {
+      icon: CreditCard,
+      title: "Payment Security",
+      content: "We accept UPI, Credit Cards, Debit Cards, Net Banking, and Wallets. All payments are processed through secure, RBI-compliant payment gateways. Poppik is not responsible for payment failures or data breaches outside its system. Cash on Delivery (COD) may be available for select pincodes.",
+      highlight: "Secure Payments"
+    },
+    {
+      icon: Truck,
+      title: "Order Processing",
+      content: "Orders are shipped within 24–48 business hours. Delivery may take 2–7 working days depending on your location. Shipping fee of Rs. 99 applies to orders below Rs. 500. We ensure secure handling of your delivery information.",
+      highlight: "Fast Processing"
+    },
+    {
+      icon: Shield,
       title: "Data Security",
       content: "We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure.",
-      highlight: "Security Measures"
-    },
-    {
-      icon: Cookie,
-      title: "Cookies and Tracking",
-      content: "We use cookies and similar technologies to enhance your browsing experience, analyze website traffic, and understand where our visitors are coming from.",
-      highlight: "Cookie Usage"
+      highlight: "Protected Information"
     },
     {
       icon: UserCheck,
       title: "Your Rights",
-      content: "You have the right to access, update, or delete your personal information. You can also opt out of promotional communications at any time.",
-      highlight: "User Rights"
-    },
-    {
-      icon: Baby,
-      title: "Children's Privacy",
-      content: "Our services are not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.",
-      highlight: "Child Protection"
+      content: "You have the right to access, update, or delete your personal information. You can also opt out of promotional communications at any time. Contact our Grievance Officer Mr. Vishal Karande at vishal@poppik.in for any privacy concerns.",
+      highlight: "User Control"
     },
     {
       icon: RefreshCw,
-      title: "Changes to This Policy",
-      content: "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.",
-      highlight: "Policy Updates"
+      title: "Promotional Communications",
+      content: "By registering on the Website, you consent to receive promotional communications from Poppik via SMS, email, WhatsApp, and other platforms. You can opt out of these communications at any time.",
+      highlight: "Communication Consent"
     },
     {
       icon: Mail,
-      title: "Contact Us",
-      content: "If you have any questions about this Privacy Policy, please contact us through our contact page.",
-      highlight: "Get Help"
+      title: "Contact & Grievances",
+      content: "In compliance with the Information Technology Act 2000, our Grievance Officer is Mr. Vishal Karande (vishal@poppik.in) with a response time within 48 hours. For general privacy questions, contact us at info@poppik.in.",
+      highlight: "Quick Response"
     }
   ];
 
@@ -76,7 +76,7 @@ export default function Privacy() {
               Privacy Document
             </Badge>
             <h1 className="text-5xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-            <p className="text-gray-600 text-lg">Last updated: January 2024</p>
+            <p className="text-gray-600 text-lg">Poppik Lifestyle Private Limited</p>
           </div>
         </div>
 
@@ -92,8 +92,9 @@ export default function Privacy() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-700 text-center leading-relaxed text-lg">
-              At Poppik, we take your privacy seriously. This policy explains how we collect, use, and protect your personal information 
-              when you use our website and services. We are committed to transparency and giving you control over your data.
+              At Poppik, we take your privacy seriously. This policy explains how we collect, use, and protect your 
+              personal information when you use our website and services. We are committed to transparency and giving 
+              you control over your data.
             </p>
           </CardContent>
         </Card>
@@ -124,17 +125,27 @@ export default function Privacy() {
                 <CardContent>
                   <p className="text-gray-700 leading-relaxed text-base">
                     {section.content}
-                    {section.title === "Contact Us" && (
-                      <Link href="/contact" className="text-blue-600 hover:text-blue-700 ml-1 font-medium">
-                        contact page
-                      </Link>
-                    )}
                   </p>
                 </CardContent>
               </Card>
             );
           })}
         </div>
+
+        {/* Authenticity Guarantee */}
+        <Card className="mt-8 shadow-xl border-0 bg-gradient-to-r from-green-50 to-emerald-50">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl text-green-700">Authenticity Guarantee</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-gray-700 leading-relaxed">
+              At poppik.in, we ONLY stock authentic products. All our items are genuine and are sourced directly 
+              from the manufacturer or from their authorized distributors. Prior to shipping, we do several levels of 
+              rigorous quality checks, hence eliminating any chances of counterfeit products. If you have concerns 
+              about authenticity, contact us at info@poppik.in.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Data Protection Highlights */}
         <div className="grid md:grid-cols-3 gap-6 mt-8">
@@ -143,8 +154,8 @@ export default function Privacy() {
               <div className="p-3 bg-green-100 rounded-full w-fit mx-auto mb-4">
                 <Shield className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Secure Storage</h3>
-              <p className="text-gray-600 text-sm">Your data is encrypted and stored securely using industry-standard practices.</p>
+              <h3 className="font-semibold text-gray-900 mb-2">RBI Compliant</h3>
+              <p className="text-gray-600 text-sm">All payments processed through secure, RBI-compliant gateways.</p>
             </CardContent>
           </Card>
           
@@ -153,8 +164,8 @@ export default function Privacy() {
               <div className="p-3 bg-purple-100 rounded-full w-fit mx-auto mb-4">
                 <UserCheck className="h-8 w-8 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Your Control</h3>
-              <p className="text-gray-600 text-sm">Access, update, or delete your personal information anytime through your account.</p>
+              <h3 className="font-semibold text-gray-900 mb-2">IT Act 2000 Compliant</h3>
+              <p className="text-gray-600 text-sm">Grievance redressal within 48 hours as per IT Act requirements.</p>
             </CardContent>
           </Card>
           
@@ -163,8 +174,8 @@ export default function Privacy() {
               <div className="p-3 bg-orange-100 rounded-full w-fit mx-auto mb-4">
                 <Eye className="h-8 w-8 text-orange-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Transparency</h3>
-              <p className="text-gray-600 text-sm">We're clear about what data we collect and how we use it to improve your experience.</p>
+              <h3 className="font-semibold text-gray-900 mb-2">No Data Selling</h3>
+              <p className="text-gray-600 text-sm">We never sell your personal data to third parties.</p>
             </CardContent>
           </Card>
         </div>
@@ -182,11 +193,9 @@ export default function Privacy() {
                   Contact Privacy Team
                 </button>
               </Link>
-              <Link href="/profile">
-                <button className="bg-blue-700 hover:bg-blue-800 text-white px-8 py-3 rounded-lg font-medium transition-colors border border-blue-500">
-                  Manage Your Data
-                </button>
-              </Link>
+              <a href="mailto:vishal@poppik.in" className="bg-blue-700 hover:bg-blue-800 text-white px-8 py-3 rounded-lg font-medium transition-colors border border-blue-500">
+                Grievance Officer
+              </a>
             </div>
           </CardContent>
         </Card>

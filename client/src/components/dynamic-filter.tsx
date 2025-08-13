@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -87,7 +86,7 @@ export default function DynamicFilter({
       }
 
       // Rating filter
-      if (filters.rating > 0 && product.rating < filters.rating) {
+      if (filters.rating > 0 && parseFloat(product.rating) < filters.rating) {
         return false;
       }
 
@@ -312,7 +311,7 @@ export default function DynamicFilter({
         const relevantCategories = categories.filter(cat => 
           availableCategories.includes(cat.name)
         );
-        
+
         return relevantCategories.length > 1 ? (
           <Card>
             <CardHeader className="pb-3">
@@ -347,7 +346,7 @@ export default function DynamicFilter({
       {/* Subcategories Filter - Only show if there are multiple subcategories */}
       {(() => {
         const availableSubcategories = [...new Set(products.map(p => p.subcategory).filter(Boolean))];
-        
+
         return availableSubcategories.length > 1 ? (
           <Card>
             <CardHeader className="pb-3">
@@ -450,6 +449,7 @@ export default function DynamicFilter({
               onCheckedChange={(checked) => 
                 setFilters(prev => ({ ...prev, inStock: checked as boolean }))
               }
+              className="h-3.5 w-3.5 scale-75"
             />
             <label htmlFor="inStock" className="text-sm font-medium cursor-pointer">
               In Stock Only
@@ -463,6 +463,7 @@ export default function DynamicFilter({
               onCheckedChange={(checked) => 
                 setFilters(prev => ({ ...prev, featured: checked as boolean }))
               }
+              className="h-3.5 w-3.5 scale-75"
             />
             <label htmlFor="featured" className="text-sm font-medium cursor-pointer">
               Featured Products
@@ -476,6 +477,7 @@ export default function DynamicFilter({
               onCheckedChange={(checked) => 
                 setFilters(prev => ({ ...prev, bestseller: checked as boolean }))
               }
+              className="h-3.5 w-3.5 scale-75"
             />
             <label htmlFor="bestseller" className="text-sm font-medium cursor-pointer">
               Bestsellers
@@ -489,6 +491,7 @@ export default function DynamicFilter({
               onCheckedChange={(checked) => 
                 setFilters(prev => ({ ...prev, newLaunch: checked as boolean }))
               }
+              className="h-3.5 w-3.5 scale-75"
             />
             <label htmlFor="newLaunch" className="text-sm font-medium cursor-pointer">
               New Launches

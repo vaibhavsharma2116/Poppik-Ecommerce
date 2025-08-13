@@ -510,45 +510,45 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="add-inStock"
+                  id="inStock"
                   checked={formData.inStock}
-                  onChange={(e) => setFormData(prev => ({ ...prev, inStock: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onChange={(e) => handleInputChange('inStock', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
                 />
-                <Label htmlFor="add-inStock" className="text-sm cursor-pointer select-none">In Stock</Label>
+                <Label htmlFor="inStock" className="text-sm cursor-pointer">In Stock</Label>
               </div>
 
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="add-featured"
+                  id="featured"
                   checked={formData.featured}
-                  onChange={(e) => setFormData(prev => ({ ...prev, featured: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onChange={(e) => handleInputChange('featured', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
                 />
-                <Label htmlFor="add-featured" className="text-sm cursor-pointer select-none">Featured</Label>
+                <Label htmlFor="featured" className="text-sm cursor-pointer">Featured</Label>
               </div>
 
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="add-bestseller"
+                  id="bestseller"
                   checked={formData.bestseller}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bestseller: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onChange={(e) => handleInputChange('bestseller', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
                 />
-                <Label htmlFor="add-bestseller" className="text-sm cursor-pointer select-none">Bestseller</Label>
+                <Label htmlFor="bestseller" className="text-sm cursor-pointer">Bestseller</Label>
               </div>
 
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="add-newLaunch"
+                  id="newLaunch"
                   checked={formData.newLaunch}
-                  onChange={(e) => setFormData(prev => ({ ...prev, newLaunch: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onChange={(e) => handleInputChange('newLaunch', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
                 />
-                <Label htmlFor="add-newLaunch" className="text-sm cursor-pointer select-none">New Launch</Label>
+                <Label htmlFor="newLaunch" className="text-sm cursor-pointer">New Launch</Label>
               </div>
             </div>
           </div>

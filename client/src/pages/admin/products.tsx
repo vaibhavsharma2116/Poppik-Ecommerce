@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -937,47 +938,40 @@ export default function AdminProducts() {
             {/* Product Flags */}
             <div className="space-y-4">
               <Label>Product Status & Features</Label>
+              <p className="text-sm text-gray-600">You can select multiple options</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="edit-inStock-checkbox"
                     checked={editFormData.inStock}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, inStock: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                    onCheckedChange={(checked) => setEditFormData(prev => ({ ...prev, inStock: checked as boolean }))}
                   />
                   <Label htmlFor="edit-inStock-checkbox" className="text-sm cursor-pointer select-none">In Stock</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="edit-featured-checkbox"
                     checked={editFormData.featured}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, featured: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                    onCheckedChange={(checked) => setEditFormData(prev => ({ ...prev, featured: checked as boolean }))}
                   />
                   <Label htmlFor="edit-featured-checkbox" className="text-sm cursor-pointer select-none">Featured</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="edit-bestseller-checkbox"
                     checked={editFormData.bestseller}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, bestseller: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                    onCheckedChange={(checked) => setEditFormData(prev => ({ ...prev, bestseller: checked as boolean }))}
                   />
                   <Label htmlFor="edit-bestseller-checkbox" className="text-sm cursor-pointer select-none">Bestseller</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="edit-newLaunch-checkbox"
                     checked={editFormData.newLaunch}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, newLaunch: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                    onCheckedChange={(checked) => setEditFormData(prev => ({ ...prev, newLaunch: checked as boolean }))}
                   />
                   <Label htmlFor="edit-newLaunch-checkbox" className="text-sm cursor-pointer select-none">New Launch</Label>
                 </div>

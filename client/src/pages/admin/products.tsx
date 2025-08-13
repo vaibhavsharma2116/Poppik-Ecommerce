@@ -941,45 +941,45 @@ export default function AdminProducts() {
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="edit-inStock"
+                    id="edit-inStock-checkbox"
                     checked={editFormData.inStock}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, inStock: e.target.checked }))}
-                    className="rounded border-gray-300"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
                   />
-                  <Label htmlFor="edit-inStock" className="text-sm">In Stock</Label>
+                  <Label htmlFor="edit-inStock-checkbox" className="text-sm cursor-pointer select-none">In Stock</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="edit-featured"
+                    id="edit-featured-checkbox"
                     checked={editFormData.featured}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, featured: e.target.checked }))}
-                    className="rounded border-gray-300"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
                   />
-                  <Label htmlFor="edit-featured" className="text-sm">Featured</Label>
+                  <Label htmlFor="edit-featured-checkbox" className="text-sm cursor-pointer select-none">Featured</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="edit-bestseller"
+                    id="edit-bestseller-checkbox"
                     checked={editFormData.bestseller}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, bestseller: e.target.checked }))}
-                    className="rounded border-gray-300"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
                   />
-                  <Label htmlFor="edit-bestseller" className="text-sm">Bestseller</Label>
+                  <Label htmlFor="edit-bestseller-checkbox" className="text-sm cursor-pointer select-none">Bestseller</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="edit-newLaunch"
+                    id="edit-newLaunch-checkbox"
                     checked={editFormData.newLaunch}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, newLaunch: e.target.checked }))}
-                    className="rounded border-gray-300"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
                   />
-                  <Label htmlFor="edit-newLaunch" className="text-sm">New Launch</Label>
+                  <Label htmlFor="edit-newLaunch-checkbox" className="text-sm cursor-pointer select-none">New Launch</Label>
                 </div>
               </div>
             </div>

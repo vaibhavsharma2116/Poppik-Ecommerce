@@ -31,9 +31,8 @@ import AdminCustomers from "@/pages/admin/customers";
 import AdminSettings from "@/pages/admin/settings";
 import AdminProfile from "@/pages/admin/profile";
 import AdminChangePassword from "@/pages/admin/change-password";
-import AdminSliders from "./pages/admin/sliders";
-import AdminContactSubmissions from "./pages/admin/contact-submissions";
-import AdminTimerSettings from "@/pages/admin/timer-settins";
+import AdminSliders from "@/pages/admin/sliders";
+import AdminContactSubmissions from "@/pages/admin/contact-submissions";
 import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 import { lazy, Suspense } from 'react';
@@ -58,10 +57,7 @@ function Router() {
             <Route path="/profile" component={AdminProfile} />
             <Route path="/shades" component={AdminShades} />
             <Route path="/change-password" component={AdminChangePassword} />
-            <Route path="/contact-submissions" component={AdminContactSubmissions} />
-            <Route path="/timer-settings" component={() => (
-                <AdminTimerSettings />
-            )} />
+             <Route path="/contact-submissions" component={AdminContactSubmissions} />
             <Route path="/reports">
               <Suspense fallback={<div className="flex items-center justify-center h-64">Loading reports...</div>}>
                 <AdminReports />
@@ -92,7 +88,7 @@ function Router() {
             <Route path="/order-history" component={OrderHistory} />
             <Route path="/track-order" component={TrackOrder} />
             <Route path="/change-password" component={ChangePassword} />
-            <Route path="/terms" component={Terms} />
+             <Route path="/terms" component={Terms} />
             <Route path="/privacy" component={Privacy} />
             <Route component={NotFound} />
           </Switch>

@@ -215,7 +215,7 @@
   
   /* Mobile hero banner */
   .mobile-hero {
-    @apply min-h-[240px] sm:min-h-[280px] md:min-h-[350px] lg:min-h-[450px] xl:min-h-[500px];
+    @apply min-h-[300px] sm:min-h-[400px] md:min-h-[500px] lg:min-h-[600px];
   }
   
   .mobile-hero-content {
@@ -291,8 +291,8 @@
   }
   
   .mobile-slider-image {
-    @apply w-full h-48 sm:h-56 md:h-64 lg:h-80 xl:h-96 object-cover;
-    min-height: 192px;
+    @apply w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover;
+    min-height: 200px;
   }
   
   .mobile-slider-content {
@@ -688,8 +688,8 @@
   
   /* Slider specific styles for iPhone SE */
   .mobile-slider-image {
-    @apply h-40;
-    min-height: 160px;
+    @apply h-48;
+    min-height: 192px;
   }
   
   .mobile-slider-title {
@@ -744,8 +744,8 @@
   
   /* Slider styles for iPhone 6/7/8 */
   .mobile-slider-image {
-    @apply h-48;
-    min-height: 192px;
+    @apply h-52;
+    min-height: 208px;
   }
   
   .mobile-slider-title {
@@ -1050,8 +1050,8 @@
   }
   
   .mobile-slider-image {
-    @apply h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80 object-cover w-full;
-    min-height: 192px;
+    @apply h-56 sm:h-64 md:h-72 lg:h-80 object-cover w-full;
+    min-height: 224px;
     object-position: center;
     object-fit: cover;
   }

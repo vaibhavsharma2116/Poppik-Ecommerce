@@ -4,14 +4,6 @@ import { useState, useEffect } from "react";
 import { Clock, Zap, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-interface TimerSettings {
-  title: string;
-  subtitle: string;
-  targetDate: string;
-  isActive: boolean;
-  discountText: string;
-}
-
 interface TimerProps {
   targetDate?: Date;
   title?: string;
@@ -19,12 +11,10 @@ interface TimerProps {
 }
 
 export default function Timer({ 
-  targetDate: propTargetDate,
-  title: propTitle,
-  subtitle: propSubtitle
+  targetDate = new Date(Date.now() + 24 * 60 * 60 * 1000), // Default: 24 hours from now
+  title = "Limited Time Offer",
+  subtitle = "Hurry! Sale ends soon"
 }: TimerProps) {
-  const [settings, setSettings] = useState<TimerSettings | null>(null);
-  const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -32,47 +22,9 @@ export default function Timer({
     seconds: 0
   });
 
-  // Fetch timer settings from admin
   useEffect(() => {
-    const fetchTimerSettings = async () => {
-      try {
-        const response = await fetch('/api/admin/timer-settings');
-        if (response.ok) {
-          const data = await response.json();
-          setSettings(data);
-        } else {
-          // Fallback to default settings if no admin settings found
-          setSettings({
-            title: propTitle || "Limited Time Offer",
-            subtitle: propSubtitle || "Hurry! Sale ends soon",
-            targetDate: propTargetDate?.toISOString() || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            isActive: true,
-            discountText: "Up to 50% OFF on Selected Items"
-          });
-        }
-      } catch (error) {
-        // Fallback to default settings on error
-        setSettings({
-          title: propTitle || "Limited Time Offer",
-          subtitle: propSubtitle || "Hurry! Sale ends soon",
-          targetDate: propTargetDate?.toISOString() || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          isActive: true,
-          discountText: "Up to 50% OFF on Selected Items"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTimerSettings();
-  }, [propTargetDate, propTitle, propSubtitle]);
-
-  useEffect(() => {
-    if (!settings) return;
-
     const timer = setInterval(() => {
       const now = new Date().getTime();
-      const targetDate = new Date(settings.targetDate);
       const distance = targetDate.getTime() - now;
 
       if (distance > 0) {
@@ -88,12 +40,7 @@ export default function Timer({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [settings]);
-
-  // Don't render if settings not loaded, loading, or timer is inactive
-  if (loading || !settings || !settings.isActive) {
-    return null;
-  }
+  }, [targetDate]);
 
   return (
     <section className="py-16 bg-gradient-to-r from-red-50 via-pink-50 to-red-50">
@@ -102,8 +49,8 @@ export default function Timer({
           <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6">
             <Zap className="h-8 w-8 text-red-600" />
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">{settings.title}</h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">{settings.subtitle}</p>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">{title}</h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">{subtitle}</p>
         </div>
 
         <Card className="max-w-4xl mx-auto shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
@@ -149,7 +96,7 @@ export default function Timer({
             <div className="mt-8 text-center">
               <div className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-red-100 to-pink-100 rounded-full px-6 py-3">
                 <Gift className="h-5 w-5 text-red-600" />
-                <span className="text-red-700 font-semibold">{settings.discountText}</span>
+                <span className="text-red-700 font-semibold">Up to 50% OFF on Selected Items</span>
               </div>
             </div>
           </CardContent>

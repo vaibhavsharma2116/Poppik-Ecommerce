@@ -1,15 +1,8 @@
 import { Button } from "@/components/ui/button";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Slider {
@@ -40,24 +33,19 @@ export default function HeroBanner({
   const [progress, setProgress] = useState(0);
 
   // Fetch sliders from API
-  const {
-    data: slidersData = [],
-    isLoading,
-    error,
-  } = useQuery<Slider[]>({
-    queryKey: ["sliders"],
+  const { data: slidersData = [], isLoading, error } = useQuery<Slider[]>({
+    queryKey: ['sliders'],
     queryFn: async () => {
-      const response = await fetch("/api/sliders");
+      const response = await fetch('/api/sliders');
       if (!response.ok) {
-        throw new Error("Failed to fetch sliders");
+        throw new Error('Failed to fetch sliders');
       }
       return response.json();
     },
   });
 
   // Filter only active sliders and sort by sortOrder
-  const slides = slidersData
-    .filter((slider) => slider.isActive)
+  const slides = slidersData.filter(slider => slider.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   useEffect(() => {
@@ -82,7 +70,7 @@ export default function HeroBanner({
           }
           return 0;
         }
-        return prev + 100 / (autoplayDelay / 100);
+        return prev + (100 / (autoplayDelay / 100));
       });
     }, 100);
 
@@ -127,9 +115,7 @@ export default function HeroBanner({
   if (error) {
     return (
       <div className="w-full h-[500px] flex items-center justify-center bg-red-50">
-        <p className="text-red-500">
-          Failed to load hero banner: {(error as Error).message}
-        </p>
+        <p className="text-red-500">Failed to load hero banner: {(error as Error).message}</p>
       </div>
     );
   }
@@ -155,10 +141,10 @@ export default function HeroBanner({
         <CarouselContent>
           {slides.map((slide) => (
             <CarouselItem key={slide.id}>
-              <div className="mobile-slider-container relative w-full h-48 sm:h-56 md:h-64 lg:h-80 xl:h-96 2xl:h-[500px] overflow-hidden">
+              <div className="mobile-slider-container relative w-full h-56 sm:h-64 md:h-80 lg:h-96 xl:h-[500px] overflow-hidden">
                 {showProgress && (
                   <div className="absolute top-0 left-0 w-full h-1 bg-gray-200 z-10">
-                    <div
+                    <div 
                       className="h-full bg-red-500 transition-all duration-100 ease-linear"
                       style={{ width: `${progress}%` }}
                       aria-hidden="true"
@@ -166,8 +152,8 @@ export default function HeroBanner({
                   </div>
                 )}
 
-                <img
-                  src={slide.imageUrl}
+                <img 
+                  src={slide.imageUrl} 
                   alt={`Slide ${slide.id}`}
                   className="mobile-slider-image w-full h-full object-cover"
                 />
@@ -207,6 +193,34 @@ export default function HeroBanner({
             <Play className="w-4 h-4 text-gray-800" />
           )}
         </button>
+
+        {showIndicators && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+            <div className="flex space-x-3 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`relative w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === current ? 'bg-red-500 scale-125' : 'bg-white/60 hover:bg-white/80'
+                  }`}
+                  onClick={() => goToSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                  aria-current={index === current ? "true" : "false"}
+                >
+                  {index === current && (
+                    <div 
+                      className="absolute inset-0 bg-red-500 rounded-full transition-all duration-100"
+                      style={{ 
+                        clipPath: `inset(0 ${100 - progress}% 0 0)`,
+                      }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="absolute top-6 right-6 z-20 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm font-medium">
           {current + 1} / {slides.length}

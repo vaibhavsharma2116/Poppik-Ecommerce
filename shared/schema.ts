@@ -134,17 +134,11 @@ import { sql } from "drizzle-orm";
 
 export const sliders = pgTable("sliders", {
   id: serial("id").primaryKey(),
-  title: text("title"),
-  subtitle: text("subtitle"),
-  description: text("description"),
   imageUrl: text("image_url").notNull(),
-  badge: text("badge"),
-  primaryActionText: text("primary_action_text"),
-  primaryActionUrl: text("primary_action_url"),
-  isActive: boolean("is_active").default(true),
-  sortOrder: integer("sort_order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const contactSubmissions = pgTable("contact_submissions", {
@@ -193,14 +187,3 @@ export const reviews = pgTable("reviews", {
 
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = typeof reviews.$inferInsert;
-
-export const timerSettings = pgTable("timer_settings", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  subtitle: text("subtitle").notNull(),
-  targetDate: timestamp("target_date").notNull(),
-  isActive: boolean("is_active").default(true),
-  discountText: text("discount_text").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});

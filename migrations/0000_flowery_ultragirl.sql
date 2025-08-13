@@ -156,3 +156,123 @@ ALTER TABLE "users" ADD COLUMN "role" varchar(20) NOT NULL DEFAULT 'user';
 
 SELECT * FROM public.shades
 ORDER BY id ASC 
+
+
+-- Add missing columns to sliders table
+ALTER TABLE "sliders" ADD COLUMN IF NOT EXISTS "title" text;
+ALTER TABLE "sliders" ADD COLUMN IF NOT EXISTS "subtitle" text;
+ALTER TABLE "sliders" ADD COLUMN IF NOT EXISTS "description" text;
+ALTER TABLE "sliders" ADD COLUMN IF NOT EXISTS "badge" text;
+ALTER TABLE "sliders" ADD COLUMN IF NOT EXISTS "primary_action_text" text;
+ALTER TABLE "sliders" ADD COLUMN IF NOT EXISTS "primary_action_url" text;
+
+-- Update existing records to have default values
+UPDATE "sliders" SET "title" = 'Slider Image' WHERE "title" IS NULL;
+UPDATE "sliders" SET "subtitle" = '' WHERE "subtitle" IS NULL;
+UPDATE "sliders" SET "description" = 'Uploaded slider image' WHERE "description" IS NULL;
+
+
+CREATE TABLE IF NOT EXISTS "reviews" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"product_id" integer NOT NULL,
+	"order_id" integer NOT NULL,
+	"rating" integer NOT NULL,
+	"review_text" text,
+	"image_url" text,
+	"is_verified" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+DO $$ BEGIN
+ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+-- Create index for better performance
+CREATE INDEX IF NOT EXISTS "reviews_product_id_idx" ON "reviews" ("product_id");
+CREATE INDEX IF NOT EXISTS "reviews_user_id_idx" ON "reviews" ("user_id");
+CREATE INDEX IF NOT EXISTS "reviews_created_at_idx" ON "reviews" ("created_at");
+
+-- Add unique constraint to prevent duplicate reviews per user per product
+ALTER TABLE "reviews" ADD CONSTRAINT "unique_user_product_review" UNIQUE ("user_id", "product_id");
+
+CREATE TABLE shades (
+  id serial PRIMARY KEY,
+  name text NOT NULL,
+  color_code text NOT NULL,
+  value text NOT NULL UNIQUE,
+  is_active boolean DEFAULT true NOT NULL,
+  sort_order integer DEFAULT 0 NOT NULL,
+  category_ids jsonb,
+  subcategory_ids jsonb,
+  product_ids jsonb,
+  image_url text,
+  created_at timestamp DEFAULT now() NOT NULL,
+  updated_at timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Insert some default shades
+INSERT INTO shades (name, color_code, value, is_active, sort_order) VALUES
+('Fair to Light', '#F7E7CE', 'fair-light', true, 1),
+('Light to Medium', '#F5D5AE', 'light-medium', true, 2),
+('Medium', '#E8B895', 'medium', true, 3),
+('Medium to Deep', '#D69E2E', 'medium-deep', true, 4),
+('Deep', '#B7791F', 'deep', true, 5),
+('Very Deep', '#975A16', 'very-deep', true, 6),
+('Porcelain', '#FFF8F0', 'porcelain', true, 7),
+('Ivory', '#FFFFF0', 'ivory', true, 8),
+('Beige', '#F5F5DC', 'beige', true, 9),
+('Sand', '#F4A460', 'sand', true, 10),
+('Honey', '#FFB347', 'honey', true, 11),
+('Caramel', '#AF6F09', 'caramel', true, 12),
+('Cocoa', '#7B3F00', 'cocoa', true, 13),
+('Espresso', '#3C2415', 'espresso', true, 14);
+
+
+
+
+
+
+
+
+-- Migration: Add product_images table
+-- Description: Add support for multiple images per product
+
+CREATE TABLE IF NOT EXISTS "product_images" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"product_id" integer NOT NULL,
+	"image_url" text NOT NULL,
+	"alt_text" text,
+	"is_primary" boolean DEFAULT false NOT NULL,
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+
+-- Add foreign key constraint
+DO $$ BEGIN
+ ALTER TABLE "product_images" ADD CONSTRAINT "product_images_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE cascade;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+
+-- Create index for better performance
+CREATE INDEX IF NOT EXISTS "idx_product_images_product_id" ON "product_images" ("product_id");
+CREATE INDEX IF NOT EXISTS "idx_product_images_is_primary" ON "product_images" ("is_primary");
+CREATE INDEX IF NOT EXISTS "idx_product_images_sort_order" ON "product_images" ("sort_order");
+

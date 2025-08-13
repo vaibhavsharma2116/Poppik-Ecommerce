@@ -10,7 +10,8 @@ import jwt from "jsonwebtoken";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, desc, and, gte, lte, like, isNull, asc, or, sql } from "drizzle-orm";
 import { Pool } from "pg";
-import { ordersTable, orderItemsTable, users, sliders, reviews } from "../shared/schema";
+import { ordersTable, orderItemsTable, users, sliders, reviews, timerSettings as timerSettingsTable } from "../shared/schema";
+
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/test_db",
@@ -21,8 +22,8 @@ const db = drizzle(pool);
 // PayPal configuration
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || 'paypal_client_id';
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || 'paypal_client_secret';
-const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.paypal.com' 
+const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://api.paypal.com'
   : 'https://api.sandbox.paypal.com';
 
 // Ensure uploads directory exists
@@ -60,8 +61,8 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get("/api/health", (req, res) => {
-    res.json({ 
-      status: "OK", 
+    res.json({
+      status: "OK",
       message: "API server is running",
       timestamp: new Date().toISOString()
     });
@@ -465,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return the file URL
       const imageUrl = `/api/images/${req.file.filename}`;
-      res.json({ 
+      res.json({
         success: true,
         imageUrl,
         message: "Image uploaded successfully"
@@ -523,23 +524,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/category/:category", async (req, res) => {
     try {
       const { category } = req.params;
-      
+
       // Get all products first
       const allProducts = await storage.getProducts();
-      
+
       // Filter products by category with flexible matching
       const filteredProducts = allProducts.filter(product => {
         if (!product.category) return false;
-        
+
         const productCategory = product.category.toLowerCase();
         const searchCategory = category.toLowerCase();
-        
+
         // Exact match
         if (productCategory === searchCategory) return true;
-        
+
         // Partial match
         if (productCategory.includes(searchCategory) || searchCategory.includes(productCategory)) return true;
-        
+
         // Special category mappings
         const categoryMappings: Record<string, string[]> = {
           'skincare': ['skin', 'face', 'facial'],
@@ -550,26 +551,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'eye-drama': ['eye', 'eyes', 'eyecare'],
           'beauty': ['makeup', 'cosmetics', 'skincare'],
         };
-        
+
         const mappedCategories = categoryMappings[searchCategory] || [];
         return mappedCategories.some(mapped => productCategory.includes(mapped));
       });
-      
+
       res.json(filteredProducts);
     } catch (error) {
       console.log("Database unavailable, using sample product data with category filter");
       const sampleProducts = generateSampleProducts();
       const { category } = req.params;
       const searchCategory = category.toLowerCase();
-      
+
       const filteredSampleProducts = sampleProducts.filter(product => {
         const productCategory = product.category.toLowerCase();
-        return productCategory.includes(searchCategory) || 
+        return productCategory.includes(searchCategory) ||
                searchCategory.includes(productCategory) ||
                (searchCategory.includes('eye') && productCategory.includes('makeup')) ||
                (searchCategory.includes('beauty') && ['skincare', 'makeup'].some(cat => productCategory.includes(cat)));
       });
-      
+
       res.json(filteredSampleProducts);
     }
   });
@@ -627,14 +628,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Received product data:", req.body);
 
-      // Ensure we always return JSON
+      // Ensure we return JSON
       res.setHeader('Content-Type', 'application/json');
 
       // Validate only essential required fields
       const { name, price, category, description } = req.body;
       if (!name || !price || !category || !description) {
-        return res.status(400).json({ 
-          error: "Missing required fields: name, price, category, and description are required" 
+        return res.status(400).json({
+          error: "Missing required fields: name, price, category, and description are required"
         });
       }
 
@@ -643,8 +644,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(product);
     } catch (error) {
       console.error("Product creation error:", error);
-      res.status(500).json({ 
-        error: "Failed to create product", 
+      res.status(500).json({
+        error: "Failed to create product",
         details: error.message || "Unknown error"
       });
     }
@@ -662,9 +663,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(product);
     } catch (error) {
       console.error("Product update error:", error);
-      res.status(500).json({ 
-        error: "Failed to update product", 
-        details: error.message 
+      res.status(500).json({
+        error: "Failed to update product",
+        details: error.message
       });
     }
   });
@@ -692,14 +693,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate required fields
       const { name, description } = req.body;
       if (!name || !description) {
-        return res.status(400).json({ 
-          error: "Missing required fields: name and description are required" 
+        return res.status(400).json({
+          error: "Missing required fields: name and description are required"
         });
       }
 
       if (name.trim().length === 0 || description.trim().length === 0) {
-        return res.status(400).json({ 
-          error: "Name and description cannot be empty" 
+        return res.status(400).json({
+          error: "Name and description cannot be empty"
         });
       }
 
@@ -722,12 +723,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const category = await storage.createCategory(categoryData);
       console.log("Category created successfully:", category);
-      
+
       res.status(201).json(category);
     } catch (error) {
       console.error("Category creation error:", error);
-      res.status(500).json({ 
-        error: "Failed to create category", 
+      res.status(500).json({
+        error: "Failed to create category",
         details: error.message || "Unknown error",
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
@@ -945,7 +946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancelled: "Your order has been cancelled."
       };
 
-      res.json({ 
+      res.json({
         message: "Notification sent successfully",
         notification: notifications[status] || "Order status updated"
       });
@@ -1141,7 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderId: createdOrders[2].id,
           productId: 4,
           productName: 'Hyaluronic Acid Serum',
-          productImage: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
+          productImage: 'https://images.unsplash.com/photo-1598662779094-110c2bad80b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300',
           quantity: 2,
           price: '₹799',
         }
@@ -1156,13 +1157,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  
+
 
   // Get PayPal access token
   const getPayPalAccessToken = async () => {
     try {
       const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
-      
+
       const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
         method: 'POST',
         headers: {
@@ -1190,11 +1191,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check PayPal configuration
-      if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET || 
-          process.env.PAYPAL_CLIENT_ID === 'paypal_client_id' || 
+      if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET ||
+          process.env.PAYPAL_CLIENT_ID === 'paypal_client_id' ||
           process.env.PAYPAL_CLIENT_SECRET === 'paypal_client_secret') {
         console.error("PayPal credentials not configured properly");
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "PayPal payment is not configured. Please use Cash on Delivery instead.",
           configError: true
         });
@@ -1205,7 +1206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accessToken = await getPayPalAccessToken();
       } catch (tokenError) {
         console.error("Failed to get PayPal access token:", tokenError);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "PayPal authentication failed. Please try again or use Cash on Delivery.",
           authError: true
         });
@@ -1255,14 +1256,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!response.ok) {
         console.error("PayPal API error:", order);
         let errorMessage = "Failed to create PayPal order";
-        
+
         if (order.details && order.details.length > 0) {
           errorMessage = order.details[0].description || errorMessage;
         } else if (order.message) {
           errorMessage = order.message;
         }
-        
-        return res.status(500).json({ 
+
+        return res.status(500).json({
           error: errorMessage,
           paypalError: true,
           details: order.details || []
@@ -1273,7 +1274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!approvalUrl) {
         console.error("No approval URL found in PayPal response:", order);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "PayPal response missing approval URL. Please try again.",
           paypalError: true
         });
@@ -1287,7 +1288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("PayPal order creation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: error instanceof Error ? error.message : "Failed to create PayPal order",
         details: error instanceof Error ? error.stack : undefined
       });
@@ -1442,7 +1443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Order created successfully with ID:", orderId);
 
-      res.status(201).json({ 
+      res.status(201).json({
         message: "Order created successfully",
         orderId,
         order: {
@@ -1454,7 +1455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error creating order:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to create order",
         details: error instanceof Error ? error.message : "Unknown error"
       });
@@ -1564,8 +1565,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ordersCreated += createdOrders.length;
       }
 
-      res.json({ 
-        message: "Sample orders created successfully", 
+      res.json({
+        message: "Sample orders created successfully",
         ordersCreated,
         usersProcessed: allUsers.length
       });
@@ -1576,7 +1577,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-        // Update order status (for admin)
+
+  // Update order status (for admin)
   app.put("/api/orders/:id/status", async (req, res) => {
     try {
       const orderId = req.params.id.replace('ORD-', '');
@@ -1724,7 +1726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function generateSampleOrders() {
     const statuses = ['pending', 'processing', 'shipped', 'delivered'];
     const customers = [
-      
+
     ];
 
     const products = [];
@@ -1784,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate sample subcategories for development
   function generateSampleSubcategories() {
     return [
-    
+
     ];
   }
 
@@ -1793,12 +1795,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sampleProducts = generateSampleProducts();
 
     const baseCategories = [
-      
+
     ];
 
     // Calculate dynamic product count for each category
     return baseCategories.map(category => {
-      const productCount = sampleProducts.filter(product => 
+      const productCount = sampleProducts.filter(product =>
         product.category.toLowerCase() === category.slug.toLowerCase()
       ).length;
 
@@ -1971,7 +1973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         originalPrice: 499,
         category: 'Haircare',
         subcategory: 'Oils',
-        imageUrl: 'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
+        imageUrl: 'https://images.unsplash.com/photo-1522338242992-a99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400',
         rating: 4.5,
         reviewCount: 112,
         inStock: true,
@@ -2368,7 +2370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // // 1. Send anemail notification to your support team
       // 2. Send a confirmation email to the customer
 
-      res.json({ 
+      res.json({
         message: "Thank you for your message! We'll get back to you within 24 hours.",
         success: true,
         submissionId: savedSubmission.id
@@ -2809,7 +2811,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin global search endpoint
   // Token validation endpoint
   app.get("/api/auth/validate", (req, res) => {
     try {
@@ -2850,7 +2851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let products = [];
       try {
         const allProducts = await storage.getProducts();
-        products = allProducts.filter(product => 
+        products = allProducts.filter(product =>
           product.name.toLowerCase().includes(searchTerm) ||
           product.category.toLowerCase().includes(searchTerm) ||
           (product.subcategory && product.subcategory.toLowerCase().includes(searchTerm)) ||
@@ -2873,7 +2874,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: users.createdAt,
         }).from(users);
 
-        customers = allUsers.filter(user => 
+        customers = allUsers.filter(user =>
           (user.firstName && user.firstName.toLowerCase().includes(searchTerm)) ||
           (user.lastName && user.lastName.toLowerCase().includes(searchTerm)) ||
           (user.email && user.email.toLowerCase().includes(searchTerm)) ||
@@ -2975,6 +2976,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin authentication middleware
+  const adminAuth = (req: any, res: any, next: any) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: "Admin authentication required" });
+      }
+
+      const token = authHeader.substring(7);
+      
+      // In production, you would verify the admin token here
+      // For now, we'll accept any valid Bearer token format
+      if (token && token.length > 10) {
+        next();
+      } else {
+        return res.status(401).json({ error: "Invalid admin token" });
+      }
+    } catch (error) {
+      console.error("Admin auth error:", error);
+      res.status(401).json({ error: "Admin authentication failed" });
+    }
+  };
+
   // Admin shade management routes
   app.get("/api/admin/shades", async (req, res) => {
     try {
@@ -2989,7 +3013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/shades", async (req, res) => {
     try {
       console.log("Creating shade with data:", req.body);
-      
+
       const { name, colorCode, value, isActive, sortOrder, categoryIds, subcategoryIds, productIds, imageUrl } = req.body;
 
       // Validation
@@ -3023,21 +3047,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const shade = await storage.createShade(shadeData);
       console.log("Shade created successfully:", shade);
-      
+
       res.status(201).json(shade);
     } catch (error) {
       console.error("Error creating shade:", error);
-      
+
       let errorMessage = "Failed to create shade";
       if (error.message) {
         errorMessage = error.message;
       }
-      
+
       if (error.message && error.message.includes('unique constraint')) {
         errorMessage = "A shade with this value already exists. Please choose a different name or value.";
       }
-      
-      res.status(500).json({ 
+
+      res.status(500).json({
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
@@ -3049,7 +3073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       console.log("Updating shade with ID:", id);
       console.log("Update data:", req.body);
-      
+
       const { name, colorCode, value, isActive, sortOrder, categoryIds, subcategoryIds, productIds, imageUrl } = req.body;
 
       // Validation
@@ -3063,7 +3087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Process the update data
       const updateData: any = {};
-      
+
       if (name !== undefined) updateData.name = name.trim();
       if (colorCode !== undefined) updateData.colorCode = colorCode.trim().toUpperCase();
       if (value !== undefined) updateData.value = value.trim() || name?.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -3080,22 +3104,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedShade) {
         return res.status(404).json({ error: "Shade not found" });
       }
-      
+
       console.log("Shade updated successfully:", updatedShade);
       res.json(updatedShade);
     } catch (error) {
       console.error("Error updating shade:", error);
-      
+
       let errorMessage = "Failed to update shade";
       if (error.message) {
         errorMessage = error.message;
       }
-      
+
       if (error.message && error.message.includes('unique constraint')) {
         errorMessage = "A shade with this value already exists. Please choose a different name or value.";
       }
-      
-      res.status(500).json({ 
+
+      res.status(500).json({
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
@@ -3117,7 +3141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Slider management routes
-  app.get('/api/admin/sliders', async (req, res) => {
+  app.get('/api/admin/sliders', adminAuth, async (req, res) => {
     try {
       const allSliders = await db.select().from(sliders).orderBy(desc(sliders.sortOrder));
       res.json(allSliders);
@@ -3127,40 +3151,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/sliders', upload.single("image"), async (req, res) => {
+  app.post('/api/admin/sliders', adminAuth, upload.single("image"), async (req, res) => {
     try {
+      console.log('Slider upload request received');
+      console.log('File info:', req.file);
+      
       // Handle image URL - require uploaded file
       if (!req.file) {
-        return res.status(400).json({ 
-          error: 'Image file is required' 
+        return res.status(400).json({
+          error: 'Image file is required'
         });
       }
 
       const imageUrl = `/api/images/${req.file.filename}`;
+      console.log('Generated image URL:', imageUrl);
 
-      const [newSlider] = await db.insert(sliders).values({
-        title: `Image ${Date.now()}`,
-        subtitle: '',
-        description: 'Uploaded image',
+      const newSliderData = {
+        title: req.body.title || `Image ${Date.now()}`,
+        subtitle: req.body.subtitle || '',
+        description: req.body.description || 'Uploaded image',
         imageUrl: imageUrl,
-        badge: '',
-        primaryActionText: '',
-        primaryActionUrl: '',
-        isActive: true,
-        sortOrder: 0
-      }).returning();
+        badge: req.body.badge || '',
+        primaryActionText: req.body.primaryActionText || '',
+        primaryActionUrl: req.body.primaryActionUrl || '',
+        isActive: req.body.isActive !== undefined ? Boolean(req.body.isActive) : true,
+        sortOrder: req.body.sortOrder ? parseInt(req.body.sortOrder) : 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
+      console.log('Creating slider with data:', newSliderData);
+
+      const [newSlider] = await db.insert(sliders).values(newSliderData).returning();
+
+      console.log('Slider created successfully:', newSlider);
       res.json(newSlider);
     } catch (error) {
-      console.error('Error uploading image:', error);
-      res.status(500).json({ 
+      console.error('Error uploading slider image:', error);
+      res.status(500).json({
         error: 'Failed to upload image',
-        details: error.message 
+        details: error.message
       });
     }
   });
 
-  app.put('/api/admin/sliders/:id', upload.single("image"), async (req, res) => {
+  app.put('/api/admin/sliders/:id', adminAuth, upload.single("image"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const body = req.body;
@@ -3193,7 +3228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/sliders/:id', async (req, res) => {
+  app.delete('/api/admin/sliders/:id', adminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
 
@@ -3225,7 +3260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Review Management APIs
-  
+
   // Get reviews for a product
   app.get("/api/products/:productId/reviews", async (req, res) => {
     try {
@@ -3296,7 +3331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const review = await storage.createReview(reviewData);
-      
+
       res.status(201).json({
         message: "Review submitted successfully",
         review
@@ -3340,6 +3375,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete review" });
     }
   });
+
+  // Add timer settings API endpoints
+  app.get("/api/admin/timer-settings", async (req, res) => {
+    try {
+      const settings = await db.select().from(timerSettingsTable).limit(1);
+      if (settings.length > 0) {
+        res.json(settings[0]);
+      } else {
+        // Return default settings if none exist
+        res.json({
+          title: "Limited Time Offer",
+          subtitle: "Hurry! Sale ends soon",
+          targetDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          isActive: true,
+          discountText: "Up to 50% OFF on Selected Items"
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching timer settings:", error);
+      res.status(500).json({ error: "Failed to fetch timer settings" });
+    }
+  });
+
+  app.post("/api/admin/timer-settings", async (req, res) => {
+    try {
+      const { title, subtitle, targetDate, isActive, discountText } = req.body;
+
+      // Validate input
+      if (!title || !subtitle || !targetDate || !discountText) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      const existingSettings = await db.select().from(timerSettingsTable).limit(1);
+
+      let updatedSettings;
+      if (existingSettings.length > 0) {
+        // Update existing settings
+        updatedSettings = await db.update(timerSettingsTable)
+          .set({
+            title: title.trim(),
+            subtitle: subtitle.trim(),
+            targetDate: new Date(targetDate),
+            isActive: Boolean(isActive),
+            discountText: discountText.trim(),
+            updatedAt: new Date()
+          })
+          .where(eq(timerSettingsTable.id, existingSettings[0].id))
+          .returning();
+      } else {
+        // Create new settings
+        updatedSettings = await db.insert(timerSettingsTable)
+          .values({
+            title: title.trim(),
+            subtitle: subtitle.trim(),
+            targetDate: new Date(targetDate),
+            isActive: Boolean(isActive),
+            discountText: discountText.trim(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .returning();
+      }
+
+      res.json(updatedSettings[0]);
+    } catch (error) {
+      console.error("Error updating timer settings:", error);
+      res.status(500).json({ error: "Failed to update timer settings" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

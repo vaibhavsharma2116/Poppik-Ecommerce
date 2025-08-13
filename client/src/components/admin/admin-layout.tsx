@@ -18,7 +18,8 @@ import {
   Sun,
   Moon,
   Activity,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,12 @@ const sidebarItems = [
     href: "/customers",
     icon: Users,
     badge: "1.2k",
+  },
+  {
+    title: "Timer Settings",
+    href: "/timer-settings",
+    icon: Clock,
+    badge: null,
   },
   {
     title: "Shades",

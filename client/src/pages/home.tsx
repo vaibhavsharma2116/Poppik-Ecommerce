@@ -16,7 +16,7 @@ import loUntitled_design from "@assets/Untitled_design.png";
 // WhatsApp Integration Component
 function WhatsAppButton() {
   const handleWhatsAppClick = () => {
-    const phoneNumber = "+919867577565"; // Replace with your actual WhatsApp business number
+    const phoneNumber = "+918976261444"; // Replace with your actual WhatsApp business number
     const message = "Hi! I'm interested in your beauty products. Can you help me?";
     const whatsappUrl = `https://wa.me/${phoneNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

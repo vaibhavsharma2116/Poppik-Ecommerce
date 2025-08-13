@@ -65,6 +65,7 @@ CREATE TABLE "categories" (
 	"product_count" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "categories_slug_unique" UNIQUE("slug")
 );
+
 CREATE TABLE "shades" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
@@ -101,7 +102,7 @@ CREATE TABLE "products" (
 	"benefits" text,
 	"how_to_use" text,
 	"size" text,
-	"tags" text,
+	"tags" text
 	
 );
 
@@ -153,5 +154,5 @@ CREATE TABLE "sliders" (
 
 ALTER TABLE "users" ADD COLUMN "role" varchar(20) NOT NULL DEFAULT 'user';
 
-ELECT * FROM public.shades
+SELECT * FROM public.shades
 ORDER BY id ASC 

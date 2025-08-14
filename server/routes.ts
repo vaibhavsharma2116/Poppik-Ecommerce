@@ -13,7 +13,7 @@ import { Pool } from "pg";
 import { ordersTable, orderItemsTable, users, sliders, reviews } from "../shared/schema";
 // Database connection
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/my_pgdb",
+  connectionString: process.env.DATABASE_URL || "postgresql://localhost:5432/test_db",
 });
 
 const db = drizzle(pool);

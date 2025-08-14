@@ -19,6 +19,8 @@ import {
   Loader2,
   Package
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+
 
 interface Shade {
   id: number;
@@ -675,12 +677,10 @@ export default function AdminShades() {
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
                 {categories.map(category => (
                   <div key={category.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       id={`cat-${category.id}`}
                       checked={formData.categoryIds.includes(category.id)}
-                      onChange={() => handleCategoryChange(category.id.toString())}
-                      className="rounded border-gray-300"
+                      onCheckedChange={() => handleCategoryChange(category.id.toString())}
                     />
                     <Label htmlFor={`cat-${category.id}`} className="text-sm">{category.name}</Label>
                   </div>
@@ -694,12 +694,10 @@ export default function AdminShades() {
                 <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
                   {getAvailableSubcategories(formData.categoryIds).map(subcategory => (
                     <div key={subcategory.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         id={`sub-${subcategory.id}`}
                         checked={formData.subcategoryIds.includes(subcategory.id)}
-                        onChange={() => handleSubcategoryChange(subcategory.id.toString())}
-                        className="rounded border-gray-300"
+                        onCheckedChange={() => handleSubcategoryChange(subcategory.id.toString())}
                       />
                       <Label htmlFor={`sub-${subcategory.id}`} className="text-sm">{subcategory.name}</Label>
                     </div>
@@ -736,12 +734,10 @@ export default function AdminShades() {
                       return filteredProducts.length > 0 ? (
                         filteredProducts.map(product => (
                           <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border hover:bg-gray-50">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               id={`prod-${product.id}`}
                               checked={formData.productIds.includes(product.id)}
-                              onChange={() => handleProductChange(product.id.toString())}
-                              className="rounded border-gray-300"
+                              onCheckedChange={() => handleProductChange(product.id.toString())}
                             />
                             <img 
                               src={product.imageUrl} 
@@ -814,12 +810,10 @@ export default function AdminShades() {
             )}
 
             <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="add-active"
                 checked={formData.isActive}
-                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                className="rounded border-gray-300"
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked as boolean }))}
               />
               <Label htmlFor="add-active" className="text-sm">Active</Label>
             </div>
@@ -954,12 +948,10 @@ export default function AdminShades() {
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
                 {categories.map(category => (
                   <div key={category.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       id={`edit-cat-${category.id}`}
                       checked={formData.categoryIds.includes(category.id)}
-                      onChange={() => handleCategoryChange(category.id.toString())}
-                      className="rounded border-gray-300"
+                      onCheckedChange={() => handleCategoryChange(category.id.toString())}
                     />
                     <Label htmlFor={`edit-cat-${category.id}`} className="text-sm">{category.name}</Label>
                   </div>
@@ -973,12 +965,10 @@ export default function AdminShades() {
                 <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
                   {getAvailableSubcategories(formData.categoryIds).map(subcategory => (
                     <div key={subcategory.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         id={`edit-sub-${subcategory.id}`}
                         checked={formData.subcategoryIds.includes(subcategory.id)}
-                        onChange={() => handleSubcategoryChange(subcategory.id.toString())}
-                        className="rounded border-gray-300"
+                        onCheckedChange={() => handleSubcategoryChange(subcategory.id.toString())}
                       />
                       <Label htmlFor={`edit-sub-${subcategory.id}`} className="text-sm">{subcategory.name}</Label>
                     </div>
@@ -1015,12 +1005,10 @@ export default function AdminShades() {
                       return filteredProducts.length > 0 ? (
                         filteredProducts.map(product => (
                           <div key={product.id} className="flex items-center space-x-3 p-2 bg-white rounded border hover:bg-gray-50">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               id={`edit-prod-${product.id}`}
                               checked={formData.productIds.includes(product.id)}
-                              onChange={() => handleProductChange(product.id.toString())}
-                              className="rounded border-gray-300"
+                              onCheckedChange={() => handleProductChange(product.id.toString())}
                             />
                             <img 
                               src={product.imageUrl} 
@@ -1093,12 +1081,10 @@ export default function AdminShades() {
             )}
 
             <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="edit-active"
                 checked={formData.isActive}
-                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                className="rounded border-gray-300"
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked as boolean }))}
               />
               <Label htmlFor="edit-active" className="text-sm">Active</Label>
             </div>

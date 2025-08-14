@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Upload, X } from "lucide-react";
 import { Product } from "@/lib/types";
 
@@ -466,87 +467,44 @@ export default function AddProductModal({ onAddProduct }: AddProductModalProps) 
           </div>
 
           {/* Shade Selection */}
-          <div className="space-y-4">
-            <Label>Available Shades (Optional)</Label>
-            <p className="text-sm text-gray-600">Select shades that this product is available in:</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-40 overflow-y-auto border rounded-lg p-3">
-              {shades.map((shade) => (
-                <div key={shade.id} className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id={`shade-${shade.id}`}
-                    checked={selectedShades.includes(shade.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedShades(prev => [...prev, shade.id]);
-                      } else {
-                        setSelectedShades(prev => prev.filter(id => id !== shade.id));
-                      }
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                  <div 
-                    className="w-6 h-6 rounded-full border-2 border-gray-300"
-                    style={{ backgroundColor: shade.colorCode }}
-                    title={shade.name}
-                  ></div>
-                  <Label htmlFor={`shade-${shade.id}`} className="text-sm cursor-pointer flex-1">
-                    {shade.name}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            {selectedShades.length > 0 && (
-              <p className="text-sm text-green-600">
-                {selectedShades.length} shade{selectedShades.length > 1 ? 's' : ''} selected
-              </p>
-            )}
-          </div>
+          
 
           {/* Product Flags */}
           <div className="space-y-4">
             <Label>Product Status & Features</Label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="add-inStock"
                   checked={formData.inStock}
-                  onChange={(e) => setFormData(prev => ({ ...prev, inStock: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, inStock: checked === true }))}
                 />
                 <Label htmlFor="add-inStock" className="text-sm cursor-pointer select-none">In Stock</Label>
               </div>
 
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="add-featured"
                   checked={formData.featured}
-                  onChange={(e) => setFormData(prev => ({ ...prev, featured: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, featured: checked === true }))}
                 />
                 <Label htmlFor="add-featured" className="text-sm cursor-pointer select-none">Featured</Label>
               </div>
 
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="add-bestseller"
                   checked={formData.bestseller}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bestseller: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, bestseller: checked === true }))}
                 />
                 <Label htmlFor="add-bestseller" className="text-sm cursor-pointer select-none">Bestseller</Label>
               </div>
 
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="add-newLaunch"
                   checked={formData.newLaunch}
-                  onChange={(e) => setFormData(prev => ({ ...prev, newLaunch: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer accent-blue-600"
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, newLaunch: checked === true }))}
                 />
                 <Label htmlFor="add-newLaunch" className="text-sm cursor-pointer select-none">New Launch</Label>
               </div>
